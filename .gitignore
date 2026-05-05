@@ -1,0 +1,7 @@
+# Dependencias y salida de build.
+node_modules/
+dist/
+
+# Logs generados por Vite/npm durante pruebas locales.
+*.log
+*.err.log
