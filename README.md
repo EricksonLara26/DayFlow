@@ -32,6 +32,7 @@ http://127.0.0.1:5173/
 ```
 
 Si ese puerto esta ocupado, Vite usara otro parecido, por ejemplo `5174` o `5175`.
+Si estas usando un entorno remoto o un preview del editor, usa la URL reenviada por el editor.
 
 ## Probar la version final
 
