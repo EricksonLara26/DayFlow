@@ -1,10 +1,10 @@
-import { Check, ChevronRight, Circle } from "lucide-react";
+import { Check, ChevronRight, Circle, Trash2 } from "lucide-react";
 import { getAreaName } from "../../utils/areaUtils";
 import { getTaskTimeRange } from "../../utils/timeUtils";
 import TaskDescription from "./TaskDescription";
 
 // Lista de tareas filtradas con boton para alternar pendiente/completada.
-export default function TaskList({ tasks, areas, onSetStatus, timeFormat }) {
+export default function TaskList({ tasks, areas, onSetStatus, onDeleteTask, timeFormat }) {
   return (
     <section className="panel tasks-panel">
       <div className="panel-header">
@@ -37,6 +37,15 @@ export default function TaskList({ tasks, areas, onSetStatus, timeFormat }) {
                 {task.gmailReminder && <span>Gmail activo</span>}
               </div>
             </div>
+            <button
+              className="task-delete-button"
+              type="button"
+              aria-label={`Eliminar tarea ${task.title}`}
+              title="Eliminar tarea"
+              onClick={() => onDeleteTask(task.id)}
+            >
+              <Trash2 size={16} />
+            </button>
           </article>
         ))}
 

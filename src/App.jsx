@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import AuthScreen from "./components/auth/AuthScreen";
 import CalendarView from "./components/calendar/CalendarView";
 import HomeView from "./components/home/HomeView";
@@ -24,6 +25,7 @@ export default function App() {
   const [taskForm, setTaskForm] = useState(defaultTaskForm);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [newAreaName, setNewAreaName] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 3, 1));
   const [themeMode, setThemeMode] = useState("light");
@@ -107,6 +109,20 @@ export default function App() {
     );
   }
 
+  function requestDeleteTask(taskId) {
+    const task = tasks.find((currentTask) => currentTask.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    setDeleteConfirmation({
+      type: "task",
+      id: task.id,
+      title: task.title,
+    });
+  }
+
   function addArea() {
     const name = newAreaName.trim();
     if (!name) {
@@ -131,7 +147,7 @@ export default function App() {
     setNewAreaName("");
   }
 
-  function deleteArea(areaId) {
+  function requestDeleteArea(areaId) {
     const area = areas.find((currentArea) => currentArea.id === areaId);
 
     if (!area) {
@@ -144,33 +160,47 @@ export default function App() {
     }
 
     const relatedTasksCount = tasks.filter((task) => task.areaId === areaId).length;
-    const shouldDelete = window.confirm(
-      `Eliminar "${area.name}" tambien eliminara ${relatedTasksCount} tarea(s) de ese bloque. ¿Continuar?`,
-    );
+    setDeleteConfirmation({
+      type: "area",
+      id: area.id,
+      title: area.name,
+      relatedTasksCount,
+    });
+  }
 
-    if (!shouldDelete) {
+  function closeDeleteConfirmation() {
+    setDeleteConfirmation(null);
+  }
+
+  function confirmDelete() {
+    if (!deleteConfirmation) {
       return;
     }
 
-    const remainingAreas = areas.filter((currentArea) => currentArea.id !== areaId);
+    if (deleteConfirmation.type === "task") {
+      setTasks((current) => current.filter((task) => task.id !== deleteConfirmation.id));
+      closeDeleteConfirmation();
+      return;
+    }
+
+    const remainingAreas = areas.filter((currentArea) => currentArea.id !== deleteConfirmation.id);
 
     setAreas(remainingAreas);
-    setTasks((current) => current.filter((task) => task.areaId !== areaId));
-    setActiveArea((current) => (current === areaId ? "all" : current));
+    setTasks((current) => current.filter((task) => task.areaId !== deleteConfirmation.id));
+    setActiveArea((current) => (current === deleteConfirmation.id ? "all" : current));
     setTaskForm((current) => ({
       ...current,
-      areaId: current.areaId === areaId ? remainingAreas[0].id : current.areaId,
+      areaId:
+        current.areaId === deleteConfirmation.id ? remainingAreas[0].id : current.areaId,
     }));
+    closeDeleteConfirmation();
   }
 
   // Elegir un bloque desde la barra lateral tambien lleva a la vista de tareas.
   function handleSidebarAreaChange(areaId) {
     setActiveArea(areaId);
     setQuery("");
-
-    if (activeView === "Inicio") {
-      setActiveView("Tareas");
-    }
+    setActiveView("Tareas");
   }
 
   function openTasksForArea(areaId) {
@@ -186,6 +216,8 @@ export default function App() {
   function saveProfile() {
     setUser((current) => ({
       ...current,
+      name: profileForm.username,
+      username: profileForm.username,
       email: profileForm.email,
       phone: profileForm.phone,
     }));
@@ -212,7 +244,7 @@ export default function App() {
         newAreaName={newAreaName}
         onNewAreaName={setNewAreaName}
         onAddArea={addArea}
-        onDeleteArea={deleteArea}
+        onDeleteArea={requestDeleteArea}
         user={user}
         onLogout={() => setUser(null)}
       />
@@ -254,6 +286,7 @@ export default function App() {
                 tasks={filteredTasks}
                 areas={areas}
                 onSetStatus={setTaskStatus}
+                onDeleteTask={requestDeleteTask}
                 timeFormat={timeFormat}
               />
             </div>
@@ -298,6 +331,40 @@ export default function App() {
             onSubmit={createTask}
             onClose={() => setIsTaskFormOpen(false)}
           />
+        </div>
+      )}
+
+      {deleteConfirmation && (
+        <div className="confirmation-backdrop" role="dialog" aria-modal="true">
+          <section className="panel confirmation-dialog" aria-labelledby="delete-confirmation-title">
+            <span className="confirmation-icon">
+              <AlertTriangle size={22} />
+            </span>
+            <div className="confirmation-copy">
+              <p className="eyebrow">
+                {deleteConfirmation.type === "area" ? "Eliminar bloque" : "Eliminar tarea"}
+              </p>
+              <h2 id="delete-confirmation-title">
+                {deleteConfirmation.type === "area"
+                  ? `Eliminar "${deleteConfirmation.title}"`
+                  : `Eliminar "${deleteConfirmation.title}"`}
+              </h2>
+              <p>
+                {deleteConfirmation.type === "area"
+                  ? `Tambien se eliminaran ${deleteConfirmation.relatedTasksCount} tarea(s) dentro de este bloque.`
+                  : "Esta tarea saldra de tu lista y no se podra recuperar desde la app."}
+              </p>
+            </div>
+            <div className="confirmation-actions">
+              <button className="outline-button" type="button" onClick={closeDeleteConfirmation}>
+                Cancelar
+              </button>
+              <button className="danger-button" type="button" onClick={confirmDelete}>
+                <Trash2 size={17} />
+                Eliminar
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </div>
