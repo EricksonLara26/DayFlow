@@ -123,7 +123,7 @@ export default function HomeView({ tasks, areas, reminders, onChangeView, onSele
             <Bell size={20} />
           </div>
           <div className="home-preview-list">
-            {reminders.slice(0, 3).map((task) => (
+            {reminders.map((task) => (
               <button
                 className="home-reminder-row"
                 key={`reminder-${task.id}`}

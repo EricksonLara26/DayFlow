@@ -627,17 +627,33 @@ h2 {
 
 .home-grid {
   display: grid;
-  align-items: start;
-  gap: 16px;
+  align-items: stretch;
+  gap: 12px;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  height: calc(100dvh - 126px);
+  min-height: 520px;
+  min-width: 0;
 }
 
 .home-main-column,
 .home-side-column {
   display: grid;
-  align-content: start;
-  gap: 16px;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
+}
+
+.home-main-column {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.home-side-column {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.78fr);
+}
+
+.home-grid article {
+  min-height: 0;
 }
 
 .home-summary {
@@ -645,15 +661,16 @@ h2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.62fr);
   align-items: center;
-  gap: 18px;
-  min-height: 220px;
+  gap: 14px;
+  min-height: 0;
+  padding: 14px 16px;
   overflow: hidden;
 }
 
 .home-summary::before {
   content: "";
   position: absolute;
-  inset: 18px auto 18px 0;
+  inset: 14px auto 14px 0;
   width: 4px;
   border-radius: 999px;
   background: #1f6feb;
@@ -661,31 +678,32 @@ h2 {
 
 .home-summary-copy {
   display: grid;
-  gap: 8px;
+  gap: 5px;
   padding-left: 8px;
 }
 
 .home-summary-copy h2 {
-  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  font-size: 1.28rem;
 }
 
 .home-summary-copy p:last-child {
   margin: 0;
   color: #66736c;
-  line-height: 1.55;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .home-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .home-metric {
   display: grid;
-  gap: 4px;
-  min-height: 82px;
-  padding: 12px;
+  gap: 3px;
+  min-height: 64px;
+  padding: 9px 10px;
   border: 1px solid #edf1ec;
   border-radius: 8px;
   background: #fbfcfb;
@@ -702,7 +720,8 @@ h2 {
 }
 
 .home-metric strong {
-  font-size: 1.45rem;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .home-metric span,
@@ -712,10 +731,10 @@ h2 {
   color: #66736c;
   font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .home-block-panel {
-  max-height: 430px;
   overflow: hidden;
 }
 
@@ -723,21 +742,26 @@ h2 {
 .home-block-panel,
 .home-reminder-panel {
   display: grid;
-  align-content: start;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px;
 }
 
 .compact-panel-header {
-  margin-bottom: 4px;
+  margin-bottom: 0;
+}
+
+.compact-panel-header h2 {
+  font-size: 1rem;
 }
 
 .home-preview-list {
   display: grid;
-  gap: 10px;
-}
-
-.home-block-panel .home-preview-list {
-  max-height: 330px;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
   overscroll-behavior: contain;
@@ -746,21 +770,21 @@ h2 {
   scrollbar-width: thin;
 }
 
-.home-agenda-panel .home-preview-list {
-  max-height: 318px;
-  overflow-y: auto;
-  padding-right: 4px;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-color: #8a978f transparent;
-  scrollbar-width: thin;
+.home-preview-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.home-preview-list::-webkit-scrollbar-thumb {
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #aab6ae;
 }
 
 .home-task-preview,
 .home-block-row,
 .home-reminder-row {
   width: 100%;
-  min-height: 58px;
+  min-height: 52px;
   border: 1px solid #edf1ec;
   border-radius: 8px;
   background: #fbfcfb;
@@ -771,8 +795,8 @@ h2 {
 .home-task-preview {
   display: grid;
   grid-template-columns: 4px minmax(0, 1fr);
-  gap: 12px;
-  padding: 0 12px 0 0;
+  gap: 10px;
+  padding: 0 10px 0 0;
   overflow: hidden;
 }
 
@@ -784,35 +808,45 @@ h2 {
 .home-task-copy {
   display: grid;
   align-content: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
 .home-task-copy strong,
 .home-block-row strong,
 .home-reminder-row strong {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-task-copy span,
+.home-block-row small,
+.home-reminder-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-block-row {
   display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) 34px;
+  grid-template-columns: 10px minmax(0, 1fr) 30px;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
 }
 
 .home-block-row span:nth-child(2),
 .home-reminder-row span {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .home-block-row b {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   border-radius: 999px;
   background: #edf4ff;
@@ -822,10 +856,10 @@ h2 {
 
 .home-reminder-row {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
 }
 
 .home-reminder-row svg {
@@ -1652,6 +1686,15 @@ h2 {
   background: #1a2a42;
 }
 
+.theme-dark .home-preview-list {
+  scrollbar-color: #385273 transparent;
+}
+
+.theme-dark .home-preview-list::-webkit-scrollbar-thumb {
+  border-color: #162236;
+  background: #385273;
+}
+
 .theme-dark .password-change-box {
   border-top-color: #27364a;
 }
@@ -1754,13 +1797,25 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .home-summary {
-    grid-template-columns: 1fr;
+  .home-grid {
+    height: auto;
+    min-height: 0;
   }
 
-  .home-agenda-panel .home-preview-list,
-  .home-block-panel .home-preview-list {
-    max-height: 300px;
+  .home-main-column,
+  .home-side-column {
+    grid-template-rows: none;
+    height: auto;
+  }
+
+  .home-summary {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
+  }
+
+  .home-agenda-panel,
+  .home-block-panel,
+  .home-reminder-panel {
+    max-height: 320px;
   }
 }
 
@@ -1796,8 +1851,21 @@ h2 {
     border-radius: 0 0 8px 8px;
   }
 
-  .home-metrics {
+  .home-summary {
     grid-template-columns: 1fr;
+  }
+
+  .home-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-metric {
+    min-height: 58px;
+    padding: 8px;
+  }
+
+  .home-metric span {
+    font-size: 0.72rem;
   }
 
   .password-change-header,
