@@ -7,6 +7,7 @@ import Header from "./components/layout/Header";
 import Sidebar from "./components/layout/Sidebar";
 import SettingsView from "./components/settings/SettingsView";
 import Filters from "./components/tasks/Filters";
+import TaskDetailsModal from "./components/tasks/TaskDetailsModal";
 import TaskForm from "./components/tasks/TaskForm";
 import TaskList from "./components/tasks/TaskList";
 import { defaultTaskForm } from "./constants/taskForm";
@@ -24,6 +25,7 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [taskForm, setTaskForm] = useState(defaultTaskForm);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [newAreaName, setNewAreaName] = useState("");
@@ -58,6 +60,11 @@ export default function App() {
   const filteredTasks = useMemo(
     () => searchedTasks.filter((task) => statusFilter === "all" || task.status === statusFilter),
     [statusFilter, searchedTasks],
+  );
+
+  const selectedTask = useMemo(
+    () => tasks.find((task) => task.id === selectedTaskId),
+    [selectedTaskId, tasks],
   );
 
   const dueReminderTasks = notificationsEnabled
@@ -287,6 +294,7 @@ export default function App() {
                 areas={areas}
                 onSetStatus={setTaskStatus}
                 onDeleteTask={requestDeleteTask}
+                onOpenTask={(task) => setSelectedTaskId(task.id)}
                 timeFormat={timeFormat}
               />
             </div>
@@ -332,6 +340,17 @@ export default function App() {
             onClose={() => setIsTaskFormOpen(false)}
           />
         </div>
+      )}
+
+      {selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          areas={areas}
+          timeFormat={timeFormat}
+          onClose={() => setSelectedTaskId(null)}
+          onSetStatus={setTaskStatus}
+          onDeleteTask={requestDeleteTask}
+        />
       )}
 
       {deleteConfirmation && (
