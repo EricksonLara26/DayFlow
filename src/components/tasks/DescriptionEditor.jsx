@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bold,
   Eraser,
@@ -239,10 +239,77 @@ function htmlToMarkdown(root) {
   return blocks.join("\n");
 }
 
+const EMPTY_ACTIVE_TOOLS = {
+  bold: false,
+  italic: false,
+  strike: false,
+  link: false,
+  bulletList: false,
+  orderedList: false,
+  checklist: false,
+  table: false,
+};
+
+const ACTIVE_TOOL_KEYS = Object.keys(EMPTY_ACTIVE_TOOLS);
+
+function hasSameToolState(current, next) {
+  return ACTIVE_TOOL_KEYS.every((key) => current[key] === next[key]);
+}
+
+function queryCommandState(command) {
+  try {
+    return document.queryCommandState(command);
+  } catch {
+    return false;
+  }
+}
+
+function findClosestWithin(node, root, predicate) {
+  let current = node?.nodeType === 1 ? node : node?.parentElement;
+
+  while (current && current !== root) {
+    if (predicate(current)) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
 // Editor enriquecido que se ve formateado, pero guarda Markdown para las tareas.
 export default function DescriptionEditor({ value, onChange }) {
   const editorRef = useRef(null);
   const lastMarkdownRef = useRef(value);
+  const [activeTools, setActiveTools] = useState(EMPTY_ACTIVE_TOOLS);
+
+  const updateToolbarState = useCallback(() => {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+    const anchorNode = selection?.anchorNode;
+
+    if (!editor || !selection?.rangeCount || !anchorNode || !editor.contains(anchorNode)) {
+      setActiveTools((current) => (hasSameToolState(current, EMPTY_ACTIVE_TOOLS) ? current : EMPTY_ACTIVE_TOOLS));
+      return;
+    }
+
+    const hasAncestor = (predicate) => Boolean(findClosestWithin(anchorNode, editor, predicate));
+    const hasTag = (tagNames) =>
+      hasAncestor((element) => tagNames.includes(element.tagName.toLowerCase()));
+    const nextActiveTools = {
+      bold: queryCommandState("bold") || hasTag(["strong", "b"]),
+      italic: queryCommandState("italic") || hasTag(["em", "i"]),
+      strike: queryCommandState("strikeThrough") || hasTag(["s", "strike", "del"]),
+      link: hasTag(["a"]),
+      bulletList: queryCommandState("insertUnorderedList") || hasTag(["ul"]),
+      orderedList: queryCommandState("insertOrderedList") || hasTag(["ol"]),
+      checklist: hasAncestor((element) => element.classList.contains("editor-check-row")),
+      table: hasTag(["table"]),
+    };
+
+    setActiveTools((current) => (hasSameToolState(current, nextActiveTools) ? current : nextActiveTools));
+  }, []);
 
   useEffect(() => {
     if (!editorRef.current || value === lastMarkdownRef.current) {
@@ -251,7 +318,8 @@ export default function DescriptionEditor({ value, onChange }) {
 
     editorRef.current.innerHTML = markdownToHtml(value);
     lastMarkdownRef.current = value;
-  }, [value]);
+    updateToolbarState();
+  }, [updateToolbarState, value]);
 
   useEffect(() => {
     if (!editorRef.current) {
@@ -260,7 +328,16 @@ export default function DescriptionEditor({ value, onChange }) {
 
     editorRef.current.innerHTML = markdownToHtml(value);
     lastMarkdownRef.current = value;
+    updateToolbarState();
   }, []);
+
+  useEffect(() => {
+    document.addEventListener("selectionchange", updateToolbarState);
+
+    return () => {
+      document.removeEventListener("selectionchange", updateToolbarState);
+    };
+  }, [updateToolbarState]);
 
   function emitChange() {
     const nextMarkdown = editorRef.current ? htmlToMarkdown(editorRef.current) : "";
@@ -276,6 +353,7 @@ export default function DescriptionEditor({ value, onChange }) {
     focusEditor();
     document.execCommand("insertHTML", false, html);
     emitChange();
+    requestAnimationFrame(updateToolbarState);
   }
 
   function runCommand(command) {
@@ -289,6 +367,8 @@ export default function DescriptionEditor({ value, onChange }) {
     if (hasSelection) {
       emitChange();
     }
+
+    requestAnimationFrame(updateToolbarState);
   }
 
   function insertLink() {
@@ -299,16 +379,19 @@ export default function DescriptionEditor({ value, onChange }) {
     if (hasSelection) {
       document.execCommand("createLink", false, "https://ejemplo.com");
       emitChange();
+      requestAnimationFrame(updateToolbarState);
       return;
     }
 
     focusEditor();
+    requestAnimationFrame(updateToolbarState);
   }
 
   function insertList(tagName) {
     focusEditor();
     document.execCommand(tagName === "ol" ? "insertOrderedList" : "insertUnorderedList");
     emitChange();
+    requestAnimationFrame(updateToolbarState);
   }
 
   function focusNode(node) {
@@ -325,6 +408,7 @@ export default function DescriptionEditor({ value, onChange }) {
       selection?.removeAllRanges();
       selection?.addRange(range);
       editorRef.current?.focus();
+      updateToolbarState();
     });
   }
 
@@ -355,6 +439,7 @@ export default function DescriptionEditor({ value, onChange }) {
       .map((line) => `<p>${escapeHtml(line)}</p>`)
       .join("");
     emitChange();
+    requestAnimationFrame(updateToolbarState);
   }
 
   function toggleChecklistItem(event) {
@@ -371,6 +456,12 @@ export default function DescriptionEditor({ value, onChange }) {
     row.dataset.checked = nextChecked ? "true" : "false";
     checkBox.textContent = nextChecked ? "✓" : "";
     emitChange();
+    requestAnimationFrame(updateToolbarState);
+  }
+
+  function handleEditorInput() {
+    emitChange();
+    requestAnimationFrame(updateToolbarState);
   }
 
   function handleToolMouseDown(event, action) {
@@ -380,46 +471,63 @@ export default function DescriptionEditor({ value, onChange }) {
 
   const tools = [
     {
+      id: "bold",
       label: "Negrita",
       icon: Bold,
+      activeKey: "bold",
       action: () => runCommand("bold"),
     },
     {
+      id: "italic",
       label: "Cursiva",
       icon: Italic,
+      activeKey: "italic",
       action: () => runCommand("italic"),
     },
     {
+      id: "strike",
       label: "Tachado",
       icon: Strikethrough,
+      activeKey: "strike",
       action: () => runCommand("strikeThrough"),
     },
     {
+      id: "link",
       label: "Enlace",
       icon: Link,
+      activeKey: "link",
       action: insertLink,
     },
     {
+      id: "bullet-list",
       label: "Lista con viñetas",
       icon: List,
+      activeKey: "bulletList",
       action: () => insertList("ul"),
     },
     {
+      id: "ordered-list",
       label: "Lista numerada",
       icon: ListOrdered,
+      activeKey: "orderedList",
       action: () => insertList("ol"),
     },
     {
+      id: "checklist",
       label: "Checklist",
       icon: ListChecks,
+      activeKey: "checklist",
       action: insertChecklist,
     },
     {
+      id: "table",
       label: "Tabla",
       icon: Table2,
+      activeKey: "table",
       action: insertTable,
     },
     {
+      id: "clear-formatting",
       label: "Limpiar formato",
       icon: Eraser,
       action: clearFormatting,
@@ -431,9 +539,10 @@ export default function DescriptionEditor({ value, onChange }) {
       <div className="description-toolbar" aria-label="Opciones de formato para detalles">
         {tools.map((tool) => (
           <button
-            className="editor-tool"
-            key={tool.label}
+            className={`editor-tool ${tool.activeKey && activeTools[tool.activeKey] ? "is-active" : ""}`}
+            key={tool.id}
             type="button"
+            aria-pressed={tool.activeKey ? activeTools[tool.activeKey] : undefined}
             aria-label={tool.label}
             title={tool.label}
             onMouseDown={(event) => handleToolMouseDown(event, tool.action)}
@@ -451,7 +560,10 @@ export default function DescriptionEditor({ value, onChange }) {
         aria-label="Detalles de la tarea"
         aria-multiline="true"
         onClick={toggleChecklistItem}
-        onInput={emitChange}
+        onFocus={updateToolbarState}
+        onInput={handleEditorInput}
+        onKeyUp={updateToolbarState}
+        onMouseUp={updateToolbarState}
         suppressContentEditableWarning
       />
     </div>
