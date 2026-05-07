@@ -1,10 +1,10 @@
-import { Check, ChevronRight, Circle, Trash2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { getAreaName } from "../../utils/areaUtils";
 import { getTaskTimeRange } from "../../utils/timeUtils";
 import TaskDescription from "./TaskDescription";
 
-// Lista de tareas filtradas con boton para alternar pendiente/completada.
-export default function TaskList({ tasks, areas, onSetStatus, onDeleteTask, onOpenTask, timeFormat }) {
+// Lista de tareas filtradas con acceso al detalle para gestionar cambios.
+export default function TaskList({ tasks, areas, onOpenTask, timeFormat }) {
   function isInteractiveTarget(target) {
     return target instanceof Element && Boolean(target.closest("a, button"));
   }
@@ -51,38 +51,19 @@ export default function TaskList({ tasks, areas, onSetStatus, onDeleteTask, onOp
             onClick={(event) => handleTaskClick(event, task)}
             onKeyDown={(event) => handleTaskKeyDown(event, task)}
           >
-            <button
-              className="check-button"
-              aria-label={task.status === "completada" ? "Completada" : "Pendiente"}
-              onClick={(event) => {
-                event.stopPropagation();
-                onSetStatus(task.id, task.status === "completada" ? "pendiente" : "completada");
-              }}
-            >
-              {task.status === "completada" ? <Check size={15} /> : <Circle size={14} />}
-            </button>
             <div className="task-copy">
               <strong>{task.title}</strong>
               <TaskDescription text={task.description} />
               <div className="task-meta">
+                <span className={`task-status-message ${task.status}`}>
+                  {task.status === "completada" ? "Completada" : "Pendiente"}
+                </span>
                 <span>{getAreaName(areas, task.areaId)}</span>
                 <span>{task.dueDate}</span>
                 <span>{getTaskTimeRange(task, timeFormat)}</span>
                 {task.gmailReminder && <span>Gmail activo</span>}
               </div>
             </div>
-            <button
-              className="task-delete-button"
-              type="button"
-              aria-label={`Eliminar tarea ${task.title}`}
-              title="Eliminar tarea"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDeleteTask(task.id);
-              }}
-            >
-              <Trash2 size={16} />
-            </button>
           </article>
         ))}
 

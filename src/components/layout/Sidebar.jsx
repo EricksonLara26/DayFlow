@@ -58,10 +58,16 @@ export default function Sidebar({
       <div className="area-switcher">
         <p className="eyebrow">Bloques</p>
         <button
-          className={activeArea === "all" ? "area-chip active" : "area-chip"}
+          className={
+            activeArea === "all"
+              ? "area-chip all-tasks-button active"
+              : "area-chip all-tasks-button"
+          }
           onClick={() => onAreaChange("all")}
+          aria-label="Ver todas las tareas"
         >
-          Todos
+          <ListTodo size={17} />
+          <span>Todas</span>
         </button>
         {areas.map((area) => (
           <div className="area-row" key={area.id}>

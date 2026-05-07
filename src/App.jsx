@@ -33,6 +33,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState("light");
   const [timeFormat, setTimeFormat] = useState("automatic");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [accountPassword, setAccountPassword] = useState("");
   const [profileForm, setProfileForm] = useState({
     username: "Erickson",
     email: "ericksonburgos26@gmail.com",
@@ -77,6 +78,7 @@ export default function App() {
 
   function handleLogin(account) {
     setUser(account);
+    setAccountPassword(account.password || "");
     setProfileForm((current) => ({
       ...current,
       username: account.username || account.name || current.username,
@@ -216,6 +218,15 @@ export default function App() {
     setActiveView("Tareas");
   }
 
+  function openTaskDirectly(task) {
+    setActiveArea(task.areaId);
+    setQuery("");
+    setStatusFilter("all");
+    setSelectedTaskId(task.id);
+    setIsNotificationsOpen(false);
+    setActiveView("Tareas");
+  }
+
   function updateProfileField(field, value) {
     setProfileForm((current) => ({ ...current, [field]: value }));
   }
@@ -266,6 +277,7 @@ export default function App() {
             }}
             alertsCount={dueReminderTasks.length}
             reminders={dueReminderTasks}
+            onOpenReminder={openTaskDirectly}
             isNotificationsOpen={isNotificationsOpen}
             onToggleNotifications={() => setIsNotificationsOpen((current) => !current)}
             showSearch={activeView === "Tareas"}
@@ -280,6 +292,7 @@ export default function App() {
             reminders={dueReminderTasks}
             onChangeView={setActiveView}
             onSelectArea={openTasksForArea}
+            onOpenTask={openTaskDirectly}
             timeFormat={timeFormat}
           />
         )}
@@ -292,8 +305,6 @@ export default function App() {
               <TaskList
                 tasks={filteredTasks}
                 areas={areas}
-                onSetStatus={setTaskStatus}
-                onDeleteTask={requestDeleteTask}
                 onOpenTask={(task) => setSelectedTaskId(task.id)}
                 timeFormat={timeFormat}
               />
@@ -324,6 +335,8 @@ export default function App() {
             onSaveProfile={saveProfile}
             notificationsEnabled={notificationsEnabled}
             onNotificationsEnabledChange={setNotificationsEnabled}
+            currentPassword={accountPassword}
+            onPasswordChange={setAccountPassword}
             timeFormat={timeFormat}
             onTimeFormatChange={setTimeFormat}
           />

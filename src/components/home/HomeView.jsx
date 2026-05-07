@@ -2,7 +2,15 @@ import { Bell, CalendarDays, ChevronRight, FolderKanban } from "lucide-react";
 import { getTaskTimeRange } from "../../utils/timeUtils";
 
 // Inicio resume lo mas importante y permite saltar rapidamente a tareas por bloque.
-export default function HomeView({ tasks, areas, reminders, onChangeView, onSelectArea, timeFormat }) {
+export default function HomeView({
+  tasks,
+  areas,
+  reminders,
+  onChangeView,
+  onSelectArea,
+  onOpenTask,
+  timeFormat,
+}) {
   const pendingTasks = tasks.filter((task) => task.status === "pendiente");
   const completedTasks = tasks.filter((task) => task.status === "completada");
   const nextTasks = [...pendingTasks].sort((first, second) =>
@@ -128,7 +136,7 @@ export default function HomeView({ tasks, areas, reminders, onChangeView, onSele
                 className="home-reminder-row"
                 key={`reminder-${task.id}`}
                 type="button"
-                onClick={() => onSelectArea(task.areaId)}
+                onClick={() => onOpenTask(task)}
               >
                 <CalendarDays size={17} />
                 <span>

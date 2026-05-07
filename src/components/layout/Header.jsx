@@ -8,6 +8,7 @@ export default function Header({
   onCreateTask,
   alertsCount,
   reminders,
+  onOpenReminder,
   isNotificationsOpen,
   onToggleNotifications,
   showSearch,
@@ -29,9 +30,14 @@ export default function Header({
       <div className="topbar-actions">
         <div className="notification-wrap">
           <button
-            className="icon-button"
+            className={
+              isNotificationsOpen
+                ? "icon-button notification-button notification-button-active"
+                : "icon-button notification-button"
+            }
             aria-label="Mostrar recordatorios"
             aria-expanded={isNotificationsOpen}
+            aria-pressed={isNotificationsOpen}
             onClick={onToggleNotifications}
           >
             <Bell size={19} />
@@ -45,13 +51,18 @@ export default function Header({
               </div>
               <div className="notification-list">
                 {reminders.map((task) => (
-                  <article className="notification-item" key={task.id}>
+                  <button
+                    className="notification-item"
+                    key={task.id}
+                    type="button"
+                    onClick={() => onOpenReminder(task)}
+                  >
                     <time>{getTaskTimeRange(task, timeFormat)}</time>
                     <div>
                       <strong>{task.title}</strong>
                       <span>{task.dueDate}</span>
                     </div>
-                  </article>
+                  </button>
                 ))}
                 {reminders.length === 0 && (
                   <p className="empty-state">No hay recordatorios pendientes.</p>

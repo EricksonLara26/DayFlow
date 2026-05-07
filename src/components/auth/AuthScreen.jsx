@@ -29,6 +29,7 @@ export default function AuthScreen({ onLogin }) {
       name: username,
       username,
       email: username.includes("@") ? username : "",
+      password: loginForm.password,
     });
   }
 
@@ -42,6 +43,7 @@ export default function AuthScreen({ onLogin }) {
       name: username,
       username,
       email,
+      password: loginForm.password,
     });
   }
 
@@ -53,6 +55,7 @@ export default function AuthScreen({ onLogin }) {
       name: username,
       username,
       email,
+      password: signupForm.password,
       phone: signupForm.phone.trim(),
     });
   }
