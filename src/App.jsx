@@ -33,7 +33,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState("light");
   const [timeFormat, setTimeFormat] = useState("automatic");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [accountPassword, setAccountPassword] = useState("");
+  const [, setAccountPassword] = useState("");
   const [profileForm, setProfileForm] = useState({
     username: "Erickson",
     email: "ericksonburgos26@gmail.com",
@@ -335,7 +335,6 @@ export default function App() {
             onSaveProfile={saveProfile}
             notificationsEnabled={notificationsEnabled}
             onNotificationsEnabledChange={setNotificationsEnabled}
-            currentPassword={accountPassword}
             onPasswordChange={setAccountPassword}
             timeFormat={timeFormat}
             onTimeFormatChange={setTimeFormat}

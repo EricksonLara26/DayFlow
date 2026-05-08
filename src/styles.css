@@ -1459,6 +1459,165 @@ h2 {
   color: #be3a34;
 }
 
+.password-modal-panel {
+  display: grid;
+  width: min(520px, 100%);
+  max-height: min(92vh, 720px);
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(23, 33, 27, 0.26);
+}
+
+.password-modal-hero {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 42px;
+  align-items: start;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid #dfe7dd;
+  background:
+    linear-gradient(135deg, rgba(234, 242, 255, 0.94), rgba(255, 255, 255, 0.98) 62%),
+    linear-gradient(90deg, rgba(31, 111, 235, 0.14), transparent 56%);
+}
+
+.password-modal-icon,
+.password-email-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eaf2ff;
+  color: #1f6feb;
+}
+
+.password-modal-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.password-modal-title {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.password-modal-title h2 {
+  font-size: 1.35rem;
+}
+
+.password-modal-title span {
+  color: #66736c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.password-modal-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.password-modal-stepper {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.password-modal-stepper span {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #dfe7dd;
+  border-radius: 8px;
+  background: #fbfcfb;
+  color: #66736c;
+}
+
+.password-modal-stepper strong {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: #edf1ec;
+  color: #526174;
+  font-size: 0.78rem;
+}
+
+.password-modal-stepper small {
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.password-modal-stepper span.active,
+.password-modal-stepper span.complete {
+  border-color: #b8d6ff;
+  background: #f8fbff;
+  color: #1f6feb;
+}
+
+.password-modal-stepper span.active strong,
+.password-modal-stepper span.complete strong {
+  background: #1f6feb;
+  color: #ffffff;
+}
+
+.password-modal-section {
+  display: grid;
+  gap: 12px;
+}
+
+.password-email-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px 11px;
+  border: 1px solid #dfe7dd;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.password-email-icon {
+  width: 42px;
+  height: 42px;
+}
+
+.password-email-card span:last-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.password-email-card strong,
+.password-email-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.password-email-card small {
+  color: #66736c;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.password-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .settings-segmented {
   width: fit-content;
 }
@@ -1963,7 +2122,8 @@ h2 {
 
 .task-modal-backdrop,
 .task-detail-backdrop,
-.confirmation-backdrop {
+.confirmation-backdrop,
+.password-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -1976,6 +2136,10 @@ h2 {
 
 .confirmation-backdrop {
   z-index: 30;
+}
+
+.password-modal-backdrop {
+  z-index: 35;
 }
 
 .task-detail-backdrop {
@@ -2464,9 +2628,12 @@ h2 {
 .theme-dark .account-summary,
 .theme-dark .profile-locked-field,
 .theme-dark .password-form,
+.theme-dark .password-modal-body,
 .theme-dark .password-mode-tabs,
 .theme-dark .recovery-stepper span,
 .theme-dark .recovery-option,
+.theme-dark .password-modal-stepper span,
+.theme-dark .password-email-card,
 .theme-dark .notification-menu,
 .theme-dark .search,
 .theme-dark .select-field,
@@ -2520,6 +2687,13 @@ h2 {
   background:
     linear-gradient(135deg, rgba(29, 59, 102, 0.72), rgba(18, 29, 46, 0.98) 62%),
     linear-gradient(90deg, rgba(47, 158, 68, 0.12), transparent 48%);
+}
+
+.theme-dark .password-modal-hero {
+  border-bottom-color: #27364a;
+  background:
+    linear-gradient(135deg, rgba(29, 59, 102, 0.72), rgba(18, 29, 46, 0.98) 62%),
+    linear-gradient(90deg, rgba(139, 188, 255, 0.14), transparent 52%);
 }
 
 .theme-dark .task-delete-button {
@@ -2603,6 +2777,7 @@ h2 {
 .theme-dark .account-summary span:not(.account-icon),
 .theme-dark .profile-locked-field span,
 .theme-dark .password-change-header span,
+.theme-dark .password-modal-title span,
 .theme-dark .settings-hint,
 .theme-dark .notification-setting-copy small,
 .theme-dark .task-description,
@@ -2801,7 +2976,9 @@ h2 {
 
 .theme-dark .password-mode-tabs,
 .theme-dark .recovery-stepper span,
-.theme-dark .recovery-option {
+.theme-dark .recovery-option,
+.theme-dark .password-modal-stepper span,
+.theme-dark .password-email-card {
   border-color: #27364a;
   background: #101a2a;
 }
@@ -2820,9 +2997,25 @@ h2 {
 
 .theme-dark .password-mode-tabs button.active,
 .theme-dark .recovery-stepper span.active,
-.theme-dark .recovery-option-icon {
+.theme-dark .recovery-option-icon,
+.theme-dark .password-modal-icon,
+.theme-dark .password-email-icon,
+.theme-dark .password-modal-stepper span.active strong,
+.theme-dark .password-modal-stepper span.complete strong {
   background: #1d3b66;
   color: #8bbcff;
+}
+
+.theme-dark .password-modal-stepper strong {
+  background: #162236;
+  color: #a9b7c9;
+}
+
+.theme-dark .password-modal-stepper span.active,
+.theme-dark .password-modal-stepper span.complete {
+  border-color: #385273;
+  background: #182a43;
+  color: #cfe4ff;
 }
 
 .theme-dark .password-mode-tabs button:not(.active):hover,
@@ -2832,7 +3025,8 @@ h2 {
 }
 
 .theme-dark .recovery-copy span,
-.theme-dark .recovery-option small {
+.theme-dark .recovery-option small,
+.theme-dark .password-email-card small {
   color: #a9b7c9;
 }
 
@@ -3129,9 +3323,20 @@ h2 {
 
   .password-change-header,
   .settings-actions-row,
+  .password-modal-footer,
   .confirmation-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .password-modal-hero {
+    grid-template-columns: 44px minmax(0, 1fr) 42px;
+    padding: 16px;
+  }
+
+  .password-modal-icon {
+    width: 44px;
+    height: 44px;
   }
 
   .confirmation-dialog {
