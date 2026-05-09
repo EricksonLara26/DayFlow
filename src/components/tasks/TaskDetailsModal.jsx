@@ -5,12 +5,16 @@ import {
   Check,
   CheckCircle2,
   Clock3,
+  Flag,
   FolderKanban,
+  Pencil,
+  Repeat,
   Trash2,
   X,
 } from "lucide-react";
 import { getAreaName } from "../../utils/areaUtils";
 import { formatTimeValue, getTaskTimeRange } from "../../utils/timeUtils";
+import { getPriorityLabel, getRecurrenceLabel } from "../../utils/taskUtils";
 import TaskDescription from "./TaskDescription";
 
 function formatReadableDate(date) {
@@ -37,6 +41,7 @@ export default function TaskDetailsModal({
   onClose,
   onSetStatus,
   onDeleteTask,
+  onEditTask,
 }) {
   const areaName = getAreaName(areas, task.areaId);
   const isCompleted = task.status === "completada";
@@ -82,6 +87,7 @@ export default function TaskDetailsModal({
               <span>{areaName}</span>
               <span>{formatReadableDate(task.dueDate)}</span>
               <span>{getTaskTimeRange(task, timeFormat)}</span>
+              <span>{getPriorityLabel(task.priority)}</span>
             </div>
           </div>
           <button className="icon-button" type="button" aria-label="Cerrar detalle" title="Cerrar" onClick={onClose}>
@@ -100,6 +106,10 @@ export default function TaskDetailsModal({
             </section>
 
             <div className="task-detail-actions">
+              <button className="outline-button" type="button" onClick={() => onEditTask(task)}>
+                <Pencil size={17} />
+                Editar
+              </button>
               <button className="outline-button" type="button" onClick={handleStatusChange}>
                 {isCompleted ? <Clock3 size={17} /> : <Check size={17} />}
                 {isCompleted ? "Marcar pendiente" : "Completar tarea"}
@@ -157,6 +167,20 @@ export default function TaskDetailsModal({
                   Recordatorio
                 </dt>
                 <dd>{task.gmailReminder ? "Gmail activo" : "Sin aviso por Gmail"}</dd>
+              </div>
+              <div>
+                <dt>
+                  <Flag size={16} />
+                  Prioridad
+                </dt>
+                <dd>{getPriorityLabel(task.priority)}</dd>
+              </div>
+              <div>
+                <dt>
+                  <Repeat size={16} />
+                  Repeticion
+                </dt>
+                <dd>{getRecurrenceLabel(task.recurrence)}</dd>
               </div>
             </dl>
           </aside>

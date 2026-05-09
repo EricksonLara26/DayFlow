@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import AuthScreen from "./components/auth/AuthScreen";
 import CalendarView from "./components/calendar/CalendarView";
@@ -13,32 +13,167 @@ import TaskList from "./components/tasks/TaskList";
 import { defaultTaskForm } from "./constants/taskForm";
 import { initialAreas, initialTasks } from "./data/dayflowData";
 import { getAreaName, toAreaId } from "./utils/areaUtils";
+import {
+  buildTasksCsv,
+  createExportPayload,
+  parseImportedData,
+} from "./utils/dataTransferUtils";
+import {
+  compareDateKeys,
+  getNextRecurrenceDate,
+  getTodayKey,
+  isDateInCurrentWeek,
+} from "./utils/dateUtils";
+import { isRecurringTask, normalizeTask, normalizeTasks } from "./utils/taskUtils";
+
+const STORAGE_KEY = "dayflow-state-v2";
+const taskFilterIds = ["all", "pendiente", "completada", "today", "week", "overdue", "reminders", "high"];
+const defaultProfile = {
+  username: "Erickson",
+  email: "ericksonburgos26@gmail.com",
+  phone: "",
+};
+
+function readStoredState() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredState(state) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function sanitizeUser(account) {
+  if (!account) {
+    return null;
+  }
+
+  return {
+    name: account.name || account.username || account.email || "Usuario DayFlow",
+    username: account.username || account.name || account.email || "Usuario DayFlow",
+    email: account.email || "",
+    phone: account.phone || "",
+  };
+}
+
+function taskMatchesFilter(task, filter) {
+  const today = getTodayKey();
+
+  if (filter === "pendiente" || filter === "completada") {
+    return task.status === filter;
+  }
+
+  if (filter === "today") {
+    return task.dueDate === today;
+  }
+
+  if (filter === "week") {
+    return isDateInCurrentWeek(task.dueDate);
+  }
+
+  if (filter === "overdue") {
+    return task.status === "pendiente" && compareDateKeys(task.dueDate, today) < 0;
+  }
+
+  if (filter === "reminders") {
+    return task.gmailReminder;
+  }
+
+  if (filter === "high") {
+    return task.priority === "alta";
+  }
+
+  return true;
+}
+
+function getTaskFilterCounts(tasks) {
+  return Object.fromEntries(
+    taskFilterIds.map((filter) => [filter, tasks.filter((task) => taskMatchesFilter(task, filter)).length]),
+  );
+}
+
+function taskToForm(task) {
+  return {
+    title: task.title ?? "",
+    description: task.description ?? "",
+    areaId: task.areaId ?? defaultTaskForm.areaId,
+    dueDate: task.dueDate ?? getTodayKey(),
+    startTime: task.startTime ?? "",
+    endTime: task.endTime ?? task.dueTime ?? "",
+    priority: task.priority ?? "media",
+    recurrence: task.recurrence ?? "none",
+    gmailReminder: Boolean(task.gmailReminder),
+  };
+}
+
+function downloadTextFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 // App mantiene el estado principal y decide que vista debe renderizarse.
 export default function App() {
-  const [user, setUser] = useState(null);
+  const storedState = useMemo(() => readStoredState(), []);
+  const [user, setUser] = useState(() => sanitizeUser(storedState?.user));
   const [activeView, setActiveView] = useState("Inicio");
-  const [areas, setAreas] = useState(initialAreas);
-  const [tasks, setTasks] = useState(initialTasks);
+  const [areas, setAreas] = useState(() =>
+    Array.isArray(storedState?.areas) && storedState.areas.length ? storedState.areas : initialAreas,
+  );
+  const [tasks, setTasks] = useState(() =>
+    normalizeTasks(Array.isArray(storedState?.tasks) && storedState.tasks.length ? storedState.tasks : initialTasks),
+  );
   const [query, setQuery] = useState("");
   const [activeArea, setActiveArea] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [taskForm, setTaskForm] = useState(defaultTaskForm);
+  const [taskFilter, setTaskFilter] = useState("all");
+  const [taskForm, setTaskForm] = useState(() => ({ ...defaultTaskForm, dueDate: getTodayKey() }));
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [newAreaName, setNewAreaName] = useState("");
-  const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 3, 1));
-  const [themeMode, setThemeMode] = useState("light");
-  const [timeFormat, setTimeFormat] = useState("automatic");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [themeMode, setThemeMode] = useState(storedState?.settings?.themeMode ?? "light");
+  const [timeFormat, setTimeFormat] = useState(storedState?.settings?.timeFormat ?? "automatic");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    storedState?.settings?.notificationsEnabled ?? true,
+  );
   const [, setAccountPassword] = useState("");
-  const [profileForm, setProfileForm] = useState({
-    username: "Erickson",
-    email: "ericksonburgos26@gmail.com",
-    phone: "",
-  });
+  const [profileForm, setProfileForm] = useState(() => ({
+    ...defaultProfile,
+    ...(storedState?.profile ?? {}),
+  }));
+  const [dataNotice, setDataNotice] = useState("");
+
+  useEffect(() => {
+    saveStoredState({
+      user: sanitizeUser(user),
+      areas,
+      tasks,
+      profile: profileForm,
+      settings: {
+        themeMode,
+        timeFormat,
+        notificationsEnabled,
+      },
+    });
+  }, [areas, notificationsEnabled, profileForm, tasks, themeMode, timeFormat, user]);
 
   // Primero se filtra por bloque para que Inicio, Tareas y Calendario compartan criterio.
   const areaFilteredTasks = useMemo(
@@ -46,21 +181,23 @@ export default function App() {
     [activeArea, tasks],
   );
 
-  // La busqueda incluye texto de tarea, descripcion, fecha y nombre del bloque.
+  // La busqueda incluye texto de tarea, descripcion, fecha, prioridad y nombre del bloque.
   const searchedTasks = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return areaFilteredTasks.filter((task) => {
       const areaName = getAreaName(areas, task.areaId).toLowerCase();
-      const text = `${task.title} ${task.description} ${task.dueDate} ${areaName}`.toLowerCase();
+      const text = `${task.title} ${task.description} ${task.dueDate} ${areaName} ${task.priority} ${task.recurrence}`.toLowerCase();
 
       return !normalizedQuery || text.includes(normalizedQuery);
     });
   }, [areaFilteredTasks, areas, query]);
 
+  const filterCounts = useMemo(() => getTaskFilterCounts(searchedTasks), [searchedTasks]);
+
   const filteredTasks = useMemo(
-    () => searchedTasks.filter((task) => statusFilter === "all" || task.status === statusFilter),
-    [statusFilter, searchedTasks],
+    () => searchedTasks.filter((task) => taskMatchesFilter(task, taskFilter)),
+    [searchedTasks, taskFilter],
   );
 
   const selectedTask = useMemo(
@@ -68,54 +205,155 @@ export default function App() {
     [selectedTaskId, tasks],
   );
 
-  const dueReminderTasks = notificationsEnabled
-    ? tasks.filter((task) => task.gmailReminder && task.status === "pendiente")
-    : [];
+  const dueReminderTasks = useMemo(() => {
+    if (!notificationsEnabled) {
+      return [];
+    }
+
+    return tasks
+      .filter((task) => task.gmailReminder && task.status === "pendiente")
+      .sort((first, second) =>
+        `${first.dueDate} ${first.startTime ?? first.dueTime ?? ""}`.localeCompare(
+          `${second.dueDate} ${second.startTime ?? second.dueTime ?? ""}`,
+        ),
+      );
+  }, [notificationsEnabled, tasks]);
+
+  function getFreshTaskForm(overrides = {}) {
+    return {
+      ...defaultTaskForm,
+      areaId: activeArea !== "all" ? activeArea : areas[0]?.id ?? defaultTaskForm.areaId,
+      dueDate: getTodayKey(),
+      ...overrides,
+    };
+  }
 
   function updateTaskForm(field, value) {
     setTaskForm((current) => ({ ...current, [field]: value }));
   }
 
   function handleLogin(account) {
-    setUser(account);
+    const nextUser = sanitizeUser(account);
+
+    setUser(nextUser);
     setAccountPassword(account.password || "");
     setProfileForm((current) => ({
       ...current,
-      username: account.username || account.name || current.username,
-      email: account.email || current.email,
-      phone: account.phone || current.phone,
+      username: nextUser.username || current.username,
+      email: nextUser.email || current.email,
+      phone: nextUser.phone || current.phone,
     }));
   }
 
-  function createTask() {
-    if (!taskForm.title.trim()) {
+  function openCreateTask(overrides = {}) {
+    setEditingTaskId(null);
+    setTaskForm(getFreshTaskForm(overrides));
+    setIsTaskFormOpen(true);
+  }
+
+  function openCreateTaskForDate(dateKey) {
+    openCreateTask({
+      dueDate: dateKey,
+      areaId: activeArea !== "all" ? activeArea : areas[0]?.id ?? defaultTaskForm.areaId,
+    });
+  }
+
+  function openEditTask(task) {
+    setEditingTaskId(task.id);
+    setSelectedTaskId(null);
+    setTaskForm(taskToForm(task));
+    setActiveView("Tareas");
+    setIsTaskFormOpen(true);
+  }
+
+  function closeTaskForm() {
+    setIsTaskFormOpen(false);
+    setEditingTaskId(null);
+  }
+
+  function saveTask() {
+    const title = taskForm.title.trim();
+
+    if (!title) {
       return;
     }
 
-    setTasks((current) => [
-      {
-        id: Date.now(),
-        title: taskForm.title.trim(),
-        description: taskForm.description.trim() || "Sin descripción",
-        areaId: taskForm.areaId,
-        dueDate: taskForm.dueDate,
-        startTime: taskForm.startTime,
-        endTime: taskForm.endTime,
-        dueTime: taskForm.endTime,
-        status: "pendiente",
-        gmailReminder: taskForm.gmailReminder,
-      },
-      ...current,
-    ]);
-    setTaskForm(defaultTaskForm);
-    setIsTaskFormOpen(false);
+    const taskData = {
+      title,
+      description: taskForm.description.trim() || "Sin descripcion",
+      areaId: taskForm.areaId,
+      dueDate: taskForm.dueDate,
+      startTime: taskForm.startTime,
+      endTime: taskForm.endTime,
+      dueTime: taskForm.endTime,
+      priority: taskForm.priority,
+      recurrence: taskForm.recurrence,
+      gmailReminder: taskForm.gmailReminder,
+    };
+
+    if (editingTaskId) {
+      setTasks((current) =>
+        current.map((task) =>
+          task.id === editingTaskId
+            ? normalizeTask({
+                ...task,
+                ...taskData,
+              })
+            : task,
+        ),
+      );
+    } else {
+      setTasks((current) => [
+        normalizeTask({
+          id: Date.now(),
+          ...taskData,
+          status: "pendiente",
+        }),
+        ...current,
+      ]);
+    }
+
+    setTaskForm(getFreshTaskForm());
+    closeTaskForm();
+    setTaskFilter("all");
     setActiveView("Tareas");
   }
 
   function setTaskStatus(taskId, status) {
-    setTasks((current) =>
-      current.map((task) => (task.id === taskId ? { ...task, status } : task)),
-    );
+    setTasks((current) => {
+      const originalTask = current.find((task) => task.id === taskId);
+      const shouldCreateNext =
+        originalTask &&
+        status === "completada" &&
+        originalTask.status !== "completada" &&
+        isRecurringTask(originalTask) &&
+        !originalTask.nextOccurrenceCreated;
+
+      const updatedTasks = current.map((task) =>
+        task.id === taskId
+          ? normalizeTask({
+              ...task,
+              status,
+              nextOccurrenceCreated: shouldCreateNext ? true : task.nextOccurrenceCreated,
+            })
+          : task,
+      );
+
+      if (!shouldCreateNext) {
+        return updatedTasks;
+      }
+
+      const nextTask = normalizeTask({
+        ...originalTask,
+        id: Date.now() + 1,
+        dueDate: getNextRecurrenceDate(originalTask.dueDate, originalTask.recurrence),
+        status: "pendiente",
+        nextOccurrenceCreated: false,
+        sourceTaskId: originalTask.sourceTaskId ?? originalTask.id,
+      });
+
+      return [nextTask, ...updatedTasks];
+    });
   }
 
   function requestDeleteTask(taskId) {
@@ -209,19 +447,27 @@ export default function App() {
   function handleSidebarAreaChange(areaId) {
     setActiveArea(areaId);
     setQuery("");
+    setTaskFilter("all");
     setActiveView("Tareas");
   }
 
   function openTasksForArea(areaId) {
     setActiveArea(areaId);
     setQuery("");
+    setTaskFilter("all");
+    setActiveView("Tareas");
+  }
+
+  function openTasksWithFilter(filter) {
+    setQuery("");
+    setTaskFilter(filter);
     setActiveView("Tareas");
   }
 
   function openTaskDirectly(task) {
     setActiveArea(task.areaId);
     setQuery("");
-    setStatusFilter("all");
+    setTaskFilter("all");
     setSelectedTaskId(task.id);
     setIsNotificationsOpen(false);
     setActiveView("Tareas");
@@ -233,7 +479,7 @@ export default function App() {
 
   function saveProfile() {
     setUser((current) => ({
-      ...current,
+      ...(current ?? {}),
       name: profileForm.username,
       username: profileForm.username,
       email: profileForm.email,
@@ -245,6 +491,88 @@ export default function App() {
     setCalendarMonth(
       (current) => new Date(current.getFullYear(), current.getMonth() + offset, 1),
     );
+  }
+
+  function exportData(format) {
+    const dateKey = getTodayKey();
+
+    if (format === "csv") {
+      downloadTextFile(
+        `dayflow-tareas-${dateKey}.csv`,
+        buildTasksCsv(tasks, areas),
+        "text/csv;charset=utf-8",
+      );
+      setDataNotice("CSV exportado correctamente.");
+      return;
+    }
+
+    const payload = createExportPayload({
+      areas,
+      tasks,
+      profile: profileForm,
+      settings: {
+        themeMode,
+        timeFormat,
+        notificationsEnabled,
+      },
+    });
+
+    downloadTextFile(
+      `dayflow-respaldo-${dateKey}.json`,
+      JSON.stringify(payload, null, 2),
+      "application/json;charset=utf-8",
+    );
+    setDataNotice("Respaldo JSON exportado correctamente.");
+  }
+
+  function importData(file) {
+    if (!file) {
+      return;
+    }
+
+    const shouldImport = window.confirm(
+      "Importar este archivo reemplazara tus tareas y bloques actuales. Continuar?",
+    );
+
+    if (!shouldImport) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const importedData = parseImportedData(String(reader.result || ""), file.name, areas);
+        const nextAreas = importedData.areas?.length ? importedData.areas : initialAreas;
+
+        setAreas(nextAreas);
+        setTasks(normalizeTasks(importedData.tasks));
+        setActiveArea("all");
+        setTaskFilter("all");
+        setQuery("");
+
+        if (importedData.profile) {
+          setProfileForm((current) => ({ ...current, ...importedData.profile }));
+        }
+
+        if (importedData.settings) {
+          setThemeMode(importedData.settings.themeMode ?? themeMode);
+          setTimeFormat(importedData.settings.timeFormat ?? timeFormat);
+          setNotificationsEnabled(importedData.settings.notificationsEnabled ?? notificationsEnabled);
+        }
+
+        setTaskForm((current) => ({ ...current, areaId: nextAreas[0]?.id ?? defaultTaskForm.areaId }));
+        setDataNotice(`Importadas ${importedData.tasks.length} tarea(s).`);
+      } catch (error) {
+        setDataNotice(error instanceof Error ? error.message : "No se pudo importar el archivo.");
+      }
+    };
+
+    reader.onerror = () => {
+      setDataNotice("No se pudo leer el archivo.");
+    };
+
+    reader.readAsText(file);
   }
 
   if (!user) {
@@ -273,7 +601,7 @@ export default function App() {
             onQueryChange={setQuery}
             onCreateTask={() => {
               setActiveView("Tareas");
-              setIsTaskFormOpen(true);
+              openCreateTask();
             }}
             alertsCount={dueReminderTasks.length}
             reminders={dueReminderTasks}
@@ -292,6 +620,7 @@ export default function App() {
             reminders={dueReminderTasks}
             onChangeView={setActiveView}
             onSelectArea={openTasksForArea}
+            onApplyFilter={openTasksWithFilter}
             onOpenTask={openTaskDirectly}
             timeFormat={timeFormat}
           />
@@ -299,7 +628,7 @@ export default function App() {
 
         {activeView === "Tareas" && (
           <>
-            <Filters statusFilter={statusFilter} onStatusFilterChange={setStatusFilter} />
+            <Filters activeFilter={taskFilter} onFilterChange={setTaskFilter} counts={filterCounts} />
 
             <div className="content-stack">
               <TaskList
@@ -322,6 +651,8 @@ export default function App() {
             onToday={() =>
               setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
             }
+            onCreateTaskOnDate={openCreateTaskForDate}
+            onOpenTask={openTaskDirectly}
             timeFormat={timeFormat}
           />
         )}
@@ -338,6 +669,11 @@ export default function App() {
             onPasswordChange={setAccountPassword}
             timeFormat={timeFormat}
             onTimeFormatChange={setTimeFormat}
+            tasksCount={tasks.length}
+            areasCount={areas.length}
+            onExportData={exportData}
+            onImportData={importData}
+            dataNotice={dataNotice}
           />
         )}
       </main>
@@ -347,9 +683,10 @@ export default function App() {
           <TaskForm
             areas={areas}
             form={taskForm}
+            isEditing={Boolean(editingTaskId)}
             onChange={updateTaskForm}
-            onSubmit={createTask}
-            onClose={() => setIsTaskFormOpen(false)}
+            onSubmit={saveTask}
+            onClose={closeTaskForm}
           />
         </div>
       )}
@@ -362,6 +699,7 @@ export default function App() {
           onClose={() => setSelectedTaskId(null)}
           onSetStatus={setTaskStatus}
           onDeleteTask={requestDeleteTask}
+          onEditTask={openEditTask}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { Bell, CalendarDays, ChevronRight, FolderKanban } from "lucide-react";
+import { compareDateKeys, getTodayKey, isDateInCurrentWeek } from "../../utils/dateUtils";
 import { getTaskTimeRange } from "../../utils/timeUtils";
 
 // Inicio resume lo mas importante y permite saltar rapidamente a tareas por bloque.
@@ -8,11 +9,15 @@ export default function HomeView({
   reminders,
   onChangeView,
   onSelectArea,
+  onApplyFilter,
   onOpenTask,
   timeFormat,
 }) {
   const pendingTasks = tasks.filter((task) => task.status === "pendiente");
   const completedTasks = tasks.filter((task) => task.status === "completada");
+  const todayKey = getTodayKey();
+  const overdueTasks = pendingTasks.filter((task) => compareDateKeys(task.dueDate, todayKey) < 0);
+  const completedThisWeek = completedTasks.filter((task) => isDateInCurrentWeek(task.dueDate)).length;
   const nextTasks = [...pendingTasks].sort((first, second) =>
     `${first.dueDate} ${first.startTime ?? first.dueTime ?? ""}`.localeCompare(
       `${second.dueDate} ${second.startTime ?? second.dueTime ?? ""}`,
@@ -27,6 +32,11 @@ export default function HomeView({
       pending: areaTasks.filter((task) => task.status === "pendiente").length,
     };
   });
+  const completionRate = tasks.length ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+  const busiestArea = areaSummaries.reduce(
+    (selected, area) => (!selected || area.pending > selected.pending ? area : selected),
+    null,
+  );
 
   return (
     <section className="home-grid home-minimal" aria-label="Vista previa de DayFlow">
@@ -53,6 +63,29 @@ export default function HomeView({
           </div>
         </article>
 
+        <article className="panel home-insights-panel" aria-label="Estadisticas">
+          <button className="home-insight" type="button" onClick={() => onApplyFilter("all")}>
+            <span>Progreso</span>
+            <strong>{completionRate}%</strong>
+          </button>
+          <button className="home-insight" type="button" onClick={() => onApplyFilter("week")}>
+            <span>Semana</span>
+            <strong>{completedThisWeek}</strong>
+          </button>
+          <button
+            className="home-insight"
+            type="button"
+            onClick={() => busiestArea && onSelectArea(busiestArea.id)}
+          >
+            <span>Mas cargado</span>
+            <strong>{busiestArea?.name ?? "Sin bloque"}</strong>
+          </button>
+          <button className="home-insight urgent" type="button" onClick={() => onApplyFilter("overdue")}>
+            <span>Vencidas</span>
+            <strong>{overdueTasks.length}</strong>
+          </button>
+        </article>
+
         <article className="panel home-agenda-panel">
           <div className="panel-header compact-panel-header">
             <div>
@@ -72,7 +105,7 @@ export default function HomeView({
                   className="home-task-preview"
                   key={task.id}
                   type="button"
-                  onClick={() => onSelectArea(task.areaId)}
+                  onClick={() => onOpenTask(task)}
                 >
                   <span
                     className="task-color-bar"

@@ -1,14 +1,15 @@
-import { Bell, CalendarDays, Clock3, FolderKanban, Plus, X } from "lucide-react";
+import { Bell, CalendarDays, Clock3, Flag, FolderKanban, Plus, Repeat, Save, X } from "lucide-react";
+import { priorityOptions, recurrenceOptions } from "../../constants/taskForm";
 import DescriptionEditor from "./DescriptionEditor";
 
 // Modal/formulario para crear una tarea nueva dentro de un bloque existente.
-export default function TaskForm({ areas, form, onChange, onSubmit, onClose }) {
+export default function TaskForm({ areas, form, isEditing, onChange, onSubmit, onClose }) {
   return (
     <section className="panel task-form-panel task-composer-panel">
       <div className="task-form-hero">
         <div>
-          <p className="eyebrow">Nueva tarea</p>
-          <h2>Convierte una idea en accion</h2>
+          <p className="eyebrow">{isEditing ? "Editar tarea" : "Nueva tarea"}</p>
+          <h2>{isEditing ? "Ajusta el plan" : "Convierte una idea en accion"}</h2>
         </div>
         <button className="icon-button" type="button" aria-label="Cerrar" title="Cerrar" onClick={onClose}>
           <X size={18} />
@@ -96,6 +97,34 @@ export default function TaskForm({ areas, form, onChange, onSubmit, onClose }) {
             </label>
           </div>
 
+          <label className="field">
+            Prioridad
+            <div className="input-with-icon">
+              <Flag size={17} />
+              <select value={form.priority} onChange={(event) => onChange("priority", event.target.value)}>
+                {priorityOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </label>
+
+          <label className="field">
+            Repeticion
+            <div className="input-with-icon">
+              <Repeat size={17} />
+              <select value={form.recurrence} onChange={(event) => onChange("recurrence", event.target.value)}>
+                {recurrenceOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </label>
+
           <label className="toggle-row task-reminder-toggle">
             <input
               type="checkbox"
@@ -109,8 +138,8 @@ export default function TaskForm({ areas, form, onChange, onSubmit, onClose }) {
           </label>
 
           <button className="primary-button wide task-create-button" onClick={onSubmit}>
-            <Plus size={18} />
-            Crear tarea
+            {isEditing ? <Save size={18} /> : <Plus size={18} />}
+            {isEditing ? "Guardar cambios" : "Crear tarea"}
           </button>
         </aside>
       </div>

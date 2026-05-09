@@ -1,5 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { Bell, Clock, LockKeyhole, Mail, Moon, Phone, Send, Sun, User, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bell,
+  Clock,
+  Database,
+  Download,
+  FileJson,
+  LockKeyhole,
+  Mail,
+  Moon,
+  Phone,
+  Send,
+  Sun,
+  Table,
+  Upload,
+  User,
+  X,
+} from "lucide-react";
 import { detectUserTimeFormat } from "../../utils/timeUtils";
 
 // Pantalla de ajustes: tema, formato de hora, recordatorios y datos del perfil.
@@ -14,7 +30,13 @@ export default function SettingsView({
   onPasswordChange,
   timeFormat,
   onTimeFormatChange,
+  tasksCount,
+  areasCount,
+  onExportData,
+  onImportData,
+  dataNotice,
 }) {
+  const importInputRef = useRef(null);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
   const [passwordStep, setPasswordStep] = useState("create");
   const [passwordDraft, setPasswordDraft] = useState("");
@@ -57,6 +79,7 @@ export default function SettingsView({
       value: notificationsEnabled ? "Activos" : "Desactivados",
       icon: Bell,
     },
+    { id: "data", label: "Datos", value: `${tasksCount} tareas`, icon: Database },
   ];
   function maskEmail(email) {
     if (!email) {
@@ -161,6 +184,16 @@ export default function SettingsView({
     setIsPasswordFormOpen(false);
     setPasswordNoticeType("success");
     setPasswordNotice("Codigo confirmado. Contrasena actualizada.");
+  }
+
+  function handleImportChange(event) {
+    const [file] = event.target.files;
+
+    if (file) {
+      onImportData(file);
+    }
+
+    event.target.value = "";
   }
 
   useEffect(() => {
@@ -396,6 +429,69 @@ export default function SettingsView({
                 </button>
               </div>
             </div>
+          </article>
+        )}
+
+        {activeSection === "data" && (
+          <article className="panel settings-panel settings-editor-panel data-panel" aria-label="Datos">
+            <div className="settings-editor-title">
+              <div>
+                <p className="eyebrow">Datos</p>
+                <h2>Respaldo</h2>
+              </div>
+              <Database size={20} />
+            </div>
+
+            <div className="data-summary-grid">
+              <span>
+                <strong>{tasksCount}</strong>
+                <small>Tareas</small>
+              </span>
+              <span>
+                <strong>{areasCount}</strong>
+                <small>Bloques</small>
+              </span>
+            </div>
+
+            <div className="data-actions-grid">
+              <button className="outline-button" type="button" onClick={() => onExportData("json")}>
+                <FileJson size={17} />
+                JSON
+                <Download size={15} />
+              </button>
+              <button className="outline-button" type="button" onClick={() => onExportData("csv")}>
+                <Table size={17} />
+                CSV
+                <Download size={15} />
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => importInputRef.current?.click()}
+              >
+                <Upload size={17} />
+                Importar
+              </button>
+              <input
+                ref={importInputRef}
+                className="visually-hidden"
+                type="file"
+                accept=".json,.csv,application/json,text/csv"
+                onChange={handleImportChange}
+              />
+            </div>
+
+            {dataNotice && (
+              <p
+                className={`password-notice ${
+                  dataNotice.toLowerCase().includes("no se") || dataNotice.toLowerCase().includes("vacio")
+                    ? "error"
+                    : "success"
+                }`}
+              >
+                {dataNotice}
+              </p>
+            )}
           </article>
         )}
       </div>

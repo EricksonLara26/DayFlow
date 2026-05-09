@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { getAreaName } from "../../utils/areaUtils";
 import { getTaskTimeRange } from "../../utils/timeUtils";
+import { getPriorityLabel, getRecurrenceLabel, isRecurringTask } from "../../utils/taskUtils";
 import TaskDescription from "./TaskDescription";
 
 // Lista de tareas filtradas con acceso al detalle para gestionar cambios.
@@ -61,6 +62,10 @@ export default function TaskList({ tasks, areas, onOpenTask, timeFormat }) {
                 <span>{getAreaName(areas, task.areaId)}</span>
                 <span>{task.dueDate}</span>
                 <span>{getTaskTimeRange(task, timeFormat)}</span>
+                <span className={`priority-badge priority-${task.priority}`}>
+                  {getPriorityLabel(task.priority)}
+                </span>
+                {isRecurringTask(task) && <span>{getRecurrenceLabel(task.recurrence)}</span>}
                 {task.gmailReminder && <span>Gmail activo</span>}
               </div>
             </div>

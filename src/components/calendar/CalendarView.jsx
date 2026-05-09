@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { getAreaName } from "../../utils/areaUtils";
 import { toDateKey } from "../../utils/dateUtils";
 import { getTaskTimeRange } from "../../utils/timeUtils";
@@ -11,6 +11,8 @@ export default function CalendarView({
   onPreviousMonth,
   onNextMonth,
   onToday,
+  onCreateTaskOnDate,
+  onOpenTask,
   timeFormat,
 }) {
   const year = monthDate.getFullYear();
@@ -82,12 +84,25 @@ export default function CalendarView({
         {calendarCells.map((cell) =>
           cell.day ? (
             <article className="calendar-day" key={cell.id}>
-              <strong>{cell.day}</strong>
+              <button
+                className="calendar-day-head"
+                type="button"
+                aria-label={`Crear tarea el dia ${cell.day}`}
+                onClick={() => onCreateTaskOnDate(cell.dateKey)}
+              >
+                <strong>{cell.day}</strong>
+                <Plus size={15} />
+              </button>
               <div className="calendar-task-stack">
                 {cell.tasks.map((task) => (
-                  <span className={`calendar-task ${task.status}`} key={task.id}>
+                  <button
+                    className={`calendar-task ${task.status} priority-${task.priority}`}
+                    key={task.id}
+                    type="button"
+                    onClick={() => onOpenTask(task)}
+                  >
                     {getTaskTimeRange(task, timeFormat)} - {getAreaName(areas, task.areaId)}: {task.title}
-                  </span>
+                  </button>
                 ))}
               </div>
             </article>
