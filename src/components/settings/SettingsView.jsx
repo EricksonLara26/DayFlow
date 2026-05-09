@@ -4,7 +4,7 @@ import {
   Clock,
   Database,
   Download,
-  FileJson,
+  FileText,
   LockKeyhole,
   Mail,
   Moon,
@@ -454,9 +454,9 @@ export default function SettingsView({
             </div>
 
             <div className="data-actions-grid">
-              <button className="outline-button" type="button" onClick={() => onExportData("json")}>
-                <FileJson size={17} />
-                JSON
+              <button className="outline-button" type="button" onClick={() => onExportData("word")}>
+                <FileText size={17} />
+                Word
                 <Download size={15} />
               </button>
               <button className="outline-button" type="button" onClick={() => onExportData("csv")}>

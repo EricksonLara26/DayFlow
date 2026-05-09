@@ -1,5 +1,5 @@
 import { getAreaName, toAreaId } from "./areaUtils";
-import { normalizeTasks } from "./taskUtils";
+import { getPriorityLabel, getRecurrenceLabel, normalizeTasks } from "./taskUtils";
 
 const csvColumns = [
   "id",
@@ -24,6 +24,34 @@ function escapeCsvValue(value) {
   }
 
   return `"${text.replace(/"/g, '""')}"`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatStatus(status) {
+  return status === "completada" ? "Completada" : "Pendiente";
+}
+
+function formatReminder(value) {
+  return value ? "Gmail activo" : "Sin aviso";
+}
+
+function formatTaskTime(task) {
+  if (task.startTime && task.endTime) {
+    return `${task.startTime} - ${task.endTime}`;
+  }
+
+  return task.dueTime || "Sin hora";
+}
+
+function formatDescription(description) {
+  return escapeHtml(description || "Sin descripcion").replace(/\n/g, "<br>");
 }
 
 function parseBoolean(value) {
@@ -100,17 +128,6 @@ function ensureArea(areas, areaId, areaName) {
   return resolvedId;
 }
 
-export function createExportPayload({ areas, tasks, profile, settings }) {
-  return {
-    version: 2,
-    exportedAt: new Date().toISOString(),
-    areas,
-    tasks,
-    profile,
-    settings,
-  };
-}
-
 export function buildTasksCsv(tasks, areas) {
   const header = csvColumns.join(",");
   const lines = tasks.map((task) =>
@@ -126,6 +143,121 @@ export function buildTasksCsv(tasks, areas) {
   );
 
   return [header, ...lines].join("\n");
+}
+
+export function buildTasksWordDocument(tasks, areas, profile) {
+  const pendingCount = tasks.filter((task) => task.status === "pendiente").length;
+  const completedCount = tasks.filter((task) => task.status === "completada").length;
+  const generatedAt = new Date().toLocaleString("es-DO");
+  const owner = profile?.username || profile?.email || "Usuario DayFlow";
+  const rows = tasks
+    .map(
+      (task) => `
+        <tr>
+          <td>${escapeHtml(task.title)}</td>
+          <td>${escapeHtml(getAreaName(areas, task.areaId))}</td>
+          <td>${escapeHtml(task.dueDate || "Sin fecha")}</td>
+          <td>${escapeHtml(formatTaskTime(task))}</td>
+          <td>${escapeHtml(formatStatus(task.status))}</td>
+          <td>${escapeHtml(getPriorityLabel(task.priority))}</td>
+          <td>${escapeHtml(getRecurrenceLabel(task.recurrence))}</td>
+          <td>${escapeHtml(formatReminder(task.gmailReminder))}</td>
+          <td>${formatDescription(task.description)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `<!doctype html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Reporte DayFlow</title>
+    <style>
+      body {
+        color: #142033;
+        font-family: "Segoe UI", Arial, sans-serif;
+        line-height: 1.45;
+      }
+
+      h1 {
+        margin: 0 0 4px;
+        color: #1f6feb;
+        font-size: 26px;
+      }
+
+      .meta {
+        margin: 0 0 18px;
+        color: #526174;
+        font-size: 12px;
+      }
+
+      .summary {
+        display: table;
+        width: 100%;
+        margin-bottom: 18px;
+      }
+
+      .summary span {
+        display: table-cell;
+        padding: 8px 10px;
+        border: 1px solid #dfe7dd;
+        background: #f8fbff;
+        font-weight: 700;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+
+      th {
+        background: #1f6feb;
+        color: #ffffff;
+        text-align: left;
+      }
+
+      th,
+      td {
+        padding: 7px;
+        border: 1px solid #cfd8d0;
+        vertical-align: top;
+      }
+
+      td:nth-child(9) {
+        width: 24%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reporte DayFlow</h1>
+    <p class="meta">Generado por ${escapeHtml(owner)} el ${escapeHtml(generatedAt)}</p>
+    <div class="summary">
+      <span>${tasks.length} tareas</span>
+      <span>${pendingCount} pendientes</span>
+      <span>${completedCount} completadas</span>
+      <span>${areas.length} bloques</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Tarea</th>
+          <th>Bloque</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Estado</th>
+          <th>Prioridad</th>
+          <th>Repeticion</th>
+          <th>Aviso</th>
+          <th>Descripcion</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows || '<tr><td colspan="9">No hay tareas registradas.</td></tr>'}
+      </tbody>
+    </table>
+  </body>
+</html>`;
 }
 
 export function parseImportedData(text, fileName, currentAreas) {

@@ -15,7 +15,7 @@ import { initialAreas, initialTasks } from "./data/dayflowData";
 import { getAreaName, toAreaId } from "./utils/areaUtils";
 import {
   buildTasksCsv,
-  createExportPayload,
+  buildTasksWordDocument,
   parseImportedData,
 } from "./utils/dataTransferUtils";
 import {
@@ -506,23 +506,12 @@ export default function App() {
       return;
     }
 
-    const payload = createExportPayload({
-      areas,
-      tasks,
-      profile: profileForm,
-      settings: {
-        themeMode,
-        timeFormat,
-        notificationsEnabled,
-      },
-    });
-
     downloadTextFile(
-      `dayflow-respaldo-${dateKey}.json`,
-      JSON.stringify(payload, null, 2),
-      "application/json;charset=utf-8",
+      `dayflow-reporte-${dateKey}.doc`,
+      `\ufeff${buildTasksWordDocument(tasks, areas, profileForm)}`,
+      "application/msword;charset=utf-8",
     );
-    setDataNotice("Respaldo JSON exportado correctamente.");
+    setDataNotice("Documento Word exportado correctamente.");
   }
 
   function importData(file) {
