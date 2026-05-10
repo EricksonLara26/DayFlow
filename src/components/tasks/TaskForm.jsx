@@ -1,9 +1,67 @@
-import { Bell, CalendarDays, Clock3, Flag, FolderKanban, Plus, Repeat, Save, X } from "lucide-react";
+import { useState } from "react";
+import {
+  Bell,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  Clock3,
+  Flag,
+  FolderKanban,
+  Plus,
+  Repeat,
+  Save,
+  X,
+} from "lucide-react";
 import { priorityOptions, recurrenceOptions } from "../../constants/taskForm";
+import { addDaysToDateKey, getTodayKey, parseDateKey } from "../../utils/dateUtils";
 import DescriptionEditor from "./DescriptionEditor";
+
+function formatDateChip(dateKey) {
+  const date = parseDateKey(dateKey);
+
+  if (!date) {
+    return dateKey;
+  }
+
+  try {
+    return new Intl.DateTimeFormat("es-DO", {
+      day: "numeric",
+      month: "short",
+    }).format(date);
+  } catch {
+    return dateKey;
+  }
+}
 
 // Modal/formulario para crear una tarea nueva dentro de un bloque existente.
 export default function TaskForm({ areas, form, isEditing, onChange, onSubmit, onClose }) {
+  const [openPicker, setOpenPicker] = useState(null);
+  const todayKey = getTodayKey();
+  const datePresetOptions = [
+    { id: "today", label: "Hoy", value: todayKey },
+    { id: "tomorrow", label: "Manana", value: addDaysToDateKey(todayKey, 1) },
+    { id: "week", label: "+7 dias", value: addDaysToDateKey(todayKey, 7) },
+  ];
+  const selectedArea = areas.find((area) => area.id === form.areaId) ?? areas[0];
+  const selectedPriority = priorityOptions.find((option) => option.id === form.priority) ?? priorityOptions[1];
+  const selectedRecurrence =
+    recurrenceOptions.find((option) => option.id === form.recurrence) ?? recurrenceOptions[0];
+
+  function togglePicker(picker) {
+    setOpenPicker((current) => (current === picker ? null : picker));
+  }
+
+  function chooseOption(field, value) {
+    onChange(field, value);
+    setOpenPicker(null);
+  }
+
+  function getPickerTriggerClass(picker) {
+    return openPicker === picker
+      ? "input-with-icon task-picker-trigger active"
+      : "input-with-icon task-picker-trigger";
+  }
+
   return (
     <section className="panel task-form-panel task-composer-panel">
       <div className="task-form-hero">
@@ -47,30 +105,95 @@ export default function TaskForm({ areas, form, isEditing, onChange, onSubmit, o
             </div>
           </div>
 
-          <label className="field">
-            Bloque
-            <div className="input-with-icon">
-              <FolderKanban size={17} />
-              <select value={form.areaId} onChange={(event) => onChange("areaId", event.target.value)}>
-                {areas.map((area) => (
-                  <option key={area.id} value={area.id}>
-                    {area.name}
-                  </option>
-                ))}
-              </select>
+          <div className="field">
+            <span>Bloque</span>
+            <div className="task-picker-wrap">
+              <button
+                className={getPickerTriggerClass("area")}
+                type="button"
+                aria-expanded={openPicker === "area"}
+                onClick={() => togglePicker("area")}
+              >
+                <FolderKanban size={17} />
+                <span className="task-picker-value">
+                  <span className="area-dot" style={{ background: selectedArea?.color }} />
+                  <span>{selectedArea?.name ?? "Selecciona"}</span>
+                </span>
+                <ChevronDown size={16} />
+              </button>
+              {openPicker === "area" && (
+                <div className="task-picker-panel" role="listbox">
+                  {areas.map((area) => {
+                    const isActive = form.areaId === area.id;
+
+                    return (
+                      <button
+                        className={isActive ? "task-picker-option active" : "task-picker-option"}
+                        key={area.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        onClick={() => chooseOption("areaId", area.id)}
+                      >
+                        <span className="area-dot" style={{ background: area.color }} />
+                        <span>{area.name}</span>
+                        {isActive && <Check size={15} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </label>
-          <label className="field">
-            Fecha
-            <div className="input-with-icon">
-              <CalendarDays size={17} />
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={(event) => onChange("dueDate", event.target.value)}
-              />
+          </div>
+
+          <div className="field">
+            <span>Fecha</span>
+            <div className="task-picker-wrap">
+              <button
+                className={getPickerTriggerClass("date")}
+                type="button"
+                aria-expanded={openPicker === "date"}
+                onClick={() => togglePicker("date")}
+              >
+                <CalendarDays size={17} />
+                <span className="task-picker-value">{form.dueDate}</span>
+                <ChevronDown size={16} />
+              </button>
+              {openPicker === "date" && (
+                <div className="task-picker-panel task-date-picker-panel">
+                  <div className="task-date-presets" role="group" aria-label="Fechas rapidas">
+                    {datePresetOptions.map((option) => {
+                      const isActive = form.dueDate === option.value;
+
+                      return (
+                        <button
+                          className={isActive ? "task-date-option active" : "task-date-option"}
+                          key={option.id}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => chooseOption("dueDate", option.value)}
+                        >
+                          <strong>{option.label}</strong>
+                          <span>{formatDateChip(option.value)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <label className="field compact-date-field">
+                    Fecha exacta
+                    <div className="input-with-icon">
+                      <CalendarDays size={17} />
+                      <input
+                        type="date"
+                        value={form.dueDate}
+                        onChange={(event) => chooseOption("dueDate", event.target.value)}
+                      />
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
-          </label>
+          </div>
 
           <div className="time-field-grid">
             <label className="field">
@@ -97,33 +220,77 @@ export default function TaskForm({ areas, form, isEditing, onChange, onSubmit, o
             </label>
           </div>
 
-          <label className="field">
-            Prioridad
-            <div className="input-with-icon">
-              <Flag size={17} />
-              <select value={form.priority} onChange={(event) => onChange("priority", event.target.value)}>
-                {priorityOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </label>
+          <div className="field">
+            <span>Prioridad</span>
+            <div className="task-picker-wrap">
+              <button
+                className={getPickerTriggerClass("priority")}
+                type="button"
+                aria-expanded={openPicker === "priority"}
+                onClick={() => togglePicker("priority")}
+              >
+                <Flag size={17} />
+                <span className="task-picker-value">{selectedPriority.label}</span>
+                <ChevronDown size={16} />
+              </button>
+              {openPicker === "priority" && (
+                <div className="task-picker-panel">
+                  {priorityOptions.map((option) => {
+                    const isActive = form.priority === option.id;
 
-          <label className="field">
-            Repeticion
-            <div className="input-with-icon">
-              <Repeat size={17} />
-              <select value={form.recurrence} onChange={(event) => onChange("recurrence", event.target.value)}>
-                {recurrenceOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                    return (
+                      <button
+                        className={isActive ? `task-picker-option priority-${option.id} active` : `task-picker-option priority-${option.id}`}
+                        key={option.id}
+                        type="button"
+                        onClick={() => chooseOption("priority", option.id)}
+                      >
+                        <Flag size={15} />
+                        <span>{option.label}</span>
+                        {isActive && <Check size={15} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </label>
+          </div>
+
+          <div className="field">
+            <span>Repeticion</span>
+            <div className="task-picker-wrap">
+              <button
+                className={getPickerTriggerClass("recurrence")}
+                type="button"
+                aria-expanded={openPicker === "recurrence"}
+                onClick={() => togglePicker("recurrence")}
+              >
+                <Repeat size={17} />
+                <span className="task-picker-value">{selectedRecurrence.label}</span>
+                <ChevronDown size={16} />
+              </button>
+              {openPicker === "recurrence" && (
+                <div className="task-picker-panel">
+                  {recurrenceOptions.map((option) => {
+                    const isActive = form.recurrence === option.id;
+
+                    return (
+                      <button
+                        className={isActive ? "task-picker-option active" : "task-picker-option"}
+                        key={option.id}
+                        type="button"
+                        onClick={() => chooseOption("recurrence", option.id)}
+                      >
+                        <Repeat size={15} />
+                        <span>{option.label}</span>
+                        {isActive && <Check size={15} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
 
           <label className="toggle-row task-reminder-toggle">
             <input
@@ -137,7 +304,7 @@ export default function TaskForm({ areas, form, isEditing, onChange, onSubmit, o
             </span>
           </label>
 
-          <button className="primary-button wide task-create-button" onClick={onSubmit}>
+          <button className="primary-button wide task-create-button" type="button" onClick={onSubmit}>
             {isEditing ? <Save size={18} /> : <Plus size={18} />}
             {isEditing ? "Guardar cambios" : "Crear tarea"}
           </button>
