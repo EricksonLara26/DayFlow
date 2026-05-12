@@ -3079,22 +3079,58 @@ h2 {
 }
 
 .calendar-actions {
-  display: flex;
+  display: inline-grid;
+  grid-template-columns: 38px minmax(56px, auto) 38px;
   flex: 0 0 auto;
-  flex-wrap: nowrap;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
+  padding: 4px;
+  border: 1px solid #dce4dc;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .calendar-nav-button {
   width: 38px;
   height: 38px;
-  min-height: 36px;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: #526174;
+}
+
+.calendar-nav-button:hover,
+.calendar-today-button:hover {
+  background: #eaf2ff;
+  color: #1f6feb;
 }
 
 .calendar-today-button {
+  position: relative;
   min-width: 58px;
   min-height: 38px;
   padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: #142033;
+}
+
+.calendar-today-button::before,
+.calendar-today-button::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: #dfe7dd;
+}
+
+.calendar-today-button::before {
+  left: -1px;
+}
+
+.calendar-today-button::after {
+  right: -1px;
 }
 
 .calendar-grid {
@@ -3668,6 +3704,27 @@ h2 {
 .theme-dark .notification-state-toggle {
   border-color: #27364a;
   background: #101a2a;
+}
+
+.theme-dark .calendar-actions {
+  border-color: #27364a;
+  background: #162236;
+}
+
+.theme-dark .calendar-nav-button,
+.theme-dark .calendar-today-button {
+  color: #a9b7c9;
+}
+
+.theme-dark .calendar-nav-button:hover,
+.theme-dark .calendar-today-button:hover {
+  background: #1d3b66;
+  color: #8bbcff;
+}
+
+.theme-dark .calendar-today-button::before,
+.theme-dark .calendar-today-button::after {
+  background: #27364a;
 }
 
 .theme-dark .segmented button,
