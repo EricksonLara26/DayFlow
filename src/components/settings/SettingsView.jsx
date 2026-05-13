@@ -527,7 +527,7 @@ export default function SettingsView({
                 {passwordStep === "verify" ? <Mail size={20} /> : <LockKeyhole size={20} />}
               </span>
               <div className="password-modal-title">
-                <p className="eyebrow">Cambio de contrasena</p>
+                <p className="eyebrow">Cambio de contraseña</p>
                 <h2 id="password-modal-title">
                   {passwordStep === "verify" ? "Confirma tu correo" : "Nueva contraseña"}
                 </h2>
@@ -543,7 +543,7 @@ export default function SettingsView({
             </header>
 
             <div className="password-modal-body">
-              <div className="password-modal-stepper" aria-label="Progreso del cambio de contrasena">
+              <div className="password-modal-stepper" aria-label="Progreso del cambio de contraseña">
                 <span className={passwordStep === "create" ? "active" : "complete"}>
                   <strong>1</strong>
                   <small>Nueva clave</small>
@@ -557,7 +557,7 @@ export default function SettingsView({
               {passwordStep === "create" && (
                 <div className="password-modal-section">
                   <label className="field">
-                    Nueva contrasena
+                    Nueva contraseña
                     <div className="input-with-icon">
                       <LockKeyhole size={17} />
                       <input
@@ -565,19 +565,19 @@ export default function SettingsView({
                         type="password"
                         value={passwordDraft}
                         onChange={(event) => setPasswordDraft(event.target.value)}
-                        placeholder="Nueva contrasena"
+                        placeholder="Nueva contraseña"
                       />
                     </div>
                   </label>
                   <label className="field">
-                    Confirmar contrasena
+                    Confirmar contraseña
                     <div className="input-with-icon">
                       <LockKeyhole size={17} />
                       <input
                         type="password"
                         value={passwordConfirm}
                         onChange={(event) => setPasswordConfirm(event.target.value)}
-                        placeholder="Confirmar contrasena"
+                        placeholder="Confirmar contraseña"
                       />
                     </div>
                   </label>
