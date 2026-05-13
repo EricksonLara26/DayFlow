@@ -529,7 +529,7 @@ export default function SettingsView({
               <div className="password-modal-title">
                 <p className="eyebrow">Cambio de contrasena</p>
                 <h2 id="password-modal-title">
-                  {passwordStep === "verify" ? "Confirma tu correo" : "Nueva contrasena"}
+                  {passwordStep === "verify" ? "Confirma tu correo" : "Nueva contraseña"}
                 </h2>
                 <span>
                   {passwordStep === "verify"
