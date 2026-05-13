@@ -1341,6 +1341,88 @@ h2 {
   gap: 10px;
 }
 
+.data-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #edf1ec;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.data-export-table {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.data-export-table th,
+.data-export-table td {
+  padding: 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.data-export-table th {
+  border-bottom: 1px solid #dfe7dd;
+  background: #edf4ff;
+  color: #315c9f;
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.data-export-table td {
+  border-bottom: 1px solid #edf1ec;
+  color: #111a2a;
+}
+
+.data-export-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-export-table td:last-child {
+  width: 1%;
+  text-align: right;
+}
+
+.data-export-table strong,
+.data-export-table small {
+  display: block;
+  white-space: nowrap;
+}
+
+.data-export-table strong {
+  font-size: 0.86rem;
+}
+
+.data-export-table small {
+  margin-top: 2px;
+  color: #66736c;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.data-format-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #142033;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.data-format-cell svg {
+  flex: 0 0 auto;
+  color: #1f6feb;
+}
+
+.data-table-action {
+  min-width: 112px;
+  white-space: nowrap;
+}
+
 .settings-single-panel .data-summary-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -3820,13 +3902,39 @@ h2 {
   color: #edf4ff;
 }
 
+.theme-dark .data-table-wrap {
+  border-color: #27364a;
+  background: #101a2a;
+}
+
+.theme-dark .data-export-table th {
+  border-bottom-color: #27364a;
+  background: #1d3b66;
+  color: #cfe4ff;
+}
+
+.theme-dark .data-export-table td {
+  border-bottom-color: #27364a;
+  color: #edf4ff;
+}
+
+.theme-dark .data-format-cell,
+.theme-dark .data-export-table strong {
+  color: #edf4ff;
+}
+
+.theme-dark .data-format-cell svg {
+  color: #8bbcff;
+}
+
 .theme-dark .home-insight:hover {
   border-color: #385273;
   background: #1a2a42;
 }
 
 .theme-dark .home-insight span,
-.theme-dark .data-summary-grid small {
+.theme-dark .data-summary-grid small,
+.theme-dark .data-export-table small {
   color: #a9b7c9;
 }
 
@@ -4083,6 +4191,19 @@ h2 {
   .home-insights-panel,
   .data-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .data-export-table {
+    min-width: 430px;
+  }
+
+  .data-export-table th,
+  .data-export-table td {
+    padding: 8px;
+  }
+
+  .data-table-action {
+    min-width: 96px;
   }
 
   .home-metric {

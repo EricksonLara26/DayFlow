@@ -416,43 +416,84 @@ export default function SettingsView({
               </div>
 
               <div className="settings-data-inline">
-                <div className="data-summary-grid">
-                  <span>
-                    <strong>{tasksCount}</strong>
-                    <small>Tareas</small>
-                  </span>
-                  <span>
-                    <strong>{areasCount}</strong>
-                    <small>Bloques</small>
-                  </span>
-                </div>
-
-                <div className="data-actions-grid">
-                  <button className="outline-button" type="button" onClick={() => onExportData("word")}>
-                    <FileText size={17} />
-                    Word
-                    <Download size={15} />
-                  </button>
-                  <button className="outline-button" type="button" onClick={() => onExportData("csv")}>
-                    <Table size={17} />
-                    CSV
-                    <Download size={15} />
-                  </button>
-                  <button
-                    className="primary-button"
-                    type="button"
-                    onClick={() => importInputRef.current?.click()}
-                  >
-                    <Upload size={17} />
-                    Importar
-                  </button>
-                  <input
-                    ref={importInputRef}
-                    className="visually-hidden"
-                    type="file"
-                    accept=".json,.csv,application/json,text/csv"
-                    onChange={handleImportChange}
-                  />
+                <div className="data-table-wrap">
+                  <table className="data-export-table">
+                    <caption className="visually-hidden">Informacion de exportacion de datos</caption>
+                    <thead>
+                      <tr>
+                        <th>Formato</th>
+                        <th>Contenido</th>
+                        <th>Accion</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span className="data-format-cell">
+                            <FileText size={17} />
+                            Word
+                          </span>
+                        </td>
+                        <td>
+                          <strong>{tasksCount} tareas</strong>
+                          <small>{areasCount} bloques</small>
+                        </td>
+                        <td>
+                          <button className="outline-button data-table-action" type="button" onClick={() => onExportData("word")}>
+                            <Download size={15} />
+                            Exportar
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span className="data-format-cell">
+                            <Table size={17} />
+                            CSV
+                          </span>
+                        </td>
+                        <td>
+                          <strong>{tasksCount} tareas</strong>
+                          <small>{areasCount} bloques</small>
+                        </td>
+                        <td>
+                          <button className="outline-button data-table-action" type="button" onClick={() => onExportData("csv")}>
+                            <Download size={15} />
+                            Exportar
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span className="data-format-cell">
+                            <Upload size={17} />
+                            Importar
+                          </span>
+                        </td>
+                        <td>
+                          <strong>JSON / CSV</strong>
+                          <small>Archivo externo</small>
+                        </td>
+                        <td>
+                          <button
+                            className="primary-button data-table-action"
+                            type="button"
+                            onClick={() => importInputRef.current?.click()}
+                          >
+                            <Upload size={17} />
+                            Importar
+                          </button>
+                          <input
+                            ref={importInputRef}
+                            className="visually-hidden"
+                            type="file"
+                            accept=".json,.csv,application/json,text/csv"
+                            onChange={handleImportChange}
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
