@@ -1,730 +1,387 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Trash2 } from "lucide-react";
-import AuthScreen from "./components/auth/AuthScreen";
-import CalendarView from "./components/calendar/CalendarView";
-import HomeView from "./components/home/HomeView";
-import Header from "./components/layout/Header";
-import Sidebar from "./components/layout/Sidebar";
-import SettingsView from "./components/settings/SettingsView";
-import Filters from "./components/tasks/Filters";
-import TaskDetailsModal from "./components/tasks/TaskDetailsModal";
-import TaskForm from "./components/tasks/TaskForm";
-import TaskList from "./components/tasks/TaskList";
-import { defaultTaskForm } from "./constants/taskForm";
-import { initialAreas, initialTasks } from "./data/dayflowData";
-import { getAreaName, toAreaId } from "./utils/areaUtils";
+import { useMemo, useState } from "react";
+import MainLayout from "./components/layout/MainLayout";
+import { TICKET_STATUSES, initialTickets } from "./data/tickets";
 import {
-  buildTasksCsv,
-  buildTasksWordDocument,
-  parseImportedData,
-} from "./utils/dataTransferUtils";
-import {
-  compareDateKeys,
-  getNextRecurrenceDate,
-  getTodayKey,
-  isDateInCurrentWeek,
-} from "./utils/dateUtils";
-import { isRecurringTask, normalizeTask, normalizeTasks } from "./utils/taskUtils";
+  ROLES,
+  getUserFullName,
+  initialUsers,
+  isTechnicianUser,
+} from "./data/users";
+import CreateTicket from "./pages/CreateTicket/CreateTicket";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Login from "./pages/Login/Login";
+import TechnicianProfile from "./pages/TechnicianProfile/TechnicianProfile";
+import TicketDetailPage from "./pages/TicketDetail/TicketDetail";
+import Tickets from "./pages/Tickets/Tickets";
+import Users from "./pages/Users/Users";
+import { getStatusLabel, terminalTicketStatuses } from "./utils/ticketUtils";
 
-const STORAGE_KEY = "dayflow-state-v2";
-const taskFilterIds = ["all", "pendiente", "completada", "today", "week", "overdue", "reminders", "high"];
-const defaultProfile = {
-  username: "Erickson",
-  email: "ericksonburgos26@gmail.com",
-  phone: "",
-};
-
-function readStoredState() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
-  } catch {
-    return null;
-  }
+function getNextId(items) {
+  return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
 }
 
-function saveStoredState(state) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function nowIso() {
+  return new Date().toISOString();
 }
 
-function sanitizeUser(account) {
-  if (!account) {
-    return null;
-  }
-
+function createHistoryItem(ticket, action, user, createdAt = nowIso()) {
   return {
-    name: account.name || account.username || account.email || "Usuario DayFlow",
-    username: account.username || account.name || account.email || "Usuario DayFlow",
-    email: account.email || "",
-    phone: account.phone || "",
+    id: getNextId(ticket.history ?? []),
+    action,
+    userId: user.id,
+    userName: getUserFullName(user),
+    createdAt,
   };
 }
 
-function taskMatchesFilter(task, filter) {
-  const today = getTodayKey();
-
-  if (filter === "pendiente" || filter === "completada") {
-    return task.status === filter;
-  }
-
-  if (filter === "today") {
-    return task.dueDate === today;
-  }
-
-  if (filter === "week") {
-    return isDateInCurrentWeek(task.dueDate);
-  }
-
-  if (filter === "overdue") {
-    return task.status === "pendiente" && compareDateKeys(task.dueDate, today) < 0;
-  }
-
-  if (filter === "reminders") {
-    return task.gmailReminder;
-  }
-
-  if (filter === "high") {
-    return task.priority === "alta";
-  }
-
-  return true;
-}
-
-function getTaskFilterCounts(tasks) {
-  return Object.fromEntries(
-    taskFilterIds.map((filter) => [filter, tasks.filter((task) => taskMatchesFilter(task, filter)).length]),
-  );
-}
-
-function taskToForm(task) {
+function createCommentItem(ticket, message, user, createdAt = nowIso()) {
   return {
-    title: task.title ?? "",
-    description: task.description ?? "",
-    areaId: task.areaId ?? defaultTaskForm.areaId,
-    dueDate: task.dueDate ?? getTodayKey(),
-    startTime: task.startTime ?? "",
-    endTime: task.endTime ?? task.dueTime ?? "",
-    priority: task.priority ?? "media",
-    recurrence: task.recurrence ?? "none",
-    gmailReminder: Boolean(task.gmailReminder),
+    id: getNextId(ticket.comments ?? []),
+    authorId: user.id,
+    authorName: getUserFullName(user),
+    role: user.role,
+    message,
+    createdAt,
   };
 }
 
-function downloadTextFile(filename, content, type) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+function getDefaultView(user) {
+  return isTechnicianUser(user) ? "dashboard" : "tickets";
 }
 
-// App mantiene el estado principal y decide que vista debe renderizarse.
 export default function App() {
-  const storedState = useMemo(() => readStoredState(), []);
-  const [user, setUser] = useState(() => sanitizeUser(storedState?.user));
-  const [activeView, setActiveView] = useState("Inicio");
-  const [areas, setAreas] = useState(() =>
-    Array.isArray(storedState?.areas) && storedState.areas.length ? storedState.areas : initialAreas,
-  );
-  const [tasks, setTasks] = useState(() =>
-    normalizeTasks(Array.isArray(storedState?.tasks) && storedState.tasks.length ? storedState.tasks : initialTasks),
-  );
-  const [query, setQuery] = useState("");
-  const [activeArea, setActiveArea] = useState("all");
-  const [taskFilter, setTaskFilter] = useState("all");
-  const [taskForm, setTaskForm] = useState(() => ({ ...defaultTaskForm, dueDate: getTodayKey() }));
-  const [editingTaskId, setEditingTaskId] = useState(null);
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
-  const [newAreaName, setNewAreaName] = useState("");
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [themeMode, setThemeMode] = useState(storedState?.settings?.themeMode ?? "light");
-  const [timeFormat, setTimeFormat] = useState(storedState?.settings?.timeFormat ?? "automatic");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    storedState?.settings?.notificationsEnabled ?? true,
-  );
-  const [, setAccountPassword] = useState("");
-  const [profileForm, setProfileForm] = useState(() => ({
-    ...defaultProfile,
-    ...(storedState?.profile ?? {}),
-  }));
-  const [dataNotice, setDataNotice] = useState("");
+  const [users, setUsers] = useState(initialUsers);
+  const [tickets, setTickets] = useState(initialTickets);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeView, setActiveView] = useState("dashboard");
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
 
-  useEffect(() => {
-    saveStoredState({
-      user: sanitizeUser(user),
-      areas,
-      tasks,
-      profile: profileForm,
-      settings: {
-        themeMode,
-        timeFormat,
-        notificationsEnabled,
-      },
-    });
-  }, [areas, notificationsEnabled, profileForm, tasks, themeMode, timeFormat, user]);
+  const isTechnician = isTechnicianUser(currentUser);
 
-  // Primero se filtra por bloque para que Inicio, Tareas y Calendario compartan criterio.
-  const areaFilteredTasks = useMemo(
-    () => tasks.filter((task) => activeArea === "all" || task.areaId === activeArea),
-    [activeArea, tasks],
+  const selectedTicket = useMemo(
+    () => tickets.find((ticket) => ticket.id === selectedTicketId),
+    [selectedTicketId, tickets],
   );
 
-  // La busqueda incluye texto de tarea, descripcion, fecha, prioridad y nombre del bloque.
-  const searchedTasks = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return areaFilteredTasks.filter((task) => {
-      const areaName = getAreaName(areas, task.areaId).toLowerCase();
-      const text = `${task.title} ${task.description} ${task.dueDate} ${areaName} ${task.priority} ${task.recurrence}`.toLowerCase();
-
-      return !normalizedQuery || text.includes(normalizedQuery);
-    });
-  }, [areaFilteredTasks, areas, query]);
-
-  const filterCounts = useMemo(() => getTaskFilterCounts(searchedTasks), [searchedTasks]);
-
-  const filteredTasks = useMemo(
-    () => searchedTasks.filter((task) => taskMatchesFilter(task, taskFilter)),
-    [searchedTasks, taskFilter],
-  );
-
-  const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId),
-    [selectedTaskId, tasks],
-  );
-
-  const dueReminderTasks = useMemo(() => {
-    if (!notificationsEnabled) {
-      return [];
-    }
-
-    return tasks
-      .filter((task) => task.gmailReminder && task.status === "pendiente")
-      .sort((first, second) =>
-        `${first.dueDate} ${first.startTime ?? first.dueTime ?? ""}`.localeCompare(
-          `${second.dueDate} ${second.startTime ?? second.dueTime ?? ""}`,
-        ),
-      );
-  }, [notificationsEnabled, tasks]);
-
-  function getFreshTaskForm(overrides = {}) {
-    return {
-      ...defaultTaskForm,
-      areaId: activeArea !== "all" ? activeArea : areas[0]?.id ?? defaultTaskForm.areaId,
-      dueDate: getTodayKey(),
-      ...overrides,
-    };
-  }
-
-  function updateTaskForm(field, value) {
-    setTaskForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function handleLogin(account) {
-    const nextUser = sanitizeUser(account);
-
-    setUser(nextUser);
-    setAccountPassword(account.password || "");
-    setProfileForm((current) => ({
-      ...current,
-      username: nextUser.username || current.username,
-      email: nextUser.email || current.email,
-      phone: nextUser.phone || current.phone,
-    }));
-  }
-
-  function openCreateTask(overrides = {}) {
-    setEditingTaskId(null);
-    setTaskForm(getFreshTaskForm(overrides));
-    setIsTaskFormOpen(true);
-  }
-
-  function openCreateTaskForDate(dateKey) {
-    openCreateTask({
-      dueDate: dateKey,
-      areaId: activeArea !== "all" ? activeArea : areas[0]?.id ?? defaultTaskForm.areaId,
-    });
-  }
-
-  function openEditTask(task) {
-    setEditingTaskId(task.id);
-    setSelectedTaskId(null);
-    setTaskForm(taskToForm(task));
-    setActiveView("Tareas");
-    setIsTaskFormOpen(true);
-  }
-
-  function closeTaskForm() {
-    setIsTaskFormOpen(false);
-    setEditingTaskId(null);
-  }
-
-  function saveTask() {
-    const title = taskForm.title.trim();
-
-    if (!title) {
+  function navigate(view) {
+    if (view === "dashboard" && !isTechnician) {
+      setActiveView("tickets");
       return;
     }
 
-    const taskData = {
-      title,
-      description: taskForm.description.trim() || "Sin descripcion",
-      areaId: taskForm.areaId,
-      dueDate: taskForm.dueDate,
-      startTime: taskForm.startTime,
-      endTime: taskForm.endTime,
-      dueTime: taskForm.endTime,
-      priority: taskForm.priority,
-      recurrence: taskForm.recurrence,
-      gmailReminder: taskForm.gmailReminder,
-    };
-
-    if (editingTaskId) {
-      setTasks((current) =>
-        current.map((task) =>
-          task.id === editingTaskId
-            ? normalizeTask({
-                ...task,
-                ...taskData,
-              })
-            : task,
-        ),
-      );
-    } else {
-      setTasks((current) => [
-        normalizeTask({
-          id: Date.now(),
-          ...taskData,
-          status: "pendiente",
-        }),
-        ...current,
-      ]);
-    }
-
-    setTaskForm(getFreshTaskForm());
-    closeTaskForm();
-    setTaskFilter("all");
-    setActiveView("Tareas");
-  }
-
-  function setTaskStatus(taskId, status) {
-    setTasks((current) => {
-      const originalTask = current.find((task) => task.id === taskId);
-      const shouldCreateNext =
-        originalTask &&
-        status === "completada" &&
-        originalTask.status !== "completada" &&
-        isRecurringTask(originalTask) &&
-        !originalTask.nextOccurrenceCreated;
-
-      const updatedTasks = current.map((task) =>
-        task.id === taskId
-          ? normalizeTask({
-              ...task,
-              status,
-              nextOccurrenceCreated: shouldCreateNext ? true : task.nextOccurrenceCreated,
-            })
-          : task,
-      );
-
-      if (!shouldCreateNext) {
-        return updatedTasks;
-      }
-
-      const nextTask = normalizeTask({
-        ...originalTask,
-        id: Date.now() + 1,
-        dueDate: getNextRecurrenceDate(originalTask.dueDate, originalTask.recurrence),
-        status: "pendiente",
-        nextOccurrenceCreated: false,
-        sourceTaskId: originalTask.sourceTaskId ?? originalTask.id,
-      });
-
-      return [nextTask, ...updatedTasks];
-    });
-  }
-
-  function requestDeleteTask(taskId) {
-    const task = tasks.find((currentTask) => currentTask.id === taskId);
-
-    if (!task) {
+    if ((view === "profile" || view === "users") && !isTechnician) {
+      setActiveView("tickets");
       return;
     }
 
-    setDeleteConfirmation({
-      type: "task",
-      id: task.id,
-      title: task.title,
-    });
+    setSelectedTicketId(null);
+    setActiveView(view);
   }
 
-  function addArea() {
-    const name = newAreaName.trim();
-    if (!name) {
-      return;
-    }
-
-    const baseId = toAreaId(name);
-    let id = baseId;
-    let suffix = 2;
-
-    while (areas.some((area) => area.id === id)) {
-      id = `${baseId}-${suffix}`;
-      suffix += 1;
-    }
-
-    const colors = ["#1f6feb", "#2f9e44", "#7c3f92", "#be3a34", "#315c9f"];
-    const color = colors[areas.length % colors.length];
-
-    setAreas((current) => [...current, { id, name, color }]);
-    setTaskForm((current) => ({ ...current, areaId: id }));
-    setActiveArea(id);
-    setNewAreaName("");
-  }
-
-  function requestDeleteArea(areaId) {
-    const area = areas.find((currentArea) => currentArea.id === areaId);
-
-    if (!area) {
-      return;
-    }
-
-    if (areas.length === 1) {
-      window.alert("Debes mantener al menos un bloque para crear tareas.");
-      return;
-    }
-
-    const relatedTasksCount = tasks.filter((task) => task.areaId === areaId).length;
-    setDeleteConfirmation({
-      type: "area",
-      id: area.id,
-      title: area.name,
-      relatedTasksCount,
-    });
-  }
-
-  function closeDeleteConfirmation() {
-    setDeleteConfirmation(null);
-  }
-
-  function confirmDelete() {
-    if (!deleteConfirmation) {
-      return;
-    }
-
-    if (deleteConfirmation.type === "task") {
-      setTasks((current) => current.filter((task) => task.id !== deleteConfirmation.id));
-      closeDeleteConfirmation();
-      return;
-    }
-
-    const remainingAreas = areas.filter((currentArea) => currentArea.id !== deleteConfirmation.id);
-
-    setAreas(remainingAreas);
-    setTasks((current) => current.filter((task) => task.areaId !== deleteConfirmation.id));
-    setActiveArea((current) => (current === deleteConfirmation.id ? "all" : current));
-    setTaskForm((current) => ({
-      ...current,
-      areaId:
-        current.areaId === deleteConfirmation.id ? remainingAreas[0].id : current.areaId,
-    }));
-    closeDeleteConfirmation();
-  }
-
-  // Elegir un bloque desde la barra lateral tambien lleva a la vista de tareas.
-  function handleSidebarAreaChange(areaId) {
-    setActiveArea(areaId);
-    setQuery("");
-    setTaskFilter("all");
-    setActiveView("Tareas");
-  }
-
-  function openTasksForArea(areaId) {
-    setActiveArea(areaId);
-    setQuery("");
-    setTaskFilter("all");
-    setActiveView("Tareas");
-  }
-
-  function openTasksWithFilter(filter) {
-    setQuery("");
-    setTaskFilter(filter);
-    setActiveView("Tareas");
-  }
-
-  function openTaskDirectly(task) {
-    setActiveArea(task.areaId);
-    setQuery("");
-    setTaskFilter("all");
-    setSelectedTaskId(task.id);
-    setIsNotificationsOpen(false);
-    setActiveView("Tareas");
-  }
-
-  function updateProfileField(field, value) {
-    setProfileForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function saveProfile() {
-    setUser((current) => ({
-      ...(current ?? {}),
-      name: profileForm.username,
-      username: profileForm.username,
-      email: profileForm.email,
-      phone: profileForm.phone,
-    }));
-  }
-
-  function moveCalendarMonth(offset) {
-    setCalendarMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() + offset, 1),
-    );
-  }
-
-  function exportData(format) {
-    const dateKey = getTodayKey();
-
-    if (format === "csv") {
-      downloadTextFile(
-        `dayflow-tareas-${dateKey}.csv`,
-        buildTasksCsv(tasks, areas),
-        "text/csv;charset=utf-8",
-      );
-      setDataNotice("CSV exportado correctamente.");
-      return;
-    }
-
-    downloadTextFile(
-      `dayflow-reporte-${dateKey}.doc`,
-      `\ufeff${buildTasksWordDocument(tasks, areas, profileForm)}`,
-      "application/msword;charset=utf-8",
-    );
-    setDataNotice("Documento Word exportado correctamente.");
-  }
-
-  function importData(file) {
-    if (!file) {
-      return;
-    }
-
-    const shouldImport = window.confirm(
-      "Importar este archivo reemplazara tus tareas y bloques actuales. Continuar?",
+  function handleLogin({ password, userType, username }) {
+    const normalizedUsername = username.trim().toLowerCase();
+    const matchedUser = users.find(
+      (user) => user.username.toLowerCase() === normalizedUsername && user.password === password,
     );
 
-    if (!shouldImport) {
+    if (!matchedUser) {
+      return { ok: false, message: "Usuario o contrasena incorrectos." };
+    }
+
+    const matchesSelectedRole =
+      userType === ROLES.EMPLOYEE ? matchedUser.role === ROLES.EMPLOYEE : isTechnicianUser(matchedUser);
+
+    if (!matchesSelectedRole) {
+      return { ok: false, message: "El usuario no pertenece al tipo seleccionado." };
+    }
+
+    setCurrentUser(matchedUser);
+    setSelectedTicketId(null);
+    setActiveView(getDefaultView(matchedUser));
+
+    return { ok: true };
+  }
+
+  function handleLogout() {
+    setCurrentUser(null);
+    setSelectedTicketId(null);
+    setActiveView("dashboard");
+  }
+
+  function openTicket(ticketId) {
+    setSelectedTicketId(ticketId);
+    setActiveView("ticket-detail");
+  }
+
+  function goBackFromTicket() {
+    setSelectedTicketId(null);
+    setActiveView(isTechnician ? "tickets" : "tickets");
+  }
+
+  function canTakeTicket(ticket) {
+    return Boolean(isTechnician && ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo);
+  }
+
+  function canManageTicket(ticket) {
+    if (!isTechnician || terminalTicketStatuses.includes(ticket.status)) {
+      return false;
+    }
+
+    return !ticket.assignedTo || ticket.assignedTo === currentUser.id;
+  }
+
+  function canCommentTicket(ticket) {
+    if (!currentUser) {
+      return false;
+    }
+
+    return isTechnician || ticket.createdBy === currentUser.id;
+  }
+
+  function takeTicket(ticketId) {
+    if (!currentUser || !isTechnician) {
       return;
     }
 
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      try {
-        const importedData = parseImportedData(String(reader.result || ""), file.name, areas);
-        const nextAreas = importedData.areas?.length ? importedData.areas : initialAreas;
-
-        setAreas(nextAreas);
-        setTasks(normalizeTasks(importedData.tasks));
-        setActiveArea("all");
-        setTaskFilter("all");
-        setQuery("");
-
-        if (importedData.profile) {
-          setProfileForm((current) => ({ ...current, ...importedData.profile }));
+    const timestamp = nowIso();
+    setTickets((currentTickets) =>
+      currentTickets.map((ticket) => {
+        if (ticket.id !== ticketId || !canTakeTicket(ticket)) {
+          return ticket;
         }
 
-        if (importedData.settings) {
-          setThemeMode(importedData.settings.themeMode ?? themeMode);
-          setTimeFormat(importedData.settings.timeFormat ?? timeFormat);
-          setNotificationsEnabled(importedData.settings.notificationsEnabled ?? notificationsEnabled);
-        }
+        const assignedName = getUserFullName(currentUser);
+        const nextHistoryId = getNextId(ticket.history);
 
-        setTaskForm((current) => ({ ...current, areaId: nextAreas[0]?.id ?? defaultTaskForm.areaId }));
-        setDataNotice(`Importadas ${importedData.tasks.length} tarea(s).`);
-      } catch (error) {
-        setDataNotice(error instanceof Error ? error.message : "No se pudo importar el archivo.");
-      }
-    };
-
-    reader.onerror = () => {
-      setDataNotice("No se pudo leer el archivo.");
-    };
-
-    reader.readAsText(file);
+        return {
+          ...ticket,
+          assignedTo: currentUser.id,
+          assignedToName: assignedName,
+          status: TICKET_STATUSES.IN_PROGRESS,
+          updatedAt: timestamp,
+          history: [
+            ...ticket.history,
+            {
+              id: nextHistoryId,
+              action: `Ticket tomado por ${assignedName}`,
+              userId: currentUser.id,
+              userName: assignedName,
+              createdAt: timestamp,
+            },
+            {
+              id: nextHistoryId + 1,
+              action: "Estado cambiado a En proceso",
+              userId: currentUser.id,
+              userName: assignedName,
+              createdAt: timestamp,
+            },
+          ],
+        };
+      }),
+    );
   }
 
-  if (!user) {
-    return <AuthScreen onLogin={handleLogin} />;
+  function changeTicketStatus(ticketId, nextStatus) {
+    if (!currentUser || !isTechnician) {
+      return;
+    }
+
+    const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
+
+    if (!ticket || !canManageTicket(ticket)) {
+      return;
+    }
+
+    const timestamp = nowIso();
+    const shouldClose = nextStatus === TICKET_STATUSES.COMPLETED || nextStatus === TICKET_STATUSES.DISMISSED;
+    const assignedTo = ticket.assignedTo ?? currentUser.id;
+    const assignedToName = ticket.assignedToName ?? getUserFullName(currentUser);
+    const wasTerminal = terminalTicketStatuses.includes(ticket.status);
+    const shouldIncrementMetric = shouldClose && !wasTerminal;
+    const action =
+      nextStatus === TICKET_STATUSES.COMPLETED
+        ? "Ticket completado"
+        : nextStatus === TICKET_STATUSES.DISMISSED
+          ? "Ticket desestimado por area tecnica"
+          : `Estado cambiado a ${getStatusLabel(nextStatus)}`;
+
+    setTickets((currentTickets) =>
+      currentTickets.map((currentTicket) => {
+        if (currentTicket.id !== ticketId) {
+          return currentTicket;
+        }
+
+        return {
+          ...currentTicket,
+          assignedTo,
+          assignedToName,
+          status: nextStatus,
+          updatedAt: timestamp,
+          completedAt: shouldClose ? timestamp : currentTicket.completedAt,
+          history: [...currentTicket.history, createHistoryItem(currentTicket, action, currentUser, timestamp)],
+        };
+      }),
+    );
+
+    if (shouldIncrementMetric) {
+      const metricField =
+        nextStatus === TICKET_STATUSES.COMPLETED ? "completedTickets" : "dismissedTickets";
+
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          user.id === assignedTo ? { ...user, [metricField]: (user[metricField] ?? 0) + 1 } : user,
+        ),
+      );
+
+      if (currentUser.id === assignedTo) {
+        setCurrentUser((user) =>
+          user ? { ...user, [metricField]: (user[metricField] ?? 0) + 1 } : user,
+        );
+      }
+    }
+  }
+
+  function addComment(ticketId, message) {
+    if (!currentUser) {
+      return;
+    }
+
+    const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
+
+    if (!ticket || !canCommentTicket(ticket)) {
+      return;
+    }
+
+    const timestamp = nowIso();
+    setTickets((currentTickets) =>
+      currentTickets.map((currentTicket) => {
+        if (currentTicket.id !== ticketId) {
+          return currentTicket;
+        }
+
+        return {
+          ...currentTicket,
+          comments: [...currentTicket.comments, createCommentItem(currentTicket, message, currentUser, timestamp)],
+          history: [
+            ...currentTicket.history,
+            createHistoryItem(
+              currentTicket,
+              `Comentario agregado por ${getUserFullName(currentUser)}`,
+              currentUser,
+              timestamp,
+            ),
+          ],
+          updatedAt: timestamp,
+        };
+      }),
+    );
+  }
+
+  function createTicket(form) {
+    if (!currentUser) {
+      return;
+    }
+
+    const timestamp = nowIso();
+    const requester = form.requester ?? currentUser;
+    const requesterName = getUserFullName(requester);
+    const nextTicket = {
+      id: getNextId(tickets),
+      title: form.title,
+      description: form.description,
+      category: form.category,
+      status: TICKET_STATUSES.OPEN,
+      priority: form.priority,
+      createdBy: requester.id,
+      createdByName: requesterName,
+      assignedTo: null,
+      assignedToName: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dueDate: form.dueDate,
+      completedAt: null,
+      comments: [],
+      history: [
+        {
+          id: 1,
+          action: `Ticket creado por ${requesterName}`,
+          userId: requester.id,
+          userName: requesterName,
+          createdAt: timestamp,
+        },
+      ],
+    };
+
+    setTickets((currentTickets) => [nextTicket, ...currentTickets]);
+    setSelectedTicketId(nextTicket.id);
+    setActiveView("ticket-detail");
+  }
+
+  function createUser(form) {
+    const nextUser = {
+      id: getNextId(users),
+      firstName: form.firstName,
+      lastName: form.lastName,
+      username: form.username,
+      email: form.email,
+      password: form.password,
+      role: ROLES.EMPLOYEE,
+    };
+
+    setUsers((currentUsers) => [...currentUsers, nextUser]);
+  }
+
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
-    <div className={`app-shell theme-${themeMode}`}>
-      <Sidebar
-        activeView={activeView}
-        onChangeView={setActiveView}
-        areas={areas}
-        activeArea={activeArea}
-        onAreaChange={handleSidebarAreaChange}
-        newAreaName={newAreaName}
-        onNewAreaName={setNewAreaName}
-        onAddArea={addArea}
-        onDeleteArea={requestDeleteArea}
-        user={user}
-        onLogout={() => setUser(null)}
-      />
-      <main className="main-content">
-        {activeView !== "Ajustes" && (
-          <Header
-            query={query}
-            onQueryChange={setQuery}
-            onCreateTask={() => {
-              setActiveView("Tareas");
-              openCreateTask();
-            }}
-            alertsCount={dueReminderTasks.length}
-            reminders={dueReminderTasks}
-            onOpenReminder={openTaskDirectly}
-            isNotificationsOpen={isNotificationsOpen}
-            onToggleNotifications={() => setIsNotificationsOpen((current) => !current)}
-            showSearch={activeView === "Tareas"}
-            timeFormat={timeFormat}
-          />
-        )}
+    <MainLayout
+      activeView={activeView}
+      currentUser={currentUser}
+      onCreateTicket={() => navigate("create-ticket")}
+      onLogout={handleLogout}
+      onNavigate={navigate}
+    >
+      {activeView === "dashboard" && isTechnician ? (
+        <Dashboard onOpenTicket={openTicket} tickets={tickets} users={users} />
+      ) : null}
 
-        {activeView === "Inicio" && (
-          <HomeView
-            tasks={tasks}
-            areas={areas}
-            reminders={dueReminderTasks}
-            onChangeView={setActiveView}
-            onSelectArea={openTasksForArea}
-            onApplyFilter={openTasksWithFilter}
-            onOpenTask={openTaskDirectly}
-            timeFormat={timeFormat}
-          />
-        )}
-
-        {activeView === "Tareas" && (
-          <>
-            <Filters activeFilter={taskFilter} onFilterChange={setTaskFilter} counts={filterCounts} />
-
-            <div className="content-stack">
-              <TaskList
-                tasks={filteredTasks}
-                areas={areas}
-                onOpenTask={(task) => setSelectedTaskId(task.id)}
-                timeFormat={timeFormat}
-              />
-            </div>
-          </>
-        )}
-
-        {activeView === "Calendario" && (
-          <CalendarView
-            tasks={areaFilteredTasks}
-            areas={areas}
-            monthDate={calendarMonth}
-            onPreviousMonth={() => moveCalendarMonth(-1)}
-            onNextMonth={() => moveCalendarMonth(1)}
-            onToday={() =>
-              setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
-            }
-            onCreateTaskOnDate={openCreateTaskForDate}
-            onOpenTask={openTaskDirectly}
-            timeFormat={timeFormat}
-          />
-        )}
-
-        {activeView === "Ajustes" && (
-          <SettingsView
-            themeMode={themeMode}
-            onThemeModeChange={setThemeMode}
-            profile={profileForm}
-            onProfileChange={updateProfileField}
-            onSaveProfile={saveProfile}
-            notificationsEnabled={notificationsEnabled}
-            onNotificationsEnabledChange={setNotificationsEnabled}
-            onPasswordChange={setAccountPassword}
-            timeFormat={timeFormat}
-            onTimeFormatChange={setTimeFormat}
-            tasksCount={tasks.length}
-            areasCount={areas.length}
-            onExportData={exportData}
-            onImportData={importData}
-            dataNotice={dataNotice}
-          />
-        )}
-      </main>
-
-      {isTaskFormOpen && (
-        <div className="task-modal-backdrop" role="dialog" aria-modal="true">
-          <TaskForm
-            areas={areas}
-            form={taskForm}
-            isEditing={Boolean(editingTaskId)}
-            onChange={updateTaskForm}
-            onSubmit={saveTask}
-            onClose={closeTaskForm}
-          />
-        </div>
-      )}
-
-      {selectedTask && (
-        <TaskDetailsModal
-          task={selectedTask}
-          areas={areas}
-          timeFormat={timeFormat}
-          onClose={() => setSelectedTaskId(null)}
-          onSetStatus={setTaskStatus}
-          onDeleteTask={requestDeleteTask}
-          onEditTask={openEditTask}
+      {activeView === "tickets" ? (
+        <Tickets
+          canTakeTicket={canTakeTicket}
+          currentUser={currentUser}
+          isTechnician={isTechnician}
+          onOpenTicket={openTicket}
+          onTakeTicket={takeTicket}
+          tickets={tickets}
         />
-      )}
+      ) : null}
 
-      {deleteConfirmation && (
-        <div className="confirmation-backdrop" role="dialog" aria-modal="true">
-          <section className="panel confirmation-dialog" aria-labelledby="delete-confirmation-title">
-            <span className="confirmation-icon">
-              <AlertTriangle size={22} />
-            </span>
-            <div className="confirmation-copy">
-              <p className="eyebrow">
-                {deleteConfirmation.type === "area" ? "Eliminar bloque" : "Eliminar tarea"}
-              </p>
-              <h2 id="delete-confirmation-title">
-                {deleteConfirmation.type === "area"
-                  ? `Eliminar "${deleteConfirmation.title}"`
-                  : `Eliminar "${deleteConfirmation.title}"`}
-              </h2>
-              <p>
-                {deleteConfirmation.type === "area"
-                  ? `Tambien se eliminaran ${deleteConfirmation.relatedTasksCount} tarea(s) dentro de este bloque.`
-                  : "Esta tarea saldra de tu lista y no se podra recuperar desde la app."}
-              </p>
-            </div>
-            <div className="confirmation-actions">
-              <button className="outline-button" type="button" onClick={closeDeleteConfirmation}>
-                Cancelar
-              </button>
-              <button className="danger-button" type="button" onClick={confirmDelete}>
-                <Trash2 size={17} />
-                Eliminar
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
+      {activeView === "ticket-detail" ? (
+        <TicketDetailPage
+          canCommentTicket={canCommentTicket}
+          canManageTicket={canManageTicket}
+          canTakeTicket={canTakeTicket}
+          onAddComment={addComment}
+          onBack={goBackFromTicket}
+          onChangeStatus={changeTicketStatus}
+          onTakeTicket={takeTicket}
+          ticket={selectedTicket}
+        />
+      ) : null}
+
+      {activeView === "create-ticket" ? (
+        <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} users={users} />
+      ) : null}
+
+      {activeView === "profile" && isTechnician ? (
+        <TechnicianProfile currentUser={currentUser} onOpenTicket={openTicket} tickets={tickets} />
+      ) : null}
+
+      {activeView === "users" && isTechnician ? (
+        <Users onCreateUser={createUser} users={users} />
+      ) : null}
+    </MainLayout>
   );
 }

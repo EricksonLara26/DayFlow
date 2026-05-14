@@ -1,0 +1,72 @@
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 28px;
+  background:
+    linear-gradient(135deg, rgba(245, 249, 255, 0.95), rgba(235, 240, 247, 0.92)),
+    #eef3f8;
+}
+
+.login-card {
+  display: grid;
+  gap: 24px;
+  width: min(460px, 100%);
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-brand,
+.login-brand div {
+  display: flex;
+  align-items: center;
+}
+
+.login-brand {
+  gap: 12px;
+}
+
+.login-brand img {
+  width: 48px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.login-brand div {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.login-brand strong {
+  font-size: 1.2rem;
+}
+
+.login-copy {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.login-form,
+.login-hints {
+  display: grid;
+  gap: 14px;
+}
+
+.login-hints {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.login-hints span {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}

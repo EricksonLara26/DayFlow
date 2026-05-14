@@ -1,4 +1,4 @@
-// Normaliza una fecha del calendario al formato YYYY-MM-DD usado por las tareas.
+// Normaliza una fecha al formato YYYY-MM-DD usado por los tickets.
 export function toDateKey(year, monthIndex, day) {
   return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -90,4 +90,50 @@ export function getNextRecurrenceDate(dateKey, recurrence) {
   }
 
   return dateKey;
+}
+
+export function formatDate(dateValue, options = {}) {
+  if (!dateValue) {
+    return "Sin fecha";
+  }
+
+  const date = typeof dateValue === "string" && dateValue.length === 10 ? parseDateKey(dateValue) : new Date(dateValue);
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return "Fecha invalida";
+  }
+
+  return new Intl.DateTimeFormat("es-DO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    ...options,
+  }).format(date);
+}
+
+export function formatDateTime(dateValue) {
+  return formatDate(dateValue, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function getDaysUntil(dateKey) {
+  const target = parseDateKey(dateKey);
+
+  if (!target) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+}
+
+export function isWithinNextDays(dateKey, days) {
+  const daysUntil = getDaysUntil(dateKey);
+
+  return daysUntil !== null && daysUntil >= 0 && daysUntil <= days;
 }

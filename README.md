@@ -1,61 +1,195 @@
 # DayFlow
 
-Instrucciones rapidas para ejecutar la app en el navegador.
+DayFlow es una aplicacion frontend construida con React y Vite para la gestion interna de tickets de soporte tecnico.
+
+El sistema permite simular el flujo principal de soporte:
+
+- Inicio de sesion por rol.
+- Creacion de solicitudes.
+- Gestion de tickets por tecnicos.
+- Comentarios e historial de actividad.
+- Dashboard con metricas de rendimiento.
+- Gestion de usuarios empleados.
 
 ## Requisitos
 
-- Tener Node.js instalado.
-- Estar ubicado en la carpeta del proyecto:
+Antes de ejecutar el proyecto necesitas:
+
+- Node.js instalado.
+- Corepack disponible.
+- Acceso a una terminal.
+- Estar ubicado en la carpeta del proyecto.
 
 ```bash
 cd DayFlow
 ```
 
-## Ejecutar en modo desarrollo
+## Preparar pnpm
 
-1. Instala las dependencias si es la primera vez que abres el proyecto:
+El proyecto usa pnpm como gestor de paquetes.
 
-```bash
-npm install
-```
-
-2. Inicia el servidor local:
+Para verificar que pnpm esta disponible mediante Corepack:
 
 ```bash
-npm run dev
+corepack pnpm --version
 ```
 
-3. Abre en el navegador la direccion que muestre la terminal. Normalmente sera:
+Si tienes pnpm habilitado directamente en tu terminal, tambien puedes verificarlo con:
+
+```bash
+pnpm --version
+```
+
+## Instalar dependencias
+
+Instala las dependencias del proyecto con:
+
+```bash
+corepack pnpm install
+```
+
+Si tu terminal reconoce el comando directo:
+
+```bash
+pnpm install
+```
+
+Esto crea la carpeta `node_modules` y usa el archivo `pnpm-lock.yaml` como lockfile del proyecto.
+
+## Ejecutar en desarrollo
+
+Para iniciar la aplicacion en modo desarrollo:
+
+```bash
+corepack pnpm dev
+```
+
+O con el comando directo:
+
+```bash
+pnpm dev
+```
+
+La terminal mostrara una URL local. Normalmente sera:
 
 ```text
 http://127.0.0.1:5173/
 ```
 
-Si ese puerto esta ocupado, Vite usara otro parecido, por ejemplo `5174` o `5175`.
-Si estas usando un entorno remoto o un preview del editor, usa la URL reenviada por el editor.
+Abre esa direccion en el navegador.
 
-## Probar la version final
+Mientras el servidor este activo, la aplicacion se actualizara automaticamente cuando guardes cambios.
 
-Para crear la version optimizada de la app:
+Para detener el servidor:
 
-```bash
-npm run build
+```text
+Ctrl + C
 ```
 
-Luego puedes verla localmente con:
+## Compilar para produccion
+
+Para generar la version optimizada:
 
 ```bash
-npm run preview
+corepack pnpm build
 ```
 
-Abre la direccion que aparezca en la terminal, normalmente:
+O:
+
+```bash
+pnpm build
+```
+
+La salida se genera en la carpeta:
+
+```text
+dist/
+```
+
+## Probar la version compilada
+
+Despues de compilar, puedes levantar una vista local de la version final:
+
+```bash
+corepack pnpm preview
+```
+
+O:
+
+```bash
+pnpm preview
+```
+
+La terminal mostrara una URL similar a:
 
 ```text
 http://127.0.0.1:4173/
 ```
 
+## Comandos principales
+
+| Comando | Uso |
+| --- | --- |
+| `corepack pnpm install` | Instala dependencias. |
+| `corepack pnpm dev` | Ejecuta la aplicacion en desarrollo. |
+| `corepack pnpm build` | Compila la aplicacion para produccion. |
+| `corepack pnpm preview` | Prueba localmente la version compilada. |
+
+Si pnpm esta habilitado directamente, puedes usar las versiones cortas:
+
+```bash
+pnpm install
+pnpm dev
+pnpm build
+pnpm preview
+```
+
+## Usuarios de prueba
+
+Admin / tecnico:
+
+```text
+usuario: elara
+contrasena: 1234
+```
+
+Empleado:
+
+```text
+usuario: jperez
+contrasena: 1234
+```
+
+## Estructura principal
+
+```text
+src/
+  components/
+  data/
+  pages/
+  styles/
+  utils/
+  App.jsx
+  main.jsx
+```
+
 ## Notas utiles
 
-- Mientras `npm run dev` este abierto, la app se actualiza automaticamente al guardar cambios.
-- Para detener el servidor, presiona `Ctrl + C` en la terminal.
-- No abras directamente `src/main.jsx`; la app debe ejecutarse con Vite usando `npm run dev` o `npm run preview`.
+- Ejecuta la aplicacion con Vite usando los scripts del proyecto.
+- No abras directamente archivos dentro de `src/`.
+- Manten versionado `pnpm-lock.yaml`.
+- Si necesitas reinstalar dependencias desde cero, elimina `node_modules` y vuelve a ejecutar la instalacion.
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force node_modules
+corepack pnpm install
+```
+
+macOS o Linux:
+
+```bash
+rm -rf node_modules
+corepack pnpm install
+```

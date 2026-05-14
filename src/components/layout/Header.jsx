@@ -1,80 +1,53 @@
-import { Bell, Plus, Search } from "lucide-react";
-import { getTaskTimeRange } from "../../utils/timeUtils";
+import { CalendarClock, PlusCircle } from "lucide-react";
+import Button from "../common/Button";
+import { getRoleLabel } from "../../data/users";
 
-// Encabezado superior con busqueda, recordatorios y acceso rapido para crear tareas.
-export default function Header({
-  query,
-  onQueryChange,
-  onCreateTask,
-  alertsCount,
-  reminders,
-  onOpenReminder,
-  isNotificationsOpen,
-  onToggleNotifications,
-  showSearch,
-  timeFormat,
-}) {
+const viewTitles = {
+  dashboard: {
+    eyebrow: "Dashboard administrativo",
+    title: "Desempeno del equipo tecnico",
+  },
+  tickets: {
+    eyebrow: "Solicitudes",
+    title: "Gestion de tickets",
+  },
+  "ticket-detail": {
+    eyebrow: "Detalle",
+    title: "Seguimiento de solicitud",
+  },
+  "create-ticket": {
+    eyebrow: "Nueva solicitud",
+    title: "Crear ticket de soporte",
+  },
+  profile: {
+    eyebrow: "Perfil del tecnico",
+    title: "Metricas y rendimiento",
+  },
+  users: {
+    eyebrow: "Gestión de Usuarios",
+    title: "Administracion de empleados",
+  },
+};
+
+export default function Header({ activeView, currentUser, onCreateTicket }) {
+  const title = viewTitles[activeView] ?? viewTitles.dashboard;
+
   return (
-    <header className={showSearch ? "topbar task-topbar" : "topbar task-topbar topbar-actions-only"}>
-      {showSearch && (
-        <label className="search">
-          <Search size={18} />
-          <input
-            type="search"
-            placeholder="Buscar tarea, área o fecha"
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-          />
-        </label>
-      )}
-      <div className="topbar-actions">
-        <div className="notification-wrap">
-          <button
-            className={
-              isNotificationsOpen
-                ? "icon-button notification-button notification-button-active"
-                : "icon-button notification-button"
-            }
-            aria-label="Mostrar recordatorios"
-            aria-expanded={isNotificationsOpen}
-            aria-pressed={isNotificationsOpen}
-            onClick={onToggleNotifications}
-          >
-            <Bell size={19} />
-            {alertsCount > 0 && <span className="badge">{alertsCount}</span>}
-          </button>
-          {isNotificationsOpen && (
-            <section className="notification-menu" aria-label="Recordatorios">
-              <div className="notification-header">
-                <strong>Recordatorios</strong>
-                <span>{alertsCount}</span>
-              </div>
-              <div className="notification-list">
-                {reminders.map((task) => (
-                  <button
-                    className="notification-item"
-                    key={task.id}
-                    type="button"
-                    onClick={() => onOpenReminder(task)}
-                  >
-                    <time>{getTaskTimeRange(task, timeFormat)}</time>
-                    <div>
-                      <strong>{task.title}</strong>
-                      <span>{task.dueDate}</span>
-                    </div>
-                  </button>
-                ))}
-                {reminders.length === 0 && (
-                  <p className="empty-state">No hay recordatorios pendientes.</p>
-                )}
-              </div>
-            </section>
-          )}
-        </div>
-        <button className="primary-button" onClick={onCreateTask}>
-          <Plus size={18} />
-          Nueva tarea
-        </button>
+    <header className="top-header">
+      <div>
+        <p className="eyebrow">{title.eyebrow}</p>
+        <h1>{title.title}</h1>
+      </div>
+      <div className="header-actions">
+        <span className="session-pill">
+          <CalendarClock size={16} aria-hidden="true" />
+          {getRoleLabel(currentUser.role)}
+        </span>
+        {activeView !== "create-ticket" ? (
+          <Button icon={PlusCircle} onClick={onCreateTicket}>
+            Crear solicitud
+          </Button>
+        ) : null}
       </div>
     </header>
   );

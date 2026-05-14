@@ -1,126 +1,78 @@
 import {
-  CalendarDays,
-  LayoutDashboard,
-  ListTodo,
+  BarChart3,
+  ClipboardList,
   LogOut,
-  Plus,
-  Settings,
-  Trash2,
+  Users,
 } from "lucide-react";
+import { getRoleLabel, isTechnicianUser } from "../../data/users";
 
-// Barra lateral: navegacion principal, selector de bloques y acciones de sesion.
-export default function Sidebar({
-  activeView,
-  onChangeView,
-  areas,
-  activeArea,
-  onAreaChange,
-  newAreaName,
-  onNewAreaName,
-  onAddArea,
-  onDeleteArea,
-  user,
-  onLogout,
-}) {
-  const userLabel = user.email || user.username || user.name;
-  const navItems = [
-    { label: "Inicio", icon: LayoutDashboard },
-    { label: "Tareas", icon: ListTodo },
-    { label: "Calendario", icon: CalendarDays },
-  ];
+const adminItems = [
+  { id: "dashboard", label: "Inicio", icon: BarChart3 },
+  { id: "tickets", label: "Solicitudes", icon: ClipboardList },
+  { id: "users", label: "Gestión de Usuarios", icon: Users },
+];
+
+const employeeItems = [
+  { id: "tickets", label: "Mis solicitudes", icon: ClipboardList },
+];
+
+export default function Sidebar({ activeView, currentUser, onNavigate, onLogout }) {
+  const isTechnician = isTechnicianUser(currentUser);
+  const items = isTechnician ? adminItems : employeeItems;
+  const profileContent = (
+    <>
+      <div className="avatar">{currentUser.firstName.slice(0, 1)}{currentUser.lastName.slice(0, 1)}</div>
+      <div>
+        <strong>{currentUser.firstName} {currentUser.lastName}</strong>
+        <span>{getRoleLabel(currentUser.role)}</span>
+      </div>
+    </>
+  );
 
   return (
-    <aside className="sidebar" aria-label="Navegación principal">
-      <div className="brand">
-        <img className="brand-logo" src="/dayflow-mark.png" alt="DayFlow" />
+    <aside className="sidebar" aria-label="Navegacion principal">
+      <div className="brand-block">
+        <img src="/dayflow-mark.png" alt="" className="brand-mark" />
         <div>
-          <strong>
-            <span className="brand-name-dark">Day</span>
-            <span className="brand-name-blue">Flow</span>
-          </strong>
-          <span>{userLabel}</span>
+          <strong>DayFlow</strong>
+          <span>Soporte interno</span>
         </div>
       </div>
 
-      <nav className="nav-list">
-        {navItems.map((item) => (
-          <button
-            className={activeView === item.label ? "nav-item active" : "nav-item"}
-            key={item.label}
-            onClick={() => onChangeView(item.label)}
-          >
-            <item.icon size={18} />
-            <span>{item.label}</span>
-          </button>
-        ))}
+      <nav className="sidebar-nav">
+        {items.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <button
+              className={`sidebar-link ${activeView === item.id ? "active" : ""}`}
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+            >
+              <Icon size={18} aria-hidden="true" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
-      <div className="area-switcher">
-        <p className="eyebrow">Bloques</p>
+      {isTechnician ? (
         <button
-          className={
-            activeArea === "all"
-              ? "area-chip all-tasks-button active"
-              : "area-chip all-tasks-button"
-          }
-          onClick={() => onAreaChange("all")}
-          aria-label="Ver todas las tareas"
+          className={`sidebar-profile sidebar-profile-button ${activeView === "profile" ? "active" : ""}`}
+          type="button"
+          onClick={() => onNavigate("profile")}
         >
-          <ListTodo size={17} />
-          <span>Todas</span>
+          {profileContent}
         </button>
-        {areas.map((area) => (
-          <div className="area-row" key={area.id}>
-            <button
-              className={activeArea === area.id ? "area-chip active" : "area-chip"}
-              onClick={() => onAreaChange(area.id)}
-            >
-              <span className="area-dot" style={{ background: area.color }} />
-              <span>{area.name}</span>
-            </button>
-            <button
-              className="delete-area-button"
-              type="button"
-              aria-label={`Eliminar bloque ${area.name}`}
-              title={`Eliminar bloque ${area.name}`}
-              onClick={() => onDeleteArea(area.id)}
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-        <form
-          className="sidebar-create-block"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onAddArea();
-          }}
-        >
-          <input
-            value={newAreaName}
-            onChange={(event) => onNewAreaName(event.target.value)}
-            placeholder="Nuevo bloque"
-            aria-label="Nombre del nuevo bloque"
-          />
-          <button className="icon-button" type="submit" aria-label="Crear bloque">
-            <Plus size={17} />
-          </button>
-        </form>
-      </div>
+      ) : (
+        <div className="sidebar-profile">{profileContent}</div>
+      )}
 
-      <div className="sidebar-footer">
-        <button
-          className={activeView === "Ajustes" ? "nav-item active" : "nav-item"}
-          onClick={() => onChangeView("Ajustes")}
-        >
-          <Settings size={18} />
-          <span>Ajustes</span>
-        </button>
-        <button className="nav-item logout-button" onClick={onLogout}>
-          <LogOut size={18} />
-          <span>Salir</span>
-        </button>
-      </div>
+      <button className="sidebar-link logout-link" type="button" onClick={onLogout}>
+        <LogOut size={18} aria-hidden="true" />
+        <span>Cerrar sesion</span>
+      </button>
     </aside>
   );
 }
