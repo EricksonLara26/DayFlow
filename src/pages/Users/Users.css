@@ -55,11 +55,76 @@
   z-index: 1;
 }
 
-.user-delete-button {
+.user-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.users-layout .user-icon-button {
   width: 40px;
   min-width: 40px;
+  flex: 0 0 40px;
   padding: 0;
+}
+
+.user-edit-button {
+  color: var(--blue);
+}
+
+.user-edit-button:hover {
+  border-color: #bdd2f7;
+  background: var(--blue-soft);
+}
+
+.user-save-button {
+  color: var(--green);
+}
+
+.user-save-button:hover {
+  border-color: #bfe5d1;
+  background: #e8f7ef;
+}
+
+.user-cancel-button {
+  color: var(--muted);
+}
+
+.user-cancel-button:hover {
+  background: var(--surface-muted);
+}
+
+.user-delete-button {
   color: var(--red);
+}
+
+.email-edit-cell {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.email-edit-cell input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  outline: 0;
+}
+
+.email-edit-cell input:focus {
+  border-color: #9bbcf5;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.email-edit-cell span {
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .user-delete-button:hover {
@@ -70,6 +135,11 @@
 .theme-dark .user-delete-button:hover {
   border-color: rgba(248, 113, 113, 0.32);
   background: rgba(248, 113, 113, 0.14);
+}
+
+.theme-dark .user-save-button:hover {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.14);
 }
 
 @media (max-width: 1180px) {
@@ -100,7 +170,7 @@
     grid-column: auto;
   }
 
-  .user-delete-button {
+  .users-layout .user-icon-button {
     width: 40px;
   }
 }

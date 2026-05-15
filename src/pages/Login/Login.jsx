@@ -1,13 +1,14 @@
 import { LockKeyhole, UserRound } from "lucide-react";
 import { useState } from "react";
 import Button from "../../components/common/Button";
+import { ROLES } from "../../data/users";
 import "./Login.css";
 
 export default function Login({ onLogin }) {
   const [form, setForm] = useState({
     username: "",
     password: "",
-    userType: "ADMIN",
+    userType: ROLES.EMPLOYEE,
   });
   const [error, setError] = useState("");
 
@@ -75,8 +76,9 @@ export default function Login({ onLogin }) {
           <label className="field">
             <span>Tipo de usuario</span>
             <select value={form.userType} onChange={(event) => updateField("userType", event.target.value)}>
-              <option value="ADMIN">Admin/Tecnico</option>
-              <option value="EMPLOYEE">Empleado</option>
+              <option value={ROLES.EMPLOYEE}>Empleado</option>
+              <option value={ROLES.TECHNICIAN}>Tecnico</option>
+              <option value={ROLES.SUPERVISOR}>Supervisor</option>
             </select>
           </label>
 

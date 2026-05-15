@@ -4,13 +4,15 @@ import {
   ClipboardList,
   Info,
   LogOut,
+  PlusCircle,
   Settings,
+  Trophy,
   UserCircle,
   Users,
 } from "lucide-react";
-import { getRoleLabel, isTechnicianUser } from "../../data/users";
+import { getRoleLabel, isEmployeeUser, isSupervisorUser, isTechnicianUser } from "../../data/users";
 
-const adminItems = [
+const supervisorItems = [
   { id: "dashboard", label: "Inicio", icon: BarChart3 },
   { id: "tickets", label: "Solicitudes", icon: ClipboardList },
   { id: "information", label: "Panel de informacion", icon: Info },
@@ -18,8 +20,16 @@ const adminItems = [
   { id: "settings", label: "Personalizacion", icon: Settings },
 ];
 
+const technicianItems = [
+  { id: "dashboard", label: "Inicio", icon: BarChart3 },
+  { id: "tickets", label: "Solicitudes", icon: ClipboardList },
+  { id: "ranking", label: "Ranking tecnico", icon: Trophy },
+  { id: "settings", label: "Personalizacion", icon: Settings },
+];
+
 const employeeItems = [
   { id: "tickets", label: "Mis solicitudes", icon: ClipboardList },
+  { id: "create-ticket", label: "Crear solicitud", icon: PlusCircle },
   { id: "settings", label: "Personalizacion", icon: Settings },
 ];
 
@@ -79,7 +89,9 @@ function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate 
 
 export default function Sidebar({ activeView, currentUser, navigationMode, onNavigate, onLogout }) {
   const isTechnician = isTechnicianUser(currentUser);
-  const items = isTechnician ? adminItems : employeeItems;
+  const isSupervisor = isSupervisorUser(currentUser);
+  const isEmployee = isEmployeeUser(currentUser);
+  const items = isSupervisor ? supervisorItems : isTechnician ? technicianItems : employeeItems;
 
   if (navigationMode === "top") {
     return (
@@ -129,7 +141,7 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
           isCompact={navigationMode === "compact"}
           onNavigate={onNavigate}
         />
-      ) : (
+      ) : isEmployee || isSupervisor ? (
         <div className={`nav-profile-static ${navigationMode === "compact" ? "icon-only" : ""}`}>
           <span className="profile-access-icon">
             <UserCircle size={22} aria-hidden="true" />
@@ -141,7 +153,7 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
             </span>
           ) : null}
         </div>
-      )}
+      ) : null}
 
       <button
         aria-label="Cerrar sesion"

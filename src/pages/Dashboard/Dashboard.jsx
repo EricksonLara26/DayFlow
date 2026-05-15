@@ -7,6 +7,7 @@ import {
   XCircle,
 } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
+import TechnicianRanking from "../../components/dashboard/TechnicianRanking";
 import TicketStatusSummary from "../../components/dashboard/TicketStatusSummary";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
@@ -16,14 +17,28 @@ import { formatDate } from "../../utils/dateUtils";
 import { calculateDashboardStats, getTicketsDueInThreeDays } from "../../utils/ticketUtils";
 import "./Dashboard.css";
 
-export default function Dashboard({ onOpenTicket, tickets }) {
+export default function Dashboard({ onOpenTicket, scope = "supervisor", technicianRanking = [], tickets }) {
   const stats = calculateDashboardStats(tickets);
   const dueSoonTickets = getTicketsDueInThreeDays(tickets);
+  const isTechnicianScope = scope === "technician";
 
   return (
     <div className="page-stack dashboard-page">
+      <section className="panel page-intro">
+        <div>
+          <p className="eyebrow">{isTechnicianScope ? "Operacion tecnica" : "Monitoreo supervisor"}</p>
+          <h2>{isTechnicianScope ? "Solicitudes disponibles y asignadas" : "Dashboard general del sistema"}</h2>
+        </div>
+        <strong>{stats.total}</strong>
+      </section>
+
       <section className="stats-grid">
-        <StatCard icon={ClipboardList} label="Total de solicitudes" tone="blue" value={stats.total} />
+        <StatCard
+          icon={ClipboardList}
+          label={isTechnicianScope ? "Solicitudes visibles" : "Total de solicitudes"}
+          tone="blue"
+          value={stats.total}
+        />
         <StatCard icon={Clock3} label="Abiertos" tone="cyan" value={stats.open} />
         <StatCard icon={TicketCheck} label="En proceso" tone="violet" value={stats.inProgress} />
         <StatCard icon={PauseCircle} label="En hold" tone="red" value={stats.onHold} />
@@ -63,6 +78,8 @@ export default function Dashboard({ onOpenTicket, tickets }) {
           )}
         </section>
       </div>
+
+      {isTechnicianScope ? <TechnicianRanking technicians={technicianRanking} /> : null}
     </div>
   );
 }

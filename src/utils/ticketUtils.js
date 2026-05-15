@@ -36,7 +36,7 @@ export function getTicketsDueInThreeDays(tickets) {
 
 export function sortTechniciansByCompletedTickets(technicians) {
   return [...technicians].sort((first, second) => {
-    const completedDifference = (second.completedTickets ?? 0) - (first.completedTickets ?? 0);
+    const completedDifference = (first.completedTickets ?? 0) - (second.completedTickets ?? 0);
 
     if (completedDifference !== 0) {
       return completedDifference;
@@ -67,6 +67,67 @@ export function getCompletedTickets(tickets) {
   return tickets
     .filter((ticket) => ticket.status === TICKET_STATUSES.COMPLETED)
     .sort((first, second) => (second.completedAt ?? "").localeCompare(first.completedAt ?? ""));
+}
+
+export function getTicketTakenAt(ticket) {
+  if (ticket.takenAt) {
+    return ticket.takenAt;
+  }
+
+  const historyTakenAt = ticket.history?.find((item) => item.action.toLowerCase().includes("ticket tomado"))?.createdAt;
+
+  if (historyTakenAt) {
+    return historyTakenAt;
+  }
+
+  const firstTechnicianAction = ticket.history?.find(
+    (item) => item.userId === ticket.assignedTo && !item.action.toLowerCase().includes("ticket creado"),
+  )?.createdAt;
+
+  return firstTechnicianAction ?? (ticket.assignedTo ? ticket.updatedAt : "");
+}
+
+export function getTicketResolutionTime(ticket) {
+  if (!ticket.createdAt || !ticket.completedAt) {
+    return "Pendiente";
+  }
+
+  const createdAt = new Date(ticket.createdAt);
+  const completedAt = new Date(ticket.completedAt);
+
+  if (Number.isNaN(createdAt.getTime()) || Number.isNaN(completedAt.getTime())) {
+    return "Fecha invalida";
+  }
+
+  const totalMinutes = Math.max(0, Math.round((completedAt.getTime() - createdAt.getTime()) / 60000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  return `${minutes}m`;
+}
+
+export function getTicketDepartment(ticket, users) {
+  const requester = users.find((user) => user.id === ticket.createdBy);
+  return requester?.department?.trim() || "Sin departamento";
+}
+
+export function getCompletedTicketsByTechnicianAndYear(tickets, technicianId, year) {
+  return getCompletedTickets(tickets).filter((ticket) => {
+    if (ticket.assignedTo !== technicianId || !ticket.completedAt) {
+      return false;
+    }
+
+    return new Date(ticket.completedAt).getFullYear() === Number(year);
+  });
 }
 
 export function getTicketVolumeByCategory(tickets) {

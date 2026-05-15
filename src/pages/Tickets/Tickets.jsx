@@ -15,25 +15,35 @@ const defaultFilters = {
 
 export default function Tickets({
   canTakeTicket,
-  currentUser,
-  isTechnician,
+  scope = "employee",
   onOpenTicket,
   onTakeTicket,
   tickets,
+  users,
 }) {
   const [filters, setFilters] = useState(defaultFilters);
-  const scopedTickets = useMemo(
-    () => (isTechnician ? tickets : tickets.filter((ticket) => ticket.createdBy === currentUser.id)),
-    [currentUser.id, isTechnician, tickets],
-  );
-  const filteredTickets = useMemo(() => filterTickets(scopedTickets, filters), [filters, scopedTickets]);
+  const filteredTickets = useMemo(() => filterTickets(tickets, filters), [filters, tickets]);
+  const copy = {
+    employee: {
+      eyebrow: "Mis solicitudes",
+      title: "Tickets creados por ti",
+    },
+    technician: {
+      eyebrow: "Vista tecnica",
+      title: "Solicitudes disponibles y asignadas a ti",
+    },
+    supervisor: {
+      eyebrow: "Gestor supervisor",
+      title: "Todas las solicitudes del sistema",
+    },
+  }[scope];
 
   return (
     <div className="page-stack tickets-page">
       <section className="panel page-intro">
         <div>
-          <p className="eyebrow">{isTechnician ? "Vista tecnica" : "Mis solicitudes"}</p>
-          <h2>{isTechnician ? "Todas las solicitudes de soporte" : "Tickets creados por ti"}</h2>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2>{copy.title}</h2>
         </div>
         <strong>{filteredTickets.length} resultado(s)</strong>
       </section>
@@ -41,9 +51,11 @@ export default function Tickets({
       <TicketFilters filters={filters} onChange={setFilters} />
       <TicketTable
         canTakeTicket={canTakeTicket}
+        mode={scope === "supervisor" ? "supervisor" : "standard"}
         onOpenTicket={onOpenTicket}
         onTakeTicket={onTakeTicket}
         tickets={filteredTickets}
+        users={users}
       />
     </div>
   );

@@ -2,7 +2,7 @@ import { ArrowLeft, CheckCircle2, CirclePause, ClipboardCheck, PlayCircle, XCirc
 import Button from "../common/Button";
 import { TICKET_STATUSES } from "../../data/tickets";
 import { formatDate, formatDateTime } from "../../utils/dateUtils";
-import { getStatusLabel, terminalTicketStatuses } from "../../utils/ticketUtils";
+import { getStatusLabel, getTicketTakenAt, terminalTicketStatuses } from "../../utils/ticketUtils";
 import TicketComments from "./TicketComments";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
@@ -19,6 +19,7 @@ export default function TicketDetail({
   ticket,
 }) {
   const isTerminal = terminalTicketStatuses.includes(ticket.status);
+  const takenAt = getTicketTakenAt(ticket);
 
   return (
     <div className="ticket-detail-page">
@@ -64,6 +65,10 @@ export default function TicketDetail({
               <div>
                 <dt>Creado</dt>
                 <dd>{formatDateTime(ticket.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>Tomado</dt>
+                <dd>{takenAt ? formatDateTime(takenAt) : "Sin tomar"}</dd>
               </div>
               <div>
                 <dt>Fecha limite</dt>

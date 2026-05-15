@@ -1,11 +1,13 @@
-
 import { useMemo, useState } from "react";
+import TechnicianRanking from "./components/dashboard/TechnicianRanking";
 import MainLayout from "./components/layout/MainLayout";
 import { TICKET_STATUSES, initialTickets } from "./data/tickets";
 import {
   ROLES,
   getUserFullName,
   initialUsers,
+  isEmployeeUser,
+  isSupervisorUser,
   isTechnicianUser,
 } from "./data/users";
 import CreateTicket from "./pages/CreateTicket/CreateTicket";
@@ -17,7 +19,11 @@ import TechnicianProfile from "./pages/TechnicianProfile/TechnicianProfile";
 import TicketDetailPage from "./pages/TicketDetail/TicketDetail";
 import Tickets from "./pages/Tickets/Tickets";
 import Users from "./pages/Users/Users";
-import { getStatusLabel, terminalTicketStatuses } from "./utils/ticketUtils";
+import {
+  getStatusLabel,
+  getTechnicianCompletionStats,
+  terminalTicketStatuses,
+} from "./utils/ticketUtils";
 
 function getNextId(items) {
   return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
@@ -49,7 +55,40 @@ function createCommentItem(ticket, message, user, createdAt = nowIso()) {
 }
 
 function getDefaultView(user) {
-  return isTechnicianUser(user) ? "dashboard" : "tickets";
+  return isTechnicianUser(user) || isSupervisorUser(user) ? "dashboard" : "tickets";
+}
+
+function getTicketScope(user) {
+  if (isSupervisorUser(user)) {
+    return "supervisor";
+  }
+
+  if (isTechnicianUser(user)) {
+    return "technician";
+  }
+
+  return "employee";
+}
+
+function getVisibleTicketsForUser(tickets, user) {
+  if (!user) {
+    return [];
+  }
+
+  if (isSupervisorUser(user)) {
+    return tickets;
+  }
+
+  if (isTechnicianUser(user)) {
+    return tickets.filter((ticket) => {
+      const isAvailable = ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo;
+      const isAssignedToTechnician = ticket.assignedTo === user.id;
+
+      return isAvailable || isAssignedToTechnician;
+    });
+  }
+
+  return tickets.filter((ticket) => ticket.createdBy === user.id);
 }
 
 const defaultPreferences = {
@@ -82,26 +121,65 @@ export default function App() {
   const [selectedTicketId, setSelectedTicketId] = useState(null);
   const [preferences, setPreferences] = useState(readStoredPreferences);
 
+  const isEmployee = isEmployeeUser(currentUser);
   const isTechnician = isTechnicianUser(currentUser);
-
-  const selectedTicket = useMemo(
-    () => tickets.find((ticket) => ticket.id === selectedTicketId),
-    [selectedTicketId, tickets],
+  const isSupervisor = isSupervisorUser(currentUser);
+  const canCreateTicket = isEmployee;
+  const ticketScope = getTicketScope(currentUser);
+  const technicians = useMemo(() => users.filter(isTechnicianUser), [users]);
+  const technicianRanking = useMemo(
+    () => getTechnicianCompletionStats(technicians, tickets),
+    [technicians, tickets],
   );
+  const visibleTickets = useMemo(
+    () => getVisibleTicketsForUser(tickets, currentUser),
+    [currentUser, tickets],
+  );
+  const dashboardTickets = isSupervisor ? tickets : visibleTickets;
+
+  const selectedTicket = useMemo(() => {
+    const ticket = tickets.find((currentTicket) => currentTicket.id === selectedTicketId);
+
+    return ticket && canViewTicket(ticket) ? ticket : null;
+  }, [selectedTicketId, tickets, currentUser]);
+
+  function canAccessView(view) {
+    if (!currentUser) {
+      return false;
+    }
+
+    if (view === "dashboard") {
+      return isTechnician || isSupervisor;
+    }
+
+    if (view === "tickets" || view === "settings") {
+      return true;
+    }
+
+    if (view === "create-ticket") {
+      return canCreateTicket;
+    }
+
+    if (view === "profile") {
+      return isTechnician;
+    }
+
+    if (view === "ranking") {
+      return isTechnician || isSupervisor;
+    }
+
+    if (view === "information" || view === "users") {
+      return isSupervisor;
+    }
+
+    return false;
+  }
 
   function navigate(view) {
-    if (view === "dashboard" && !isTechnician) {
-      setActiveView("tickets");
-      return;
-    }
-
-    if ((view === "profile" || view === "users" || view === "information") && !isTechnician) {
-      setActiveView("tickets");
-      return;
-    }
+    const nextView = canAccessView(view) ? view : getDefaultView(currentUser);
 
     setSelectedTicketId(null);
-    setActiveView(view);
+    setActiveView(nextView);
   }
 
   function handleLogin({ password, userType, username }) {
@@ -114,10 +192,7 @@ export default function App() {
       return { ok: false, message: "Usuario o contrasena incorrectos." };
     }
 
-    const matchesSelectedRole =
-      userType === ROLES.EMPLOYEE ? matchedUser.role === ROLES.EMPLOYEE : isTechnicianUser(matchedUser);
-
-    if (!matchesSelectedRole) {
+    if (matchedUser.role !== userType) {
       return { ok: false, message: "El usuario no pertenece al tipo seleccionado." };
     }
 
@@ -134,34 +209,70 @@ export default function App() {
     setActiveView("dashboard");
   }
 
+  function canViewTicket(ticket) {
+    if (!currentUser || !ticket) {
+      return false;
+    }
+
+    if (isSupervisor) {
+      return true;
+    }
+
+    if (isTechnician) {
+      const isAvailable = ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo;
+      return isAvailable || ticket.assignedTo === currentUser.id;
+    }
+
+    return ticket.createdBy === currentUser.id;
+  }
+
   function openTicket(ticketId) {
+    const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
+
+    if (!canViewTicket(ticket)) {
+      return;
+    }
+
     setSelectedTicketId(ticketId);
     setActiveView("ticket-detail");
   }
 
   function goBackFromTicket() {
     setSelectedTicketId(null);
-    setActiveView(isTechnician ? "tickets" : "tickets");
+    setActiveView("tickets");
   }
 
   function canTakeTicket(ticket) {
-    return Boolean(isTechnician && ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo);
+    return Boolean(
+      isTechnician &&
+        canViewTicket(ticket) &&
+        ticket.status === TICKET_STATUSES.OPEN &&
+        !ticket.assignedTo,
+    );
   }
 
   function canManageTicket(ticket) {
-    if (!isTechnician || terminalTicketStatuses.includes(ticket.status)) {
+    if (!isTechnician || !canViewTicket(ticket) || terminalTicketStatuses.includes(ticket.status)) {
       return false;
     }
 
-    return !ticket.assignedTo || ticket.assignedTo === currentUser.id;
+    return ticket.assignedTo === currentUser.id;
   }
 
   function canCommentTicket(ticket) {
-    if (!currentUser) {
+    if (!currentUser || !canViewTicket(ticket)) {
       return false;
     }
 
-    return isTechnician || ticket.createdBy === currentUser.id;
+    if (isSupervisor) {
+      return true;
+    }
+
+    if (isTechnician) {
+      return ticket.assignedTo === currentUser.id;
+    }
+
+    return ticket.createdBy === currentUser.id;
   }
 
   function takeTicket(ticketId) {
@@ -184,6 +295,7 @@ export default function App() {
           assignedTo: currentUser.id,
           assignedToName: assignedName,
           status: TICKET_STATUSES.IN_PROGRESS,
+          takenAt: timestamp,
           updatedAt: timestamp,
           history: [
             ...ticket.history,
@@ -220,8 +332,6 @@ export default function App() {
 
     const timestamp = nowIso();
     const shouldClose = nextStatus === TICKET_STATUSES.COMPLETED || nextStatus === TICKET_STATUSES.DISMISSED;
-    const assignedTo = ticket.assignedTo ?? currentUser.id;
-    const assignedToName = ticket.assignedToName ?? getUserFullName(currentUser);
     const action =
       nextStatus === TICKET_STATUSES.COMPLETED
         ? "Ticket completado"
@@ -237,8 +347,6 @@ export default function App() {
 
         return {
           ...currentTicket,
-          assignedTo,
-          assignedToName,
           status: nextStatus,
           updatedAt: timestamp,
           completedAt: shouldClose ? timestamp : currentTicket.completedAt,
@@ -285,12 +393,12 @@ export default function App() {
   }
 
   function createTicket(form) {
-    if (!currentUser) {
-      return;
+    if (!currentUser || !canCreateTicket) {
+      return { ok: false, message: "No tienes permiso para crear solicitudes." };
     }
 
     const timestamp = nowIso();
-    const requester = form.requester ?? currentUser;
+    const requester = currentUser;
     const requesterName = getUserFullName(requester);
     const nextTicket = {
       id: getNextId(tickets),
@@ -322,9 +430,15 @@ export default function App() {
     setTickets((currentTickets) => [nextTicket, ...currentTickets]);
     setSelectedTicketId(nextTicket.id);
     setActiveView("ticket-detail");
+
+    return { ok: true };
   }
 
   function createUser(form) {
+    if (!isSupervisor) {
+      return;
+    }
+
     const nextUser = {
       id: getNextId(users),
       firstName: form.firstName,
@@ -341,11 +455,56 @@ export default function App() {
   }
 
   function deleteUser(userId) {
-    if (currentUser?.id === userId) {
+    const targetUser = users.find((user) => user.id === userId);
+
+    if (!isSupervisor || currentUser?.id === userId || targetUser?.role !== ROLES.EMPLOYEE) {
       return;
     }
 
     setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+  }
+
+  function updateUserEmail(userId, email) {
+    if (!isSupervisor) {
+      return { ok: false, message: "No tienes permiso para editar usuarios." };
+    }
+
+    const targetUser = users.find((user) => user.id === userId);
+
+    if (targetUser?.role !== ROLES.EMPLOYEE) {
+      return { ok: false, message: "Solo se puede editar el correo de empleados desde esta vista." };
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!emailPattern.test(cleanEmail) || !cleanEmail.endsWith(".com")) {
+      return { ok: false, message: "El correo debe tener formato valido y terminar en .com." };
+    }
+
+    if (users.some((user) => user.id !== userId && user.email.toLowerCase() === cleanEmail)) {
+      return { ok: false, message: "Ese correo ya esta en uso." };
+    }
+
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => (user.id === userId ? { ...user, email: cleanEmail } : user)),
+    );
+
+    return { ok: true };
+  }
+
+  function authorizeTechnicianReport({ technicianId }) {
+    if (!isSupervisor) {
+      return { ok: false, message: "Solo el supervisor puede descargar informes." };
+    }
+
+    const technician = users.find((user) => user.id === Number(technicianId) && isTechnicianUser(user));
+
+    if (!technician) {
+      return { ok: false, message: "Selecciona un tecnico valido." };
+    }
+
+    return { ok: true };
   }
 
   function updatePreferences(nextPreferences) {
@@ -394,6 +553,7 @@ export default function App() {
   return (
     <MainLayout
       activeView={activeView}
+      canCreateTicket={canCreateTicket}
       currentUser={currentUser}
       darkMode={preferences.darkMode}
       navigationMode={preferences.navigationMode}
@@ -401,18 +561,23 @@ export default function App() {
       onLogout={handleLogout}
       onNavigate={navigate}
     >
-      {activeView === "dashboard" && isTechnician ? (
-        <Dashboard onOpenTicket={openTicket} tickets={tickets} />
+      {activeView === "dashboard" && (isTechnician || isSupervisor) ? (
+        <Dashboard
+          onOpenTicket={openTicket}
+          scope={isTechnician ? "technician" : "supervisor"}
+          technicianRanking={technicianRanking}
+          tickets={dashboardTickets}
+        />
       ) : null}
 
       {activeView === "tickets" ? (
         <Tickets
           canTakeTicket={canTakeTicket}
-          currentUser={currentUser}
-          isTechnician={isTechnician}
           onOpenTicket={openTicket}
           onTakeTicket={takeTicket}
-          tickets={tickets}
+          scope={ticketScope}
+          tickets={visibleTickets}
+          users={users}
         />
       ) : null}
 
@@ -429,20 +594,42 @@ export default function App() {
         />
       ) : null}
 
-      {activeView === "create-ticket" ? (
-        <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} users={users} />
+      {activeView === "create-ticket" && canCreateTicket ? (
+        <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} />
       ) : null}
 
       {activeView === "profile" && isTechnician ? (
-        <TechnicianProfile currentUser={currentUser} onOpenTicket={openTicket} tickets={tickets} />
+        <TechnicianProfile
+          currentUser={currentUser}
+          onOpenSettings={() => navigate("settings")}
+          onOpenTicket={openTicket}
+          tickets={tickets}
+        />
       ) : null}
 
-      {activeView === "information" && isTechnician ? (
-        <InformationPanel onOpenTicket={openTicket} tickets={tickets} users={users} />
+      {activeView === "ranking" && (isTechnician || isSupervisor) ? (
+        <div className="page-stack">
+          <TechnicianRanking technicians={technicianRanking} />
+        </div>
       ) : null}
 
-      {activeView === "users" && isTechnician ? (
-        <Users onCreateUser={createUser} onDeleteUser={deleteUser} users={users} />
+      {activeView === "information" && isSupervisor ? (
+        <InformationPanel
+          canDownloadReports={isSupervisor}
+          onAuthorizeReport={authorizeTechnicianReport}
+          onOpenTicket={openTicket}
+          tickets={tickets}
+          users={users}
+        />
+      ) : null}
+
+      {activeView === "users" && isSupervisor ? (
+        <Users
+          onCreateUser={createUser}
+          onDeleteUser={deleteUser}
+          onUpdateUserEmail={updateUserEmail}
+          users={users}
+        />
       ) : null}
 
       {activeView === "settings" ? (

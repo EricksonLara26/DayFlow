@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, ShieldCheck, UserCircle, XCircle } from "lucide-react";
+import { Activity, CheckCircle2, ShieldCheck, SlidersHorizontal, UserCircle, XCircle } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
 import EmptyState from "../../components/common/EmptyState";
 import Button from "../../components/common/Button";
@@ -35,7 +35,7 @@ function TicketHistoryList({ emptyTitle, onOpenTicket, tickets }) {
   );
 }
 
-export default function TechnicianProfile({ currentUser, onOpenTicket, tickets }) {
+export default function TechnicianProfile({ currentUser, onOpenSettings, onOpenTicket, tickets }) {
   const assignedTickets = getTicketsByTechnician(tickets, currentUser.id);
   const completedTickets = getCompletedTicketsByTechnician(tickets, currentUser.id);
   const dismissedTickets = getDismissedTicketsByTechnician(tickets, currentUser.id);
@@ -51,9 +51,15 @@ export default function TechnicianProfile({ currentUser, onOpenTicket, tickets }
   return (
     <div className="page-stack profile-page">
       <section className="profile-hero panel">
-        <div className="profile-hero-icon" aria-hidden="true">
-          <UserCircle size={48} />
-        </div>
+        <button
+          aria-label="Abrir personalizacion del menu"
+          className="profile-hero-button"
+          title="Personalizar menu"
+          type="button"
+          onClick={onOpenSettings}
+        >
+          <UserCircle size={44} aria-hidden="true" />
+        </button>
         <div className="profile-identity">
           <p className="eyebrow">Perfil operativo</p>
           <h2>{currentUser.firstName} {currentUser.lastName}</h2>
@@ -64,6 +70,9 @@ export default function TechnicianProfile({ currentUser, onOpenTicket, tickets }
             <b>{currentUser.department || "Area no definida"}</b>
           </div>
         </div>
+        <Button icon={SlidersHorizontal} variant="ghost" onClick={onOpenSettings}>
+          Personalizar menu
+        </Button>
       </section>
 
       <section className="stats-grid profile-stats">

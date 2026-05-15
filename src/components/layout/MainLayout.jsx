@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 
 export default function MainLayout({
   activeView,
+  canCreateTicket,
   children,
   currentUser,
   darkMode,
@@ -23,6 +24,7 @@ export default function MainLayout({
       <main className="main-content">
         <Header
           activeView={activeView}
+          canCreateTicket={canCreateTicket}
           currentUser={currentUser}
           onCreateTicket={onCreateTicket}
         />

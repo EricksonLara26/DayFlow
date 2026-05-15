@@ -1,6 +1,8 @@
-import { Download, Eye } from "lucide-react";
+import { CheckCircle2, ClipboardList, Clock3, Download, Eye, PauseCircle, TicketCheck, XCircle } from "lucide-react";
+import { useMemo, useState } from "react";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
+import StatCard from "../../components/dashboard/StatCard";
 import TechnicianRanking from "../../components/dashboard/TechnicianRanking";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import TicketStatusBadge from "../../components/tickets/TicketStatusBadge";
@@ -9,20 +11,77 @@ import { formatDateTime } from "../../utils/dateUtils";
 import {
   calculateDashboardStats,
   getCompletedTickets,
+  getCompletedTicketsByTechnicianAndYear,
+  getStatusLabel,
   getTechnicianCompletionStats,
   getTicketDemandByDepartment,
+  getTicketDepartment,
+  getTicketResolutionTime,
+  getTicketTakenAt,
   getTicketsExcludingDismissed,
   getTicketVolumeByCategory,
 } from "../../utils/ticketUtils";
+import { downloadXlsx } from "../../utils/xlsxExporter";
 import "./InformationPanel.css";
 
-function csvCell(value) {
-  const text = String(value ?? "");
-  return `"${text.replaceAll('"', '""')}"`;
+function safeFilenameText(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "")
+    .trim();
 }
 
-function buildCsv(rows) {
-  return rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+function getReportYears(tickets) {
+  const years = new Set(
+    tickets
+      .filter((ticket) => ticket.completedAt)
+      .map((ticket) => new Date(ticket.completedAt).getFullYear())
+      .filter((year) => !Number.isNaN(year)),
+  );
+
+  years.add(new Date().getFullYear());
+
+  return [...years].sort((first, second) => second - first);
+}
+
+function buildReportRows({ reportTickets, selectedTechnician, selectedYear, users }) {
+  return [
+    [`Informe ${selectedYear}`],
+    ["Tecnico", `${selectedTechnician.firstName} ${selectedTechnician.lastName}`],
+    ["Generado", new Date().toLocaleString()],
+    [],
+    [
+      "ID ticket",
+      "Titulo o descripcion",
+      "Categoria",
+      "Departamento",
+      "Usuario solicitante",
+      "Tecnico responsable",
+      "Fecha creacion",
+      "Fecha tomada",
+      "Fecha finalizacion",
+      "Estado",
+      "Tiempo resolucion",
+    ],
+    ...reportTickets.map((ticket) => {
+      const takenAt = getTicketTakenAt(ticket);
+
+      return [
+        ticket.id,
+        ticket.title || ticket.description,
+        ticket.category,
+        getTicketDepartment(ticket, users),
+        ticket.createdByName,
+        ticket.assignedToName ?? "Sin asignar",
+        formatDateTime(ticket.createdAt),
+        takenAt ? formatDateTime(takenAt) : "Sin tomar",
+        formatDateTime(ticket.completedAt),
+        getStatusLabel(ticket.status),
+        getTicketResolutionTime(ticket),
+      ];
+    }),
+  ];
 }
 
 function BarInsight({ emptyTitle, eyebrow, items, title }) {
@@ -60,62 +119,61 @@ function BarInsight({ emptyTitle, eyebrow, items, title }) {
   );
 }
 
-export default function InformationPanel({ onOpenTicket, tickets, users }) {
+export default function InformationPanel({
+  canDownloadReports,
+  onAuthorizeReport,
+  onOpenTicket,
+  tickets,
+  users,
+}) {
   const technicians = users.filter(isTechnicianUser);
+  const reportYears = getReportYears(tickets);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState(String(technicians[0]?.id ?? ""));
+  const [selectedYear, setSelectedYear] = useState(String(reportYears[0] ?? new Date().getFullYear()));
+  const [reportError, setReportError] = useState("");
   const stats = calculateDashboardStats(tickets);
   const completedTickets = getCompletedTickets(tickets);
   const reportableTickets = getTicketsExcludingDismissed(tickets);
   const technicianRanking = getTechnicianCompletionStats(technicians, tickets);
   const categoryVolume = getTicketVolumeByCategory(reportableTickets);
   const departmentDemand = getTicketDemandByDepartment(reportableTickets, users);
+  const fullHistory = tickets
+    .flatMap((ticket) =>
+      ticket.history.map((item) => ({
+        ...item,
+        ticketId: ticket.id,
+        ticketTitle: ticket.title,
+      })),
+    )
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+  const selectedTechnician = technicians.find((technician) => String(technician.id) === selectedTechnicianId);
+  const reportTickets = useMemo(
+    () =>
+      selectedTechnician
+        ? getCompletedTicketsByTechnicianAndYear(tickets, selectedTechnician.id, selectedYear)
+        : [],
+    [selectedTechnician, selectedYear, tickets],
+  );
 
-  function downloadReport() {
-    const rows = [
-      ["DayFlow - informe operativo"],
-      ["Generado", new Date().toLocaleString()],
-      [],
-      ["Resumen"],
-      ["Total de solicitudes", stats.total],
-      ["Abiertos", stats.open],
-      ["En proceso", stats.inProgress],
-      ["En hold", stats.onHold],
-      ["Completados", stats.completed],
-      ["Desestimados", stats.dismissed],
-      [],
-      ["Ranking por tecnico"],
-      ["Tecnico", "Completados"],
-      ...technicianRanking
-        .filter((technician) => (technician.completedTickets ?? 0) > 0)
-        .map((technician) => [
-          `${technician.firstName} ${technician.lastName}`,
-          technician.completedTickets ?? 0,
-        ]),
-      [],
-      ["Solicitudes completadas"],
-      ["ID", "Titulo", "Categoria", "Tecnico", "Fecha de cierre"],
-      ...completedTickets.map((ticket) => [
-        ticket.id,
-        ticket.title,
-        ticket.category,
-        ticket.assignedToName ?? "Sin asignar",
-        ticket.completedAt ? formatDateTime(ticket.completedAt) : "",
-      ]),
-      [],
-      ["Volumen por categoria"],
-      ["Categoria", "Solicitudes"],
-      ...categoryVolume.map((item) => [item.label, item.value]),
-      [],
-      ["Demanda por departamento"],
-      ["Departamento", "Solicitudes"],
-      ...departmentDemand.map((item) => [item.label, item.value]),
-    ];
-    const blob = new Blob([buildCsv(rows)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `dayflow-informe-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  function handleDownloadReport() {
+    setReportError("");
+    const authorization = onAuthorizeReport({ technicianId: selectedTechnicianId, year: selectedYear });
+
+    if (!authorization.ok) {
+      setReportError(authorization.message);
+      return;
+    }
+
+    if (!selectedTechnician || !reportTickets.length) {
+      setReportError("Este tecnico no tiene solicitudes completadas en el año seleccionado.");
+      return;
+    }
+
+    const technicianName = `${selectedTechnician.firstName}${selectedTechnician.lastName}`;
+    const filename = `informe_tecnico_${safeFilenameText(technicianName)}_${selectedYear}.xlsx`;
+    const rows = buildReportRows({ reportTickets, selectedTechnician, selectedYear, users });
+
+    downloadXlsx(rows, filename, `Informe ${selectedYear}`);
   }
 
   return (
@@ -125,9 +183,16 @@ export default function InformationPanel({ onOpenTicket, tickets, users }) {
           <p className="eyebrow">Informacion operativa</p>
           <h2>Panel de informacion</h2>
         </div>
-        <Button icon={Download} onClick={downloadReport}>
-          Descargar informe
-        </Button>
+        <strong>{stats.total} tickets</strong>
+      </section>
+
+      <section className="stats-grid">
+        <StatCard icon={ClipboardList} label="Total" tone="blue" value={stats.total} />
+        <StatCard icon={Clock3} label="Abiertos" tone="cyan" value={stats.open} />
+        <StatCard icon={TicketCheck} label="En proceso" tone="violet" value={stats.inProgress} />
+        <StatCard icon={PauseCircle} label="En hold" tone="red" value={stats.onHold} />
+        <StatCard icon={CheckCircle2} label="Completados" tone="green" value={stats.completed} />
+        <StatCard icon={XCircle} label="Desestimados" tone="dark" value={stats.dismissed} />
       </section>
 
       <div className="information-grid">
@@ -181,6 +246,121 @@ export default function InformationPanel({ onOpenTicket, tickets, users }) {
           )}
         </section>
       </div>
+
+      <section className="panel system-history-panel">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Historial completo</p>
+            <h2>Actividad general del sistema</h2>
+          </div>
+          <span>{fullHistory.length}</span>
+        </div>
+        {fullHistory.length ? (
+          <div className="system-history-list">
+            {fullHistory.map((item) => (
+              <article className="system-history-item" key={`${item.ticketId}-${item.id}-${item.createdAt}`}>
+                <div>
+                  <strong>{item.action}</strong>
+                  <span>
+                    #{item.ticketId} - {item.ticketTitle}
+                  </span>
+                </div>
+                <span>{item.userName}</span>
+                <time>{formatDateTime(item.createdAt)}</time>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Sin historial" message="Las acciones del sistema se mostraran aqui." />
+        )}
+      </section>
+
+      {canDownloadReports ? (
+        <section className="panel report-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Descargar informe</p>
+              <h2>Informe anual por tecnico</h2>
+            </div>
+            <Button icon={Download} onClick={handleDownloadReport}>
+              Descargar Excel
+            </Button>
+          </div>
+
+          <div className="report-controls">
+            <label className="field compact-field">
+              <span>Tecnico</span>
+              <select value={selectedTechnicianId} onChange={(event) => setSelectedTechnicianId(event.target.value)}>
+                {technicians.map((technician) => (
+                  <option key={technician.id} value={technician.id}>
+                    {technician.firstName} {technician.lastName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field compact-field">
+              <span>Año</span>
+              <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
+                {reportYears.map((year) => (
+                  <option key={year} value={year}>
+                    Informe {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {reportError ? <p className="form-error">{reportError}</p> : null}
+
+          {reportTickets.length ? (
+            <div className="table-wrap report-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>ID ticket</th>
+                    <th>Titulo o descripcion</th>
+                    <th>Categoria</th>
+                    <th>Departamento</th>
+                    <th>Usuario solicitante</th>
+                    <th>Tecnico responsable</th>
+                    <th>Fecha creacion</th>
+                    <th>Fecha tomada</th>
+                    <th>Fecha finalizacion</th>
+                    <th>Estado</th>
+                    <th>Tiempo resolucion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportTickets.map((ticket) => {
+                    const takenAt = getTicketTakenAt(ticket);
+
+                    return (
+                      <tr key={ticket.id}>
+                        <td>#{ticket.id}</td>
+                        <td>{ticket.title || ticket.description}</td>
+                        <td>{ticket.category}</td>
+                        <td>{getTicketDepartment(ticket, users)}</td>
+                        <td>{ticket.createdByName}</td>
+                        <td>{ticket.assignedToName ?? "Sin asignar"}</td>
+                        <td>{formatDateTime(ticket.createdAt)}</td>
+                        <td>{takenAt ? formatDateTime(takenAt) : "Sin tomar"}</td>
+                        <td>{formatDateTime(ticket.completedAt)}</td>
+                        <td>{getStatusLabel(ticket.status)}</td>
+                        <td>{getTicketResolutionTime(ticket)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState
+              title="Sin solicitudes completadas"
+              message="Este tecnico no tiene solicitudes completadas en el año seleccionado."
+            />
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

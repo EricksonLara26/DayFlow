@@ -2,9 +2,7 @@ import { sortTechniciansByCompletedTickets } from "../../utils/ticketUtils";
 import EmptyState from "../common/EmptyState";
 
 export default function TechnicianRanking({ technicians }) {
-  const rankedTechnicians = sortTechniciansByCompletedTickets(technicians).filter(
-    (technician) => (technician.completedTickets ?? 0) > 0,
-  );
+  const rankedTechnicians = sortTechniciansByCompletedTickets(technicians);
 
   return (
     <section className="panel ranking-panel">
@@ -33,8 +31,8 @@ export default function TechnicianRanking({ technicians }) {
         </div>
       ) : (
         <EmptyState
-          title="Sin cierres completados"
-          message="El ranking se activara cuando existan solicitudes con estado completado."
+          title="Sin tecnicos registrados"
+          message="El ranking se mostrara cuando existan tecnicos activos en el sistema."
         />
       )}
     </section>

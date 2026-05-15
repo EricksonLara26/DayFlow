@@ -46,6 +46,22 @@
   font-weight: 700;
 }
 
+.report-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.report-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(140px, 200px);
+  gap: 12px;
+  align-items: end;
+}
+
+.report-table-wrap .data-table {
+  min-width: 1260px;
+}
+
 @media (max-width: 1180px) {
   .information-grid {
     grid-template-columns: 1fr;
@@ -54,6 +70,10 @@
 
 @media (max-width: 720px) {
   .completed-item {
+    grid-template-columns: 1fr;
+  }
+
+  .report-controls {
     grid-template-columns: 1fr;
   }
 }

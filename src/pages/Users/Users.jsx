@@ -5,7 +5,7 @@ import UserTable from "../../components/users/UserTable";
 import { ROLES } from "../../data/users";
 import "./Users.css";
 
-export default function Users({ onCreateUser, onDeleteUser, users }) {
+export default function Users({ onCreateUser, onDeleteUser, onUpdateUserEmail, users }) {
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const employees = users.filter((user) => user.role === ROLES.EMPLOYEE);
@@ -62,7 +62,7 @@ export default function Users({ onCreateUser, onDeleteUser, users }) {
               </select>
             </label>
           </div>
-          <UserTable onDeleteUser={onDeleteUser} users={filteredEmployees} />
+          <UserTable onDeleteUser={onDeleteUser} onUpdateUserEmail={onUpdateUserEmail} users={filteredEmployees} />
         </section>
       </div>
     </div>

@@ -1,7 +1,7 @@
 export const ROLES = {
-  ADMIN: "ADMIN",
-  TECHNICIAN: "TECHNICIAN",
   EMPLOYEE: "EMPLOYEE",
+  TECHNICIAN: "TECHNICIAN",
+  SUPERVISOR: "SUPERVISOR",
 };
 
 export const initialUsers = [
@@ -12,8 +12,8 @@ export const initialUsers = [
     username: "elara",
     email: "elara@empresa.com",
     password: "1234",
-    role: ROLES.ADMIN,
-    jobTitle: "Administrador de soporte",
+    role: ROLES.TECHNICIAN,
+    jobTitle: "Tecnico de soporte senior",
     department: "Tecnologia",
   },
   {
@@ -47,6 +47,17 @@ export const initialUsers = [
     password: "1234",
     role: ROLES.TECHNICIAN,
     jobTitle: "Analista de soporte",
+    department: "Tecnologia",
+  },
+  {
+    id: 5,
+    firstName: "Supervisor",
+    lastName: "General",
+    username: "supervisor",
+    email: "supervisor@empresa.com",
+    password: "1234",
+    role: ROLES.SUPERVISOR,
+    jobTitle: "Supervisor de soporte tecnico",
     department: "Tecnologia",
   },
   {
@@ -104,14 +115,22 @@ export function getUserFullName(user) {
 }
 
 export function isTechnicianUser(user) {
-  return user?.role === ROLES.ADMIN || user?.role === ROLES.TECHNICIAN;
+  return user?.role === ROLES.TECHNICIAN;
+}
+
+export function isSupervisorUser(user) {
+  return user?.role === ROLES.SUPERVISOR;
+}
+
+export function isEmployeeUser(user) {
+  return user?.role === ROLES.EMPLOYEE;
 }
 
 export function getRoleLabel(role) {
   const labels = {
-    [ROLES.ADMIN]: "Administrador tecnico",
-    [ROLES.TECHNICIAN]: "Tecnico",
     [ROLES.EMPLOYEE]: "Empleado",
+    [ROLES.TECHNICIAN]: "Tecnico",
+    [ROLES.SUPERVISOR]: "Supervisor",
   };
 
   return labels[role] ?? role;
