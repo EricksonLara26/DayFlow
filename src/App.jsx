@@ -222,8 +222,6 @@ export default function App() {
     const shouldClose = nextStatus === TICKET_STATUSES.COMPLETED || nextStatus === TICKET_STATUSES.DISMISSED;
     const assignedTo = ticket.assignedTo ?? currentUser.id;
     const assignedToName = ticket.assignedToName ?? getUserFullName(currentUser);
-    const wasTerminal = terminalTicketStatuses.includes(ticket.status);
-    const shouldIncrementMetric = shouldClose && !wasTerminal;
     const action =
       nextStatus === TICKET_STATUSES.COMPLETED
         ? "Ticket completado"
@@ -248,23 +246,6 @@ export default function App() {
         };
       }),
     );
-
-    if (shouldIncrementMetric) {
-      const metricField =
-        nextStatus === TICKET_STATUSES.COMPLETED ? "completedTickets" : "dismissedTickets";
-
-      setUsers((currentUsers) =>
-        currentUsers.map((user) =>
-          user.id === assignedTo ? { ...user, [metricField]: (user[metricField] ?? 0) + 1 } : user,
-        ),
-      );
-
-      if (currentUser.id === assignedTo) {
-        setCurrentUser((user) =>
-          user ? { ...user, [metricField]: (user[metricField] ?? 0) + 1 } : user,
-        );
-      }
-    }
   }
 
   function addComment(ticketId, message) {

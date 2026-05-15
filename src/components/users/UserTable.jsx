@@ -7,6 +7,12 @@ export default function UserTable({ onDeleteUser, users }) {
     return <EmptyState title="Sin usuarios" message="Los empleados registrados se mostraran aqui." />;
   }
 
+  function confirmDelete(user) {
+    if (window.confirm("¿Está seguro de que desea eliminar este usuario?")) {
+      onDeleteUser(user.id);
+    }
+  }
+
   return (
     <div className="table-wrap">
       <table className="data-table">
@@ -31,9 +37,14 @@ export default function UserTable({ onDeleteUser, users }) {
               <td>{user.jobTitle}</td>
               <td>{user.department}</td>
               <td>
-                <Button icon={Trash2} variant="ghost" onClick={() => onDeleteUser(user.id)}>
-                  Eliminar
-                </Button>
+                <Button
+                  aria-label={`Borrar usuario ${user.firstName} ${user.lastName}`}
+                  className="user-delete-button"
+                  icon={Trash2}
+                  title="Borrar usuario"
+                  variant="ghost"
+                  onClick={() => confirmDelete(user)}
+                />
               </td>
             </tr>
           ))}

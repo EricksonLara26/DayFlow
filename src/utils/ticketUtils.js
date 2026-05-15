@@ -23,6 +23,10 @@ export function getDismissedTicketsByTechnician(tickets, technicianId) {
   );
 }
 
+export function getTicketsExcludingDismissed(tickets) {
+  return tickets.filter((ticket) => ticket.status !== TICKET_STATUSES.DISMISSED);
+}
+
 export function getTicketsDueInThreeDays(tickets) {
   return tickets
     .filter((ticket) => !terminalTicketStatuses.includes(ticket.status))
@@ -40,6 +44,23 @@ export function sortTechniciansByCompletedTickets(technicians) {
 
     return `${first.firstName} ${first.lastName}`.localeCompare(`${second.firstName} ${second.lastName}`);
   });
+}
+
+export function getTechnicianCompletionStats(technicians, tickets) {
+  const completedByTechnician = tickets.reduce((totals, ticket) => {
+    if (ticket.status === TICKET_STATUSES.COMPLETED && ticket.assignedTo) {
+      totals.set(ticket.assignedTo, (totals.get(ticket.assignedTo) ?? 0) + 1);
+    }
+
+    return totals;
+  }, new Map());
+
+  return sortTechniciansByCompletedTickets(
+    technicians.map((technician) => ({
+      ...technician,
+      completedTickets: completedByTechnician.get(technician.id) ?? 0,
+    })),
+  );
 }
 
 export function getCompletedTickets(tickets) {

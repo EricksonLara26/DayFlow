@@ -1,8 +1,7 @@
-import { Activity, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
+import { Activity, CheckCircle2, ShieldCheck, UserCircle, XCircle } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
 import EmptyState from "../../components/common/EmptyState";
 import Button from "../../components/common/Button";
-import UserPhoto from "../../components/common/UserPhoto";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import { getRoleLabel } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
@@ -52,7 +51,9 @@ export default function TechnicianProfile({ currentUser, onOpenTicket, tickets }
   return (
     <div className="page-stack profile-page">
       <section className="profile-hero panel">
-        <UserPhoto className="profile-photo-large" user={currentUser} />
+        <div className="profile-hero-icon" aria-hidden="true">
+          <UserCircle size={48} />
+        </div>
         <div className="profile-identity">
           <p className="eyebrow">Perfil operativo</p>
           <h2>{currentUser.firstName} {currentUser.lastName}</h2>

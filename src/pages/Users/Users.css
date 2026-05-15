@@ -55,6 +55,23 @@
   z-index: 1;
 }
 
+.user-delete-button {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  color: var(--red);
+}
+
+.user-delete-button:hover {
+  border-color: #f1bbb9;
+  background: #fff1f0;
+}
+
+.theme-dark .user-delete-button:hover {
+  border-color: rgba(248, 113, 113, 0.32);
+  background: rgba(248, 113, 113, 0.14);
+}
+
 @media (max-width: 1180px) {
   .users-layout {
     grid-template-columns: 1fr;
@@ -81,5 +98,9 @@
 
   .users-layout .user-form .span-2 {
     grid-column: auto;
+  }
+
+  .user-delete-button {
+    width: 40px;
   }
 }

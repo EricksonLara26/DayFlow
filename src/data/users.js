@@ -15,8 +15,6 @@ export const initialUsers = [
     role: ROLES.ADMIN,
     jobTitle: "Administrador de soporte",
     department: "Tecnologia",
-    completedTickets: 4,
-    dismissedTickets: 1,
   },
   {
     id: 2,
@@ -28,8 +26,6 @@ export const initialUsers = [
     role: ROLES.TECHNICIAN,
     jobTitle: "Tecnica de redes",
     department: "Tecnologia",
-    completedTickets: 2,
-    dismissedTickets: 0,
   },
   {
     id: 3,
@@ -41,8 +37,6 @@ export const initialUsers = [
     role: ROLES.TECHNICIAN,
     jobTitle: "Especialista de infraestructura",
     department: "Tecnologia",
-    completedTickets: 6,
-    dismissedTickets: 2,
   },
   {
     id: 4,
@@ -54,8 +48,6 @@ export const initialUsers = [
     role: ROLES.TECHNICIAN,
     jobTitle: "Analista de soporte",
     department: "Tecnologia",
-    completedTickets: 1,
-    dismissedTickets: 1,
   },
   {
     id: 10,

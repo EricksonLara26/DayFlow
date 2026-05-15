@@ -9,7 +9,9 @@ import { formatDateTime } from "../../utils/dateUtils";
 import {
   calculateDashboardStats,
   getCompletedTickets,
+  getTechnicianCompletionStats,
   getTicketDemandByDepartment,
+  getTicketsExcludingDismissed,
   getTicketVolumeByCategory,
 } from "../../utils/ticketUtils";
 import "./InformationPanel.css";
@@ -62,8 +64,10 @@ export default function InformationPanel({ onOpenTicket, tickets, users }) {
   const technicians = users.filter(isTechnicianUser);
   const stats = calculateDashboardStats(tickets);
   const completedTickets = getCompletedTickets(tickets);
-  const categoryVolume = getTicketVolumeByCategory(tickets);
-  const departmentDemand = getTicketDemandByDepartment(tickets, users);
+  const reportableTickets = getTicketsExcludingDismissed(tickets);
+  const technicianRanking = getTechnicianCompletionStats(technicians, tickets);
+  const categoryVolume = getTicketVolumeByCategory(reportableTickets);
+  const departmentDemand = getTicketDemandByDepartment(reportableTickets, users);
 
   function downloadReport() {
     const rows = [
@@ -79,13 +83,13 @@ export default function InformationPanel({ onOpenTicket, tickets, users }) {
       ["Desestimados", stats.dismissed],
       [],
       ["Ranking por tecnico"],
-      ["Tecnico", "Completados", "Desestimados", "Total gestionado"],
-      ...technicians.map((technician) => [
-        `${technician.firstName} ${technician.lastName}`,
-        technician.completedTickets ?? 0,
-        technician.dismissedTickets ?? 0,
-        (technician.completedTickets ?? 0) + (technician.dismissedTickets ?? 0),
-      ]),
+      ["Tecnico", "Completados"],
+      ...technicianRanking
+        .filter((technician) => (technician.completedTickets ?? 0) > 0)
+        .map((technician) => [
+          `${technician.firstName} ${technician.lastName}`,
+          technician.completedTickets ?? 0,
+        ]),
       [],
       ["Solicitudes completadas"],
       ["ID", "Titulo", "Categoria", "Tecnico", "Fecha de cierre"],
@@ -127,7 +131,7 @@ export default function InformationPanel({ onOpenTicket, tickets, users }) {
       </section>
 
       <div className="information-grid">
-        <TechnicianRanking technicians={technicians} />
+        <TechnicianRanking technicians={technicianRanking} />
         <BarInsight
           emptyTitle="Sin volumen por categoria"
           eyebrow="Volumen"
