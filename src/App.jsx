@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import MainLayout from "./components/layout/MainLayout";
 import { TICKET_STATUSES, initialTickets } from "./data/tickets";
@@ -9,7 +10,9 @@ import {
 } from "./data/users";
 import CreateTicket from "./pages/CreateTicket/CreateTicket";
 import Dashboard from "./pages/Dashboard/Dashboard";
+import InformationPanel from "./pages/InformationPanel/InformationPanel";
 import Login from "./pages/Login/Login";
+import Settings from "./pages/Settings/Settings";
 import TechnicianProfile from "./pages/TechnicianProfile/TechnicianProfile";
 import TicketDetailPage from "./pages/TicketDetail/TicketDetail";
 import Tickets from "./pages/Tickets/Tickets";
@@ -49,12 +52,35 @@ function getDefaultView(user) {
   return isTechnicianUser(user) ? "dashboard" : "tickets";
 }
 
+const defaultPreferences = {
+  darkMode: false,
+  navigationMode: "sidebar",
+};
+
+function readStoredPreferences() {
+  try {
+    const rawPreferences = window.localStorage.getItem("dayflow-preferences");
+    const parsedPreferences = rawPreferences ? JSON.parse(rawPreferences) : {};
+    const navigationMode = ["sidebar", "top", "compact"].includes(parsedPreferences.navigationMode)
+      ? parsedPreferences.navigationMode
+      : defaultPreferences.navigationMode;
+
+    return {
+      darkMode: Boolean(parsedPreferences.darkMode),
+      navigationMode,
+    };
+  } catch {
+    return defaultPreferences;
+  }
+}
+
 export default function App() {
   const [users, setUsers] = useState(initialUsers);
   const [tickets, setTickets] = useState(initialTickets);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeView, setActiveView] = useState("dashboard");
   const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [preferences, setPreferences] = useState(readStoredPreferences);
 
   const isTechnician = isTechnicianUser(currentUser);
 
@@ -69,7 +95,7 @@ export default function App() {
       return;
     }
 
-    if ((view === "profile" || view === "users") && !isTechnician) {
+    if ((view === "profile" || view === "users" || view === "information") && !isTechnician) {
       setActiveView("tickets");
       return;
     }
@@ -326,9 +352,58 @@ export default function App() {
       email: form.email,
       password: form.password,
       role: ROLES.EMPLOYEE,
+      jobTitle: form.jobTitle,
+      department: form.department,
     };
 
     setUsers((currentUsers) => [...currentUsers, nextUser]);
+  }
+
+  function deleteUser(userId) {
+    if (currentUser?.id === userId) {
+      return;
+    }
+
+    setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+  }
+
+  function updatePreferences(nextPreferences) {
+    setPreferences((currentPreferences) => {
+      const updatedPreferences = { ...currentPreferences, ...nextPreferences };
+      try {
+        window.localStorage.setItem("dayflow-preferences", JSON.stringify(updatedPreferences));
+      } catch {
+        // La configuracion sigue activa durante la sesion aunque el navegador bloquee almacenamiento local.
+      }
+      return updatedPreferences;
+    });
+  }
+
+  function changePassword({ confirmPassword, currentPassword, newPassword }) {
+    if (!currentUser) {
+      return { ok: false, message: "No hay una sesion activa." };
+    }
+
+    if (currentPassword !== currentUser.password) {
+      return { ok: false, message: "La contrasena actual no coincide." };
+    }
+
+    const cleanPassword = newPassword.trim();
+
+    if (cleanPassword.length < 4) {
+      return { ok: false, message: "La nueva contrasena debe tener al menos 4 caracteres." };
+    }
+
+    if (cleanPassword !== confirmPassword.trim()) {
+      return { ok: false, message: "La confirmacion no coincide." };
+    }
+
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => (user.id === currentUser.id ? { ...user, password: cleanPassword } : user)),
+    );
+    setCurrentUser((user) => (user ? { ...user, password: cleanPassword } : user));
+
+    return { ok: true };
   }
 
   if (!currentUser) {
@@ -339,12 +414,14 @@ export default function App() {
     <MainLayout
       activeView={activeView}
       currentUser={currentUser}
+      darkMode={preferences.darkMode}
+      navigationMode={preferences.navigationMode}
       onCreateTicket={() => navigate("create-ticket")}
       onLogout={handleLogout}
       onNavigate={navigate}
     >
       {activeView === "dashboard" && isTechnician ? (
-        <Dashboard onOpenTicket={openTicket} tickets={tickets} users={users} />
+        <Dashboard onOpenTicket={openTicket} tickets={tickets} />
       ) : null}
 
       {activeView === "tickets" ? (
@@ -379,8 +456,20 @@ export default function App() {
         <TechnicianProfile currentUser={currentUser} onOpenTicket={openTicket} tickets={tickets} />
       ) : null}
 
+      {activeView === "information" && isTechnician ? (
+        <InformationPanel onOpenTicket={openTicket} tickets={tickets} users={users} />
+      ) : null}
+
       {activeView === "users" && isTechnician ? (
-        <Users onCreateUser={createUser} users={users} />
+        <Users onCreateUser={createUser} onDeleteUser={deleteUser} users={users} />
+      ) : null}
+
+      {activeView === "settings" ? (
+        <Settings
+          onChangePassword={changePassword}
+          onUpdatePreferences={updatePreferences}
+          preferences={preferences}
+        />
       ) : null}
     </MainLayout>
   );

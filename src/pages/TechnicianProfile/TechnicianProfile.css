@@ -1,5 +1,60 @@
+.profile-page {
+  width: 100%;
+  max-width: none;
+}
+
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.profile-focus-grid {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+
+.profile-identity {
+  display: grid;
+  gap: 7px;
+}
+
+.profile-identity h2 {
+  font-size: 1.35rem;
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.profile-meta b {
+  min-height: 28px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.profile-activity-panel {
+  align-content: start;
+}
+
+.performance-panel {
+  align-content: start;
+}
+
+.performance-grid div {
+  min-height: 104px;
+  align-content: center;
+}
+
+@media (max-width: 1180px) {
+  .profile-grid,
+  .profile-focus-grid {
+    grid-template-columns: 1fr;
+  }
 }

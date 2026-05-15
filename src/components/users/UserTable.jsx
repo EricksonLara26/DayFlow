@@ -1,9 +1,10 @@
+import { Trash2 } from "lucide-react";
+import Button from "../common/Button";
 import EmptyState from "../common/EmptyState";
-import { getRoleLabel } from "../../data/users";
 
-export default function UserTable({ users }) {
+export default function UserTable({ onDeleteUser, users }) {
   if (!users.length) {
-    return <EmptyState title="Sin usuarios" message="Los empleados creados se mostraran aqui." />;
+    return <EmptyState title="Sin usuarios" message="Los empleados registrados se mostraran aqui." />;
   }
 
   return (
@@ -14,7 +15,9 @@ export default function UserTable({ users }) {
             <th>Nombre</th>
             <th>Usuario</th>
             <th>Correo</th>
-            <th>Rol</th>
+            <th>Cargo</th>
+            <th>Area/departamento</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -25,7 +28,13 @@ export default function UserTable({ users }) {
               </td>
               <td>{user.username}</td>
               <td>{user.email}</td>
-              <td>{getRoleLabel(user.role)}</td>
+              <td>{user.jobTitle}</td>
+              <td>{user.department}</td>
+              <td>
+                <Button icon={Trash2} variant="ghost" onClick={() => onDeleteUser(user.id)}>
+                  Eliminar
+                </Button>
+              </td>
             </tr>
           ))}
         </tbody>

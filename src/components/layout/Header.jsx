@@ -5,7 +5,7 @@ import { getRoleLabel } from "../../data/users";
 const viewTitles = {
   dashboard: {
     eyebrow: "Dashboard administrativo",
-    title: "Desempeno del equipo tecnico",
+    title: "Estado operativo",
   },
   tickets: {
     eyebrow: "Solicitudes",
@@ -23,9 +23,17 @@ const viewTitles = {
     eyebrow: "Perfil del tecnico",
     title: "Metricas y rendimiento",
   },
+  information: {
+    eyebrow: "Panel de informacion",
+    title: "Analitica y exportacion",
+  },
   users: {
-    eyebrow: "Gestión de Usuarios",
+    eyebrow: "Gestion de usuarios",
     title: "Administracion de empleados",
+  },
+  settings: {
+    eyebrow: "Personalizacion",
+    title: "Preferencias del sistema",
   },
 };
 

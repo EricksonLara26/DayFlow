@@ -9,7 +9,7 @@ export default function TechnicianChart({ technicians }) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Solicitudes completadas</p>
-          <h2>Tecnicos ordenados de menor a mayor</h2>
+          <h2>Tecnicos con mas cierres</h2>
         </div>
       </div>
       <div className="bar-chart">

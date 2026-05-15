@@ -13,6 +13,8 @@ export const initialUsers = [
     email: "elara@empresa.com",
     password: "1234",
     role: ROLES.ADMIN,
+    jobTitle: "Administrador de soporte",
+    department: "Tecnologia",
     completedTickets: 4,
     dismissedTickets: 1,
   },
@@ -24,6 +26,8 @@ export const initialUsers = [
     email: "msantos@empresa.com",
     password: "1234",
     role: ROLES.TECHNICIAN,
+    jobTitle: "Tecnica de redes",
+    department: "Tecnologia",
     completedTickets: 2,
     dismissedTickets: 0,
   },
@@ -35,6 +39,8 @@ export const initialUsers = [
     email: "cdiaz@empresa.com",
     password: "1234",
     role: ROLES.TECHNICIAN,
+    jobTitle: "Especialista de infraestructura",
+    department: "Tecnologia",
     completedTickets: 6,
     dismissedTickets: 2,
   },
@@ -46,6 +52,8 @@ export const initialUsers = [
     email: "arojas@empresa.com",
     password: "1234",
     role: ROLES.TECHNICIAN,
+    jobTitle: "Analista de soporte",
+    department: "Tecnologia",
     completedTickets: 1,
     dismissedTickets: 1,
   },
@@ -57,6 +65,8 @@ export const initialUsers = [
     email: "jperez@empresa.com",
     password: "1234",
     role: ROLES.EMPLOYEE,
+    jobTitle: "Analista de nomina",
+    department: "Finanzas",
   },
   {
     id: 11,
@@ -66,6 +76,8 @@ export const initialUsers = [
     email: "lmendez@empresa.com",
     password: "1234",
     role: ROLES.EMPLOYEE,
+    jobTitle: "Coordinadora administrativa",
+    department: "Administracion",
   },
   {
     id: 12,
@@ -75,6 +87,8 @@ export const initialUsers = [
     email: "pnunez@empresa.com",
     password: "1234",
     role: ROLES.EMPLOYEE,
+    jobTitle: "Asistente de operaciones",
+    department: "Operaciones",
   },
   {
     id: 13,
@@ -84,6 +98,8 @@ export const initialUsers = [
     email: "scastillo@empresa.com",
     password: "1234",
     role: ROLES.EMPLOYEE,
+    jobTitle: "Ejecutiva comercial",
+    department: "Ventas",
   },
 ];
 
@@ -101,7 +117,7 @@ export function isTechnicianUser(user) {
 
 export function getRoleLabel(role) {
   const labels = {
-    [ROLES.ADMIN]: "Admin / Tecnico",
+    [ROLES.ADMIN]: "Administrador tecnico",
     [ROLES.TECHNICIAN]: "Tecnico",
     [ROLES.EMPLOYEE]: "Empleado",
   };

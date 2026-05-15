@@ -1,7 +1,8 @@
-import { CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
+import { Activity, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
 import EmptyState from "../../components/common/EmptyState";
 import Button from "../../components/common/Button";
+import UserPhoto from "../../components/common/UserPhoto";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import { getRoleLabel } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
@@ -45,102 +46,100 @@ export default function TechnicianProfile({ currentUser, onOpenTicket, tickets }
   const personalHistory = tickets
     .flatMap((ticket) => ticket.history.map((item) => ({ ...item, ticketId: ticket.id, ticketTitle: ticket.title })))
     .filter((item) => item.userId === currentUser.id)
-    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
+    .slice(0, 8);
 
   return (
     <div className="page-stack profile-page">
       <section className="profile-hero panel">
-        <div className="profile-avatar-large">
-          {currentUser.firstName.slice(0, 1)}{currentUser.lastName.slice(0, 1)}
-        </div>
-        <div>
-          <p className="eyebrow">Perfil del tecnico</p>
+        <UserPhoto className="profile-photo-large" user={currentUser} />
+        <div className="profile-identity">
+          <p className="eyebrow">Perfil operativo</p>
           <h2>{currentUser.firstName} {currentUser.lastName}</h2>
-          <span>{getRoleLabel(currentUser.role)} - {currentUser.email}</span>
-        </div>
-      </section>
-
-      <section className="panel profile-section-title">
-        <div>
-          <p className="eyebrow">Metricas</p>
-          <h2>Resumen personal de gestion</h2>
+          <span>{currentUser.email}</span>
+          <div className="profile-meta">
+            <b>{getRoleLabel(currentUser.role)}</b>
+            <b>{currentUser.jobTitle || "Cargo no definido"}</b>
+            <b>{currentUser.department || "Area no definida"}</b>
+          </div>
         </div>
       </section>
 
       <section className="stats-grid profile-stats">
-        <StatCard icon={CheckCircle2} label="Tickets completados" tone="green" value={currentUser.completedTickets ?? 0} />
-        <StatCard icon={XCircle} label="Tickets desestimados" tone="dark" value={currentUser.dismissedTickets ?? 0} />
-        <StatCard
-          icon={ShieldCheck}
-          label="Total gestionado"
-          tone="blue"
-          value={(currentUser.completedTickets ?? 0) + (currentUser.dismissedTickets ?? 0)}
-        />
+        <StatCard icon={CheckCircle2} label="Solicitudes completadas" tone="green" value={completedTickets.length} />
+        <StatCard icon={XCircle} label="Desestimadas" tone="dark" value={dismissedTickets.length} />
+        <StatCard icon={ShieldCheck} label="Total gestionado" tone="blue" value={managedTickets} />
       </section>
 
-      <section className="panel performance-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Rendimiento</p>
-            <h2>Actividad operativa del tecnico</h2>
+      <div className="profile-grid profile-focus-grid">
+        <section className="panel performance-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Rendimiento</p>
+              <h2>Metricas personales</h2>
+            </div>
+            <Activity size={20} aria-hidden="true" />
           </div>
-        </div>
-        <div className="performance-grid">
-          <div>
-            <span>Asignados historicos</span>
-            <strong>{assignedTickets.length}</strong>
+          <div className="performance-grid">
+            <div>
+              <span>Asignados historicos</span>
+              <strong>{assignedTickets.length}</strong>
+            </div>
+            <div>
+              <span>Activos asignados</span>
+              <strong>{activeTickets}</strong>
+            </div>
+            <div>
+              <span>Efectividad de cierre</span>
+              <strong>{completionRate}%</strong>
+            </div>
           </div>
-          <div>
-            <span>Activos asignados</span>
-            <strong>{activeTickets}</strong>
+        </section>
+
+        <section className="panel profile-activity-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Actividad</p>
+              <h2>Ultimos movimientos</h2>
+            </div>
+            <span>{personalHistory.length}</span>
           </div>
-          <div>
-            <span>Efectividad de cierre</span>
-            <strong>{completionRate}%</strong>
-          </div>
-        </div>
-      </section>
+          {personalHistory.length ? (
+            <div className="timeline-list">
+              {personalHistory.map((item) => (
+                <article className="timeline-item" key={`${item.ticketId}-${item.id}-${item.createdAt}`}>
+                  <span className="timeline-dot" />
+                  <div>
+                    <strong>{item.action}</strong>
+                    <span>#{item.ticketId} - {item.ticketTitle}</span>
+                    <time>{formatDateTime(item.createdAt)}</time>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="Sin historial personal" message="Tus acciones quedaran registradas aqui." />
+          )}
+        </section>
+      </div>
 
       <div className="profile-grid">
         <section className="panel">
           <div className="section-heading">
-            <h2>Tickets completados</h2>
+            <h2>Solicitudes completadas</h2>
             <span>{completedTickets.length}</span>
           </div>
-          <TicketHistoryList emptyTitle="Sin tickets completados" onOpenTicket={onOpenTicket} tickets={completedTickets} />
+          <TicketHistoryList emptyTitle="Sin solicitudes completadas" onOpenTicket={onOpenTicket} tickets={completedTickets} />
         </section>
 
         <section className="panel">
           <div className="section-heading">
-            <h2>Tickets desestimados</h2>
+            <h2>Solicitudes desestimadas</h2>
             <span>{dismissedTickets.length}</span>
           </div>
-          <TicketHistoryList emptyTitle="Sin tickets desestimados" onOpenTicket={onOpenTicket} tickets={dismissedTickets} />
+          <TicketHistoryList emptyTitle="Sin solicitudes desestimadas" onOpenTicket={onOpenTicket} tickets={dismissedTickets} />
         </section>
       </div>
-
-      <section className="panel">
-        <div className="section-heading">
-          <h2>Historial de actividad</h2>
-          <span>{personalHistory.length}</span>
-        </div>
-        {personalHistory.length ? (
-          <div className="timeline-list compact-timeline">
-            {personalHistory.map((item) => (
-              <article className="timeline-item" key={`${item.ticketId}-${item.id}-${item.createdAt}`}>
-                <span className="timeline-dot" />
-                <div>
-                  <strong>{item.action}</strong>
-                  <span>#{item.ticketId} - {item.ticketTitle}</span>
-                  <time>{formatDateTime(item.createdAt)}</time>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="Sin historial personal" message="Tus acciones quedaran registradas aqui." />
-        )}
-      </section>
     </div>
   );
 }

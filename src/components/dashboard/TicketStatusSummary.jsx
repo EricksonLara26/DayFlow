@@ -15,8 +15,8 @@ export default function TicketStatusSummary({ stats }) {
     <section className="panel status-summary">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Estado actual</p>
-          <h2>Resumen de tickets</h2>
+          <p className="eyebrow">Vista de estado actual</p>
+          <h2>Resumen de solicitudes</h2>
         </div>
       </div>
       <div className="status-summary-list">

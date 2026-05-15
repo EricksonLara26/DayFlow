@@ -8,7 +8,8 @@ const initialForm = {
   username: "",
   email: "",
   password: "",
-  role: "EMPLOYEE",
+  jobTitle: "",
+  department: "",
 };
 
 export default function UserForm({ onCreateUser, users }) {
@@ -27,6 +28,11 @@ export default function UserForm({ onCreateUser, users }) {
 
     if (!form.firstName.trim() || !form.lastName.trim()) {
       setError("Nombre y apellido son obligatorios.");
+      return;
+    }
+
+    if (!form.jobTitle.trim() || !form.department.trim()) {
+      setError("Cargo y area/departamento son obligatorios.");
       return;
     }
 
@@ -57,6 +63,8 @@ export default function UserForm({ onCreateUser, users }) {
       username,
       email,
       password: form.password.trim(),
+      jobTitle: form.jobTitle.trim(),
+      department: form.department.trim(),
     });
     setForm(initialForm);
     setError("");
@@ -64,6 +72,12 @@ export default function UserForm({ onCreateUser, users }) {
 
   return (
     <form className="form-panel user-form" onSubmit={handleSubmit}>
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Registro</p>
+          <h2>Nuevo empleado</h2>
+        </div>
+      </div>
       <div className="form-grid two-columns">
         <label className="field">
           <span>Nombre</span>
@@ -90,10 +104,12 @@ export default function UserForm({ onCreateUser, users }) {
           />
         </label>
         <label className="field">
-          <span>Rol</span>
-          <select value={form.role} onChange={(event) => updateField("role", event.target.value)}>
-            <option value="EMPLOYEE">Empleado</option>
-          </select>
+          <span>Cargo del empleado</span>
+          <input value={form.jobTitle} onChange={(event) => updateField("jobTitle", event.target.value)} />
+        </label>
+        <label className="field span-2">
+          <span>Area/departamento</span>
+          <input value={form.department} onChange={(event) => updateField("department", event.target.value)} />
         </label>
       </div>
       {error ? <p className="form-error">{error}</p> : null}

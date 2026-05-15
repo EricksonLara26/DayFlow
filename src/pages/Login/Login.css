@@ -15,7 +15,7 @@
   padding: clamp(24px, 5vw, 40px);
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--surface);
   box-shadow: var(--shadow-lg);
 }
 
@@ -50,23 +50,7 @@
   line-height: 1.55;
 }
 
-.login-form,
-.login-hints {
+.login-form {
   display: grid;
   gap: 14px;
-}
-
-.login-hints {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.login-hints span {
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 700;
 }

@@ -32,7 +32,7 @@ export function getTicketsDueInThreeDays(tickets) {
 
 export function sortTechniciansByCompletedTickets(technicians) {
   return [...technicians].sort((first, second) => {
-    const completedDifference = (first.completedTickets ?? 0) - (second.completedTickets ?? 0);
+    const completedDifference = (second.completedTickets ?? 0) - (first.completedTickets ?? 0);
 
     if (completedDifference !== 0) {
       return completedDifference;
@@ -40,6 +40,37 @@ export function sortTechniciansByCompletedTickets(technicians) {
 
     return `${first.firstName} ${first.lastName}`.localeCompare(`${second.firstName} ${second.lastName}`);
   });
+}
+
+export function getCompletedTickets(tickets) {
+  return tickets
+    .filter((ticket) => ticket.status === TICKET_STATUSES.COMPLETED)
+    .sort((first, second) => (second.completedAt ?? "").localeCompare(first.completedAt ?? ""));
+}
+
+export function getTicketVolumeByCategory(tickets) {
+  const totals = tickets.reduce((accumulator, ticket) => {
+    accumulator[ticket.category] = (accumulator[ticket.category] ?? 0) + 1;
+    return accumulator;
+  }, {});
+
+  return Object.entries(totals)
+    .map(([label, value]) => ({ label, value }))
+    .sort((first, second) => second.value - first.value || first.label.localeCompare(second.label));
+}
+
+export function getTicketDemandByDepartment(tickets, users) {
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  const totals = tickets.reduce((accumulator, ticket) => {
+    const requester = usersById.get(ticket.createdBy);
+    const department = requester?.department?.trim() || "Sin departamento";
+    accumulator[department] = (accumulator[department] ?? 0) + 1;
+    return accumulator;
+  }, {});
+
+  return Object.entries(totals)
+    .map(([label, value]) => ({ label, value }))
+    .sort((first, second) => second.value - first.value || first.label.localeCompare(second.label));
 }
 
 export function calculateDashboardStats(tickets) {

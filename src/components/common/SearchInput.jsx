@@ -1,8 +1,8 @@
 import { Search } from "lucide-react";
 
-export default function SearchInput({ value, onChange, placeholder = "Buscar" }) {
+export default function SearchInput({ className = "", value, onChange, placeholder = "Buscar" }) {
   return (
-    <label className="search-input">
+    <label className={`search-input ${className}`.trim()}>
       <Search size={17} aria-hidden="true" />
       <input
         type="search"

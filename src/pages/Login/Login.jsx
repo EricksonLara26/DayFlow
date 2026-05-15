@@ -5,8 +5,8 @@ import "./Login.css";
 
 export default function Login({ onLogin }) {
   const [form, setForm] = useState({
-    username: "elara",
-    password: "1234",
+    username: "",
+    password: "",
     userType: "ADMIN",
   });
   const [error, setError] = useState("");
@@ -39,10 +39,10 @@ export default function Login({ onLogin }) {
         </div>
 
         <div>
-          <p className="eyebrow">Ingreso simulado</p>
+          <p className="eyebrow">Acceso seguro</p>
           <h1>Accede al panel de soporte tecnico</h1>
           <p className="login-copy">
-            Usa usuarios locales para probar los flujos de empleados, tecnicos y administradores.
+            Ingresa con tus credenciales corporativas para gestionar solicitudes y seguimiento operativo.
           </p>
         </div>
 
@@ -86,11 +86,6 @@ export default function Login({ onLogin }) {
             Iniciar sesion
           </Button>
         </form>
-
-        <div className="login-hints">
-          <span>Admin: elara / 1234</span>
-          <span>Empleado: jperez / 1234</span>
-        </div>
       </section>
     </main>
   );
