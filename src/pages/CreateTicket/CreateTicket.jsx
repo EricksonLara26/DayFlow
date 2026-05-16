@@ -1,8 +1,11 @@
 import TicketForm from "../../components/tickets/TicketForm";
+import { ROLES, isTechnicianUser } from "../../data/users";
 import "./CreateTicket.css";
 
-export default function CreateTicket({ currentUser, onCreateTicket }) {
-  const requesters = [currentUser];
+export default function CreateTicket({ currentUser, onCreateTicket, users }) {
+  const requesters = isTechnicianUser(currentUser)
+    ? users.filter((user) => user.role === ROLES.EMPLOYEE)
+    : [currentUser];
 
   return (
     <div className="page-stack create-ticket-page">

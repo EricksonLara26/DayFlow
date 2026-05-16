@@ -4,33 +4,27 @@ import {
   ClipboardList,
   Info,
   LogOut,
-  PlusCircle,
-  Settings,
-  Trophy,
   UserCircle,
   Users,
 } from "lucide-react";
-import { getRoleLabel, isEmployeeUser, isSupervisorUser, isTechnicianUser } from "../../data/users";
+import { isSupervisorUser, isTechnicianUser } from "../../data/users";
 
 const supervisorItems = [
   { id: "dashboard", label: "Inicio", icon: BarChart3 },
   { id: "tickets", label: "Solicitudes", icon: ClipboardList },
   { id: "information", label: "Panel de informacion", icon: Info },
   { id: "users", label: "Gestion de usuarios", icon: Users },
-  { id: "settings", label: "Personalizacion", icon: Settings },
 ];
 
 const technicianItems = [
   { id: "dashboard", label: "Inicio", icon: BarChart3 },
   { id: "tickets", label: "Solicitudes", icon: ClipboardList },
-  { id: "ranking", label: "Ranking tecnico", icon: Trophy },
-  { id: "settings", label: "Personalizacion", icon: Settings },
+  { id: "information", label: "Panel de informacion", icon: Info },
+  { id: "users", label: "Gestion de usuarios", icon: Users },
 ];
 
 const employeeItems = [
   { id: "tickets", label: "Mis solicitudes", icon: ClipboardList },
-  { id: "create-ticket", label: "Crear solicitud", icon: PlusCircle },
-  { id: "settings", label: "Personalizacion", icon: Settings },
 ];
 
 function NavigationButton({ activeView, item, onNavigate }) {
@@ -63,13 +57,15 @@ function BrandBlock() {
 }
 
 function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate }) {
+  const profileDescription = isTechnicianUser(currentUser) ? "Metricas y preferencias" : "Datos y preferencias";
+
   return (
     <button
-      aria-label="Abrir perfil y metricas"
+      aria-label="Abrir mi perfil"
       className={`nav-profile-button profile-access-button ${isCompact ? "icon-only" : ""} ${
         activeView === "profile" ? "active" : ""
       }`}
-      title="Mi perfil y metricas"
+      title="Mi perfil"
       type="button"
       onClick={() => onNavigate("profile")}
     >
@@ -79,7 +75,7 @@ function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate 
       {!isCompact ? (
         <span className="profile-access-copy">
           <strong>Mi perfil</strong>
-          <small>{currentUser.firstName} {currentUser.lastName} - Metricas</small>
+          <small>{profileDescription}</small>
         </span>
       ) : null}
       {!isCompact ? <ChevronRight className="profile-access-chevron" size={18} aria-hidden="true" /> : null}
@@ -90,7 +86,6 @@ function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate 
 export default function Sidebar({ activeView, currentUser, navigationMode, onNavigate, onLogout }) {
   const isTechnician = isTechnicianUser(currentUser);
   const isSupervisor = isSupervisorUser(currentUser);
-  const isEmployee = isEmployeeUser(currentUser);
   const items = isSupervisor ? supervisorItems : isTechnician ? technicianItems : employeeItems;
 
   if (navigationMode === "top") {
@@ -103,15 +98,7 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
           ))}
         </nav>
         <div className="top-nav-actions">
-          {isTechnician ? (
-            <ProfileButton activeView={activeView} currentUser={currentUser} onNavigate={onNavigate} />
-          ) : (
-            <div className="nav-profile-static icon-only">
-              <span className="profile-access-icon">
-                <UserCircle size={22} aria-hidden="true" />
-              </span>
-            </div>
-          )}
+          <ProfileButton activeView={activeView} currentUser={currentUser} onNavigate={onNavigate} />
           <button aria-label="Cerrar sesion" className="sidebar-link logout-link" type="button" onClick={onLogout}>
             <LogOut size={18} aria-hidden="true" />
             <span>Cerrar sesion</span>
@@ -134,26 +121,12 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
         ))}
       </nav>
 
-      {isTechnician ? (
-        <ProfileButton
-          activeView={activeView}
-          currentUser={currentUser}
-          isCompact={navigationMode === "compact"}
-          onNavigate={onNavigate}
-        />
-      ) : isEmployee || isSupervisor ? (
-        <div className={`nav-profile-static ${navigationMode === "compact" ? "icon-only" : ""}`}>
-          <span className="profile-access-icon">
-            <UserCircle size={22} aria-hidden="true" />
-          </span>
-          {navigationMode !== "compact" ? (
-            <span>
-              <strong>{currentUser.firstName} {currentUser.lastName}</strong>
-              <small>{currentUser.jobTitle || getRoleLabel(currentUser.role)}</small>
-            </span>
-          ) : null}
-        </div>
-      ) : null}
+      <ProfileButton
+        activeView={activeView}
+        currentUser={currentUser}
+        isCompact={navigationMode === "compact"}
+        onNavigate={onNavigate}
+      />
 
       <button
         aria-label="Cerrar sesion"

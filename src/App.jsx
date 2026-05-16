@@ -14,7 +14,6 @@ import CreateTicket from "./pages/CreateTicket/CreateTicket";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import InformationPanel from "./pages/InformationPanel/InformationPanel";
 import Login from "./pages/Login/Login";
-import Settings from "./pages/Settings/Settings";
 import TechnicianProfile from "./pages/TechnicianProfile/TechnicianProfile";
 import TicketDetailPage from "./pages/TicketDetail/TicketDetail";
 import Tickets from "./pages/Tickets/Tickets";
@@ -75,17 +74,8 @@ function getVisibleTicketsForUser(tickets, user) {
     return [];
   }
 
-  if (isSupervisorUser(user)) {
+  if (isSupervisorUser(user) || isTechnicianUser(user)) {
     return tickets;
-  }
-
-  if (isTechnicianUser(user)) {
-    return tickets.filter((ticket) => {
-      const isAvailable = ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo;
-      const isAssignedToTechnician = ticket.assignedTo === user.id;
-
-      return isAvailable || isAssignedToTechnician;
-    });
   }
 
   return tickets.filter((ticket) => ticket.createdBy === user.id);
@@ -124,7 +114,7 @@ export default function App() {
   const isEmployee = isEmployeeUser(currentUser);
   const isTechnician = isTechnicianUser(currentUser);
   const isSupervisor = isSupervisorUser(currentUser);
-  const canCreateTicket = isEmployee;
+  const canCreateTicket = isEmployee || isTechnician;
   const ticketScope = getTicketScope(currentUser);
   const technicians = useMemo(() => users.filter(isTechnicianUser), [users]);
   const technicianRanking = useMemo(
@@ -152,7 +142,7 @@ export default function App() {
       return isTechnician || isSupervisor;
     }
 
-    if (view === "tickets" || view === "settings") {
+    if (view === "tickets") {
       return true;
     }
 
@@ -161,7 +151,7 @@ export default function App() {
     }
 
     if (view === "profile") {
-      return isTechnician;
+      return true;
     }
 
     if (view === "ranking") {
@@ -169,7 +159,7 @@ export default function App() {
     }
 
     if (view === "information" || view === "users") {
-      return isSupervisor;
+      return isTechnician || isSupervisor;
     }
 
     return false;
@@ -214,13 +204,8 @@ export default function App() {
       return false;
     }
 
-    if (isSupervisor) {
+    if (isSupervisor || isTechnician) {
       return true;
-    }
-
-    if (isTechnician) {
-      const isAvailable = ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo;
-      return isAvailable || ticket.assignedTo === currentUser.id;
     }
 
     return ticket.createdBy === currentUser.id;
@@ -256,7 +241,7 @@ export default function App() {
       return false;
     }
 
-    return ticket.assignedTo === currentUser.id;
+    return !ticket.assignedTo || ticket.assignedTo === currentUser.id;
   }
 
   function canCommentTicket(ticket) {
@@ -269,7 +254,7 @@ export default function App() {
     }
 
     if (isTechnician) {
-      return ticket.assignedTo === currentUser.id;
+      return true;
     }
 
     return ticket.createdBy === currentUser.id;
@@ -332,6 +317,8 @@ export default function App() {
 
     const timestamp = nowIso();
     const shouldClose = nextStatus === TICKET_STATUSES.COMPLETED || nextStatus === TICKET_STATUSES.DISMISSED;
+    const assignedTo = ticket.assignedTo ?? currentUser.id;
+    const assignedToName = ticket.assignedToName ?? getUserFullName(currentUser);
     const action =
       nextStatus === TICKET_STATUSES.COMPLETED
         ? "Ticket completado"
@@ -347,7 +334,10 @@ export default function App() {
 
         return {
           ...currentTicket,
+          assignedTo,
+          assignedToName,
           status: nextStatus,
+          takenAt: currentTicket.takenAt ?? (!currentTicket.assignedTo ? timestamp : currentTicket.takenAt),
           updatedAt: timestamp,
           completedAt: shouldClose ? timestamp : currentTicket.completedAt,
           history: [...currentTicket.history, createHistoryItem(currentTicket, action, currentUser, timestamp)],
@@ -398,7 +388,7 @@ export default function App() {
     }
 
     const timestamp = nowIso();
-    const requester = currentUser;
+    const requester = form.requester ?? currentUser;
     const requesterName = getUserFullName(requester);
     const nextTicket = {
       id: getNextId(tickets),
@@ -435,7 +425,7 @@ export default function App() {
   }
 
   function createUser(form) {
-    if (!isSupervisor) {
+    if (!isSupervisor && !isTechnician) {
       return;
     }
 
@@ -457,7 +447,7 @@ export default function App() {
   function deleteUser(userId) {
     const targetUser = users.find((user) => user.id === userId);
 
-    if (!isSupervisor || currentUser?.id === userId || targetUser?.role !== ROLES.EMPLOYEE) {
+    if ((!isSupervisor && !isTechnician) || currentUser?.id === userId || targetUser?.role !== ROLES.EMPLOYEE) {
       return;
     }
 
@@ -465,7 +455,7 @@ export default function App() {
   }
 
   function updateUserEmail(userId, email) {
-    if (!isSupervisor) {
+    if (!isSupervisor && !isTechnician) {
       return { ok: false, message: "No tienes permiso para editar usuarios." };
     }
 
@@ -595,14 +585,16 @@ export default function App() {
       ) : null}
 
       {activeView === "create-ticket" && canCreateTicket ? (
-        <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} />
+        <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} users={users} />
       ) : null}
 
-      {activeView === "profile" && isTechnician ? (
+      {activeView === "profile" ? (
         <TechnicianProfile
           currentUser={currentUser}
-          onOpenSettings={() => navigate("settings")}
+          onChangePassword={changePassword}
           onOpenTicket={openTicket}
+          onUpdatePreferences={updatePreferences}
+          preferences={preferences}
           tickets={tickets}
         />
       ) : null}
@@ -613,7 +605,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {activeView === "information" && isSupervisor ? (
+      {activeView === "information" && (isTechnician || isSupervisor) ? (
         <InformationPanel
           canDownloadReports={isSupervisor}
           onAuthorizeReport={authorizeTechnicianReport}
@@ -623,7 +615,7 @@ export default function App() {
         />
       ) : null}
 
-      {activeView === "users" && isSupervisor ? (
+      {activeView === "users" && (isTechnician || isSupervisor) ? (
         <Users
           onCreateUser={createUser}
           onDeleteUser={deleteUser}
@@ -632,13 +624,6 @@ export default function App() {
         />
       ) : null}
 
-      {activeView === "settings" ? (
-        <Settings
-          onChangePassword={changePassword}
-          onUpdatePreferences={updatePreferences}
-          preferences={preferences}
-        />
-      ) : null}
     </MainLayout>
   );
 }

@@ -14,7 +14,7 @@
 }
 
 .profile-page .profile-hero {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .profile-hero-button {
@@ -68,6 +68,63 @@
   align-content: start;
 }
 
+.profile-data-panel {
+  align-content: start;
+}
+
+.profile-data-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-data-item {
+  display: grid;
+  gap: 6px;
+  min-height: 78px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.profile-data-item span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.profile-data-item strong {
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+
+.profile-preferences-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-preferences-heading h2 {
+  font-size: 1.25rem;
+}
+
+.profile-preferences-heading strong {
+  min-height: 30px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.profile-settings-grid {
+  display: grid;
+  gap: 16px;
+}
+
 .performance-panel {
   align-content: start;
 }
@@ -90,9 +147,15 @@
   .profile-page .profile-hero {
     grid-template-columns: auto minmax(0, 1fr);
   }
+}
 
-  .profile-page .profile-hero .btn {
-    grid-column: 1 / -1;
-    justify-self: start;
+@media (max-width: 720px) {
+  .profile-data-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-preferences-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

@@ -5,22 +5,37 @@
 
 .users-layout {
   display: grid;
-  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 16px;
 }
 
-.users-layout .user-form {
-  position: sticky;
-  top: 96px;
+.users-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.users-layout .user-form .two-columns {
-  grid-template-columns: 1fr;
+.user-form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.46);
 }
 
-.users-layout .user-form .span-2 {
-  grid-column: auto;
+.user-form-modal {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+}
+
+.user-form-modal .user-form {
+  box-shadow: var(--shadow-lg);
 }
 
 .user-list-panel {
@@ -146,27 +161,21 @@
   .users-layout {
     grid-template-columns: 1fr;
   }
-
-  .users-layout .user-form {
-    position: static;
-  }
-
-  .users-layout .user-form .two-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .users-layout .user-form .span-2 {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 720px) {
   .user-filter-panel,
-  .users-layout .user-form .two-columns {
+  .user-form-modal .user-form .two-columns {
     grid-template-columns: 1fr;
   }
 
-  .users-layout .user-form .span-2 {
+  .users-page-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .user-form-modal .user-form .span-2 {
     grid-column: auto;
   }
 

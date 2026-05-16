@@ -20,8 +20,8 @@ const viewTitles = {
     title: "Crear ticket de soporte",
   },
   profile: {
-    eyebrow: "Perfil del tecnico",
-    title: "Metricas y rendimiento",
+    eyebrow: "Mi perfil",
+    title: "Datos y preferencias",
   },
   ranking: {
     eyebrow: "Ranking tecnico",
@@ -34,10 +34,6 @@ const viewTitles = {
   users: {
     eyebrow: "Gestion de usuarios",
     title: "Administracion de empleados",
-  },
-  settings: {
-    eyebrow: "Personalizacion",
-    title: "Preferencias del sistema",
   },
 };
 

@@ -21,7 +21,7 @@ const navigationOptions = [
   },
 ];
 
-export default function Settings({ onChangePassword, onUpdatePreferences, preferences }) {
+export function SettingsContent({ onChangePassword, onUpdatePreferences, preferences }) {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -54,15 +54,7 @@ export default function Settings({ onChangePassword, onUpdatePreferences, prefer
   }
 
   return (
-    <div className="page-stack settings-page">
-      <section className="panel page-intro">
-        <div>
-          <p className="eyebrow">Personalizacion del sistema</p>
-          <h2>Configuracion visual y seguridad</h2>
-        </div>
-        <strong>{preferences.darkMode ? "Modo oscuro" : "Modo claro"}</strong>
-      </section>
-
+    <>
       <section className="panel settings-panel">
         <div className="section-heading">
           <div>
@@ -157,6 +149,26 @@ export default function Settings({ onChangePassword, onUpdatePreferences, prefer
           </div>
         </form>
       </section>
+    </>
+  );
+}
+
+export default function Settings({ onChangePassword, onUpdatePreferences, preferences }) {
+  return (
+    <div className="page-stack settings-page">
+      <section className="panel page-intro">
+        <div>
+          <p className="eyebrow">Personalizacion del sistema</p>
+          <h2>Configuracion visual y seguridad</h2>
+        </div>
+        <strong>{preferences.darkMode ? "Modo oscuro" : "Modo claro"}</strong>
+      </section>
+
+      <SettingsContent
+        onChangePassword={onChangePassword}
+        onUpdatePreferences={onUpdatePreferences}
+        preferences={preferences}
+      />
     </div>
   );
 }

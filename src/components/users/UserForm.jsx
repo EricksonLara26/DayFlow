@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus, X } from "lucide-react";
 import Button from "../common/Button";
 
 const initialForm = {
@@ -12,7 +12,7 @@ const initialForm = {
   department: "",
 };
 
-export default function UserForm({ onCreateUser, users }) {
+export default function UserForm({ onCancel, onCreateUser, users }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
 
@@ -75,7 +75,7 @@ export default function UserForm({ onCreateUser, users }) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Registro</p>
-          <h2>Nuevo empleado</h2>
+          <h2 id="new-user-title">Nuevo empleado</h2>
         </div>
       </div>
       <div className="form-grid two-columns">
@@ -114,6 +114,11 @@ export default function UserForm({ onCreateUser, users }) {
       </div>
       {error ? <p className="form-error">{error}</p> : null}
       <div className="form-actions">
+        {onCancel ? (
+          <Button icon={X} variant="ghost" onClick={onCancel}>
+            Cancelar
+          </Button>
+        ) : null}
         <Button icon={UserPlus} type="submit">
           Crear empleado
         </Button>

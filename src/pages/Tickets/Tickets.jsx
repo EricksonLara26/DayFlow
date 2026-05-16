@@ -30,7 +30,7 @@ export default function Tickets({
     },
     technician: {
       eyebrow: "Vista tecnica",
-      title: "Solicitudes disponibles y asignadas a ti",
+      title: "Todas las solicitudes de soporte",
     },
     supervisor: {
       eyebrow: "Gestor supervisor",

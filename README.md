@@ -146,7 +146,14 @@ pnpm preview
 
 ## Usuarios de prueba
 
-Admin / tecnico:
+Supervisor:
+
+```text
+usuario: supervisor
+contrasena: 1234
+```
+
+Tecnico:
 
 ```text
 usuario: elara
