@@ -32,8 +32,20 @@ export default function Tickets({
       eyebrow: "Vista tecnica",
       title: "Todas las solicitudes de soporte",
     },
-    supervisor: {
-      eyebrow: "Gestor supervisor",
+    "technician-available": {
+      eyebrow: "Solicitudes disponibles",
+      title: "Tickets abiertos sin asignar",
+    },
+    "technician-mine": {
+      eyebrow: "Mis solicitudes",
+      title: "Tickets activos asignados a ti",
+    },
+    "technician-history": {
+      eyebrow: "Historial tecnico",
+      title: "Solicitudes cerradas por ti",
+    },
+    administrator: {
+      eyebrow: "Gestion administrativa",
       title: "Todas las solicitudes del sistema",
     },
   }[scope];
@@ -51,7 +63,7 @@ export default function Tickets({
       <TicketFilters filters={filters} onChange={setFilters} />
       <TicketTable
         canTakeTicket={canTakeTicket}
-        mode={scope === "supervisor" ? "supervisor" : "standard"}
+        mode={scope === "administrator" ? "administrator" : "standard"}
         onOpenTicket={onOpenTicket}
         onTakeTicket={onTakeTicket}
         tickets={filteredTickets}

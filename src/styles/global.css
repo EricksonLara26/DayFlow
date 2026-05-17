@@ -666,6 +666,16 @@ h3 {
   font-weight: 800;
 }
 
+.form-success {
+  padding: 10px 12px;
+  border: 1px solid #bfe5d1;
+  border-radius: 8px;
+  background: #e8f7ef;
+  color: var(--green);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 .filter-panel {
   display: grid;
   grid-template-columns: minmax(260px, 1.4fr) repeat(4, minmax(150px, 0.7fr)) auto;

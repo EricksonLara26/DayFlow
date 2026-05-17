@@ -16,13 +16,13 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
     );
   }
 
-  const isSupervisorMode = mode === "supervisor";
+  const isAdministratorMode = mode === "administrator";
 
   return (
     <>
       <div className="table-wrap ticket-table-wrap">
-        <table className={`data-table ${isSupervisorMode ? "supervisor-ticket-table" : ""}`.trim()}>
-          {isSupervisorMode ? (
+        <table className={`data-table ${isAdministratorMode ? "administrator-ticket-table" : ""}`.trim()}>
+          {isAdministratorMode ? (
             <thead>
               <tr>
                 <th>ID ticket</th>
@@ -55,7 +55,7 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
             {tickets.map((ticket) => {
               const takenAt = getTicketTakenAt(ticket);
 
-              if (isSupervisorMode) {
+              if (isAdministratorMode) {
                 return (
                   <tr key={ticket.id}>
                     <td>#{ticket.id}</td>

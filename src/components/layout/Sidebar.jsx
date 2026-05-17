@@ -1,34 +1,35 @@
 import {
   BarChart3,
   ChevronRight,
+  ClipboardCheck,
   ClipboardList,
+  FileDown,
+  History,
   Info,
+  Inbox,
   LogOut,
+  PlusCircle,
   UserCircle,
   Users,
 } from "lucide-react";
-import { isSupervisorUser, isTechnicianUser } from "../../data/users";
+import { VIEW_IDS, getNavigationItems } from "../../config/permissions";
+import { isTechnicianUser } from "../../data/users";
 
-const supervisorItems = [
-  { id: "dashboard", label: "Inicio", icon: BarChart3 },
-  { id: "tickets", label: "Solicitudes", icon: ClipboardList },
-  { id: "information", label: "Panel de informacion", icon: Info },
-  { id: "users", label: "Gestion de usuarios", icon: Users },
-];
-
-const technicianItems = [
-  { id: "dashboard", label: "Inicio", icon: BarChart3 },
-  { id: "tickets", label: "Solicitudes", icon: ClipboardList },
-  { id: "information", label: "Panel de informacion", icon: Info },
-  { id: "users", label: "Gestion de usuarios", icon: Users },
-];
-
-const employeeItems = [
-  { id: "tickets", label: "Mis solicitudes", icon: ClipboardList },
-];
+const iconsByView = {
+  [VIEW_IDS.AVAILABLE_TICKETS]: Inbox,
+  [VIEW_IDS.DASHBOARD]: BarChart3,
+  [VIEW_IDS.HISTORY]: History,
+  [VIEW_IDS.INFORMATION]: Info,
+  [VIEW_IDS.MY_TICKETS]: ClipboardCheck,
+  [VIEW_IDS.RANKING]: BarChart3,
+  [VIEW_IDS.REPORTS]: FileDown,
+  [VIEW_IDS.TICKETS]: ClipboardList,
+  [VIEW_IDS.CREATE_TICKET]: PlusCircle,
+  [VIEW_IDS.USERS]: Users,
+};
 
 function NavigationButton({ activeView, item, onNavigate }) {
-  const Icon = item.icon;
+  const Icon = iconsByView[item.id] ?? ClipboardList;
 
   return (
     <button
@@ -84,9 +85,7 @@ function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate 
 }
 
 export default function Sidebar({ activeView, currentUser, navigationMode, onNavigate, onLogout }) {
-  const isTechnician = isTechnicianUser(currentUser);
-  const isSupervisor = isSupervisorUser(currentUser);
-  const items = isSupervisor ? supervisorItems : isTechnician ? technicianItems : employeeItems;
+  const items = getNavigationItems(currentUser);
 
   if (navigationMode === "top") {
     return (

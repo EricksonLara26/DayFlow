@@ -2,6 +2,7 @@ import { Send } from "lucide-react";
 import { useState } from "react";
 import Button from "../common/Button";
 import EmptyState from "../common/EmptyState";
+import { getRoleLabel } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
 
 export default function TicketComments({ canComment, comments, onAddComment }) {
@@ -32,7 +33,7 @@ export default function TicketComments({ canComment, comments, onAddComment }) {
             <article className="comment-item" key={comment.id}>
               <div>
                 <strong>{comment.authorName}</strong>
-                <span>{comment.role}</span>
+                <span>{getRoleLabel(comment.role)}</span>
               </div>
               <p>{comment.message}</p>
               <time>{formatDateTime(comment.createdAt)}</time>

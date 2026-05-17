@@ -46,7 +46,7 @@
 
 .user-filter-panel {
   display: grid;
-  grid-template-columns: minmax(220px, 320px) minmax(180px, 240px);
+  grid-template-columns: minmax(220px, 320px) minmax(150px, 190px) minmax(180px, 240px);
   gap: 12px;
   align-items: end;
 }
@@ -114,6 +114,69 @@
   color: var(--red);
 }
 
+.user-reset-button {
+  color: var(--amber);
+}
+
+.user-reset-button:hover {
+  border-color: #efd39a;
+  background: #fff7df;
+}
+
+.user-management-table {
+  min-width: 1160px;
+}
+
+.user-edit-grid {
+  display: grid;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.table-inline-input,
+.user-edit-grid input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  outline: 0;
+}
+
+.table-inline-input:focus,
+.user-edit-grid input:focus {
+  border-color: #9bbcf5;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.user-status-pill {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid #bfe5d1;
+  border-radius: 999px;
+  background: #e8f7ef;
+  color: var(--green);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.user-status-pill.inactive {
+  border-color: #c7ced8;
+  background: #edf0f5;
+  color: var(--dark);
+}
+
+.table-row-error {
+  margin-top: 8px;
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .email-edit-cell {
   display: grid;
   gap: 6px;
@@ -155,6 +218,11 @@
 .theme-dark .user-save-button:hover {
   border-color: rgba(74, 222, 128, 0.3);
   background: rgba(74, 222, 128, 0.14);
+}
+
+.theme-dark .user-reset-button:hover {
+  border-color: rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.16);
 }
 
 @media (max-width: 1180px) {

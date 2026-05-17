@@ -1,23 +1,54 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TechnicianRanking from "./components/dashboard/TechnicianRanking";
 import MainLayout from "./components/layout/MainLayout";
+import {
+  VIEW_IDS,
+  canAccessView,
+  canCreateTicket as canCreateTicketForUser,
+  canCreateUser,
+  canDeactivateUser,
+  canDownloadReports,
+  canEditUser,
+  canResetUserPassword,
+  getDefaultView,
+} from "./config/permissions";
 import { TICKET_STATUSES, initialTickets } from "./data/tickets";
 import {
   ROLES,
   getUserFullName,
   initialUsers,
-  isEmployeeUser,
-  isSupervisorUser,
+  isAdministratorUser,
   isTechnicianUser,
 } from "./data/users";
+import AccessDenied from "./pages/AccessDenied/AccessDenied";
 import CreateTicket from "./pages/CreateTicket/CreateTicket";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import InformationPanel from "./pages/InformationPanel/InformationPanel";
 import Login from "./pages/Login/Login";
+import Reports from "./pages/Reports/Reports";
 import TechnicianProfile from "./pages/TechnicianProfile/TechnicianProfile";
 import TicketDetailPage from "./pages/TicketDetail/TicketDetail";
 import Tickets from "./pages/Tickets/Tickets";
 import Users from "./pages/Users/Users";
+import RoleBasedRoute from "./routes/RoleBasedRoute";
+import { getViewFromHash, setHashForView } from "./routes/routeConfig";
+import {
+  clearAuthenticatedUser,
+  getStoredAuthenticatedUser,
+  login as authLogin,
+  storeAuthenticatedUser,
+} from "./services/authService";
+import {
+  createLocalUser,
+  deactivateLocalUser,
+  resetLocalUserPassword,
+  updateLocalUser,
+} from "./services/userService";
+import {
+  getDashboardTicketsForUser,
+  getTicketScopeForView,
+  getTicketsForView,
+} from "./services/ticketService";
 import {
   getStatusLabel,
   getTechnicianCompletionStats,
@@ -53,34 +84,6 @@ function createCommentItem(ticket, message, user, createdAt = nowIso()) {
   };
 }
 
-function getDefaultView(user) {
-  return isTechnicianUser(user) || isSupervisorUser(user) ? "dashboard" : "tickets";
-}
-
-function getTicketScope(user) {
-  if (isSupervisorUser(user)) {
-    return "supervisor";
-  }
-
-  if (isTechnicianUser(user)) {
-    return "technician";
-  }
-
-  return "employee";
-}
-
-function getVisibleTicketsForUser(tickets, user) {
-  if (!user) {
-    return [];
-  }
-
-  if (isSupervisorUser(user) || isTechnicianUser(user)) {
-    return tickets;
-  }
-
-  return tickets.filter((ticket) => ticket.createdBy === user.id);
-}
-
 const defaultPreferences = {
   darkMode: false,
   navigationMode: "sidebar",
@@ -103,29 +106,41 @@ function readStoredPreferences() {
   }
 }
 
+function validateEmail(email) {
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailPattern.test(email) && email.endsWith(".com");
+}
+
 export default function App() {
   const [users, setUsers] = useState(initialUsers);
   const [tickets, setTickets] = useState(initialTickets);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeView, setActiveView] = useState("dashboard");
+  const [currentUser, setCurrentUser] = useState(getStoredAuthenticatedUser);
+  const [activeView, setActiveView] = useState(() => getViewFromHash() ?? VIEW_IDS.DASHBOARD);
   const [selectedTicketId, setSelectedTicketId] = useState(null);
   const [preferences, setPreferences] = useState(readStoredPreferences);
+  const [loginMessage, setLoginMessage] = useState("");
 
-  const isEmployee = isEmployeeUser(currentUser);
   const isTechnician = isTechnicianUser(currentUser);
-  const isSupervisor = isSupervisorUser(currentUser);
-  const canCreateTicket = isEmployee || isTechnician;
-  const ticketScope = getTicketScope(currentUser);
-  const technicians = useMemo(() => users.filter(isTechnicianUser), [users]);
+  const isAdministrator = isAdministratorUser(currentUser);
+  const canCreateTicket = canCreateTicketForUser(currentUser);
+  const dashboardScope = isAdministrator ? "administrator" : isTechnician ? "technician" : "employee";
+  const ticketScope = getTicketScopeForView(currentUser, activeView);
+  const technicians = useMemo(
+    () => users.filter((user) => isTechnicianUser(user) && user.active !== false),
+    [users],
+  );
   const technicianRanking = useMemo(
     () => getTechnicianCompletionStats(technicians, tickets),
     [technicians, tickets],
   );
   const visibleTickets = useMemo(
-    () => getVisibleTicketsForUser(tickets, currentUser),
+    () => getTicketsForView(tickets, currentUser, activeView),
+    [activeView, currentUser, tickets],
+  );
+  const dashboardTickets = useMemo(
+    () => getDashboardTicketsForUser(tickets, currentUser),
     [currentUser, tickets],
   );
-  const dashboardTickets = isSupervisor ? tickets : visibleTickets;
 
   const selectedTicket = useMemo(() => {
     const ticket = tickets.find((currentTicket) => currentTicket.id === selectedTicketId);
@@ -133,70 +148,68 @@ export default function App() {
     return ticket && canViewTicket(ticket) ? ticket : null;
   }, [selectedTicketId, tickets, currentUser]);
 
-  function canAccessView(view) {
+  useEffect(() => {
     if (!currentUser) {
-      return false;
+      return;
     }
 
-    if (view === "dashboard") {
-      return isTechnician || isSupervisor;
+    const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
+    const nextView = canAccessView(currentUser, requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
+    setActiveView(nextView);
+    setHashForView(nextView);
+  }, [currentUser]);
+
+  useEffect(() => {
+    function handleHashChange() {
+      if (!currentUser) {
+        return;
+      }
+
+      const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
+      const nextView = canAccessView(currentUser, requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
+      setSelectedTicketId(null);
+      setActiveView(nextView);
+
+      if (nextView === VIEW_IDS.ACCESS_DENIED) {
+        setHashForView(VIEW_IDS.ACCESS_DENIED);
+      }
     }
 
-    if (view === "tickets") {
-      return true;
-    }
-
-    if (view === "create-ticket") {
-      return canCreateTicket;
-    }
-
-    if (view === "profile") {
-      return true;
-    }
-
-    if (view === "ranking") {
-      return isTechnician || isSupervisor;
-    }
-
-    if (view === "information" || view === "users") {
-      return isTechnician || isSupervisor;
-    }
-
-    return false;
-  }
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [currentUser]);
 
   function navigate(view) {
-    const nextView = canAccessView(view) ? view : getDefaultView(currentUser);
+    const nextView = canAccessView(currentUser, view) ? view : VIEW_IDS.ACCESS_DENIED;
 
     setSelectedTicketId(null);
     setActiveView(nextView);
+    setHashForView(nextView);
   }
 
-  function handleLogin({ password, userType, username }) {
-    const normalizedUsername = username.trim().toLowerCase();
-    const matchedUser = users.find(
-      (user) => user.username.toLowerCase() === normalizedUsername && user.password === password,
-    );
+  function handleLogin(form) {
+    const result = authLogin(form, users);
 
-    if (!matchedUser) {
-      return { ok: false, message: "Usuario o contrasena incorrectos." };
+    if (!result.ok) {
+      return result;
     }
 
-    if (matchedUser.role !== userType) {
-      return { ok: false, message: "El usuario no pertenece al tipo seleccionado." };
-    }
-
-    setCurrentUser(matchedUser);
+    const nextView = getDefaultView(result.user);
+    setCurrentUser(result.user);
     setSelectedTicketId(null);
-    setActiveView(getDefaultView(matchedUser));
+    setActiveView(nextView);
+    setHashForView(nextView);
+    setLoginMessage("");
 
     return { ok: true };
   }
 
   function handleLogout() {
+    clearAuthenticatedUser();
     setCurrentUser(null);
     setSelectedTicketId(null);
-    setActiveView("dashboard");
+    setActiveView(VIEW_IDS.DASHBOARD);
+    setLoginMessage("Sesi\u00f3n cerrada correctamente.");
   }
 
   function canViewTicket(ticket) {
@@ -204,7 +217,7 @@ export default function App() {
       return false;
     }
 
-    if (isSupervisor || isTechnician) {
+    if (isAdministrator || isTechnician) {
       return true;
     }
 
@@ -215,16 +228,18 @@ export default function App() {
     const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
 
     if (!canViewTicket(ticket)) {
+      navigate(VIEW_IDS.ACCESS_DENIED);
       return;
     }
 
     setSelectedTicketId(ticketId);
-    setActiveView("ticket-detail");
+    setActiveView(VIEW_IDS.TICKET_DETAIL);
+    setHashForView(VIEW_IDS.TICKET_DETAIL);
   }
 
   function goBackFromTicket() {
     setSelectedTicketId(null);
-    setActiveView("tickets");
+    navigate(isTechnician ? VIEW_IDS.MY_TICKETS : VIEW_IDS.TICKETS);
   }
 
   function canTakeTicket(ticket) {
@@ -249,11 +264,7 @@ export default function App() {
       return false;
     }
 
-    if (isSupervisor) {
-      return true;
-    }
-
-    if (isTechnician) {
+    if (isAdministrator || isTechnician) {
       return true;
     }
 
@@ -419,56 +430,40 @@ export default function App() {
 
     setTickets((currentTickets) => [nextTicket, ...currentTickets]);
     setSelectedTicketId(nextTicket.id);
-    setActiveView("ticket-detail");
+    setActiveView(VIEW_IDS.TICKET_DETAIL);
+    setHashForView(VIEW_IDS.TICKET_DETAIL);
 
     return { ok: true };
   }
 
   function createUser(form) {
-    if (!isSupervisor && !isTechnician) {
-      return;
+    if (!canCreateUser(currentUser)) {
+      return { ok: false, message: "No tienes permisos para crear usuarios." };
     }
 
-    const nextUser = {
-      id: getNextId(users),
-      firstName: form.firstName,
-      lastName: form.lastName,
-      username: form.username,
-      email: form.email,
-      password: form.password,
-      role: ROLES.EMPLOYEE,
-      jobTitle: form.jobTitle,
-      department: form.department,
-    };
+    if (users.some((user) => user.username.toLowerCase() === form.username.trim().toLowerCase())) {
+      return { ok: false, message: "Ese nombre de usuario ya existe." };
+    }
 
-    setUsers((currentUsers) => [...currentUsers, nextUser]);
+    if (users.some((user) => user.email.toLowerCase() === form.email.trim().toLowerCase())) {
+      return { ok: false, message: "Ese correo ya esta en uso." };
+    }
+
+    setUsers((currentUsers) => createLocalUser(currentUsers, form));
+
+    return { ok: true, message: "Usuario creado correctamente." };
   }
 
-  function deleteUser(userId) {
+  function updateUser(userId, form) {
     const targetUser = users.find((user) => user.id === userId);
 
-    if ((!isSupervisor && !isTechnician) || currentUser?.id === userId || targetUser?.role !== ROLES.EMPLOYEE) {
-      return;
+    if (!canEditUser(currentUser, targetUser)) {
+      return { ok: false, message: "No tienes permisos para modificar este usuario." };
     }
 
-    setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
-  }
+    const cleanEmail = form.email.trim().toLowerCase();
 
-  function updateUserEmail(userId, email) {
-    if (!isSupervisor && !isTechnician) {
-      return { ok: false, message: "No tienes permiso para editar usuarios." };
-    }
-
-    const targetUser = users.find((user) => user.id === userId);
-
-    if (targetUser?.role !== ROLES.EMPLOYEE) {
-      return { ok: false, message: "Solo se puede editar el correo de empleados desde esta vista." };
-    }
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const cleanEmail = email.trim().toLowerCase();
-
-    if (!emailPattern.test(cleanEmail) || !cleanEmail.endsWith(".com")) {
+    if (!validateEmail(cleanEmail)) {
       return { ok: false, message: "El correo debe tener formato valido y terminar en .com." };
     }
 
@@ -476,16 +471,67 @@ export default function App() {
       return { ok: false, message: "Ese correo ya esta en uso." };
     }
 
-    setUsers((currentUsers) =>
-      currentUsers.map((user) => (user.id === userId ? { ...user, email: cleanEmail } : user)),
-    );
+    const cleanFirstName = form.firstName.trim();
+    const cleanLastName = form.lastName.trim();
+    const cleanJobTitle = form.jobTitle.trim();
+    const cleanDepartment = form.department.trim();
 
-    return { ok: true };
+    if (!cleanFirstName || !cleanLastName || !cleanJobTitle || !cleanDepartment) {
+      return { ok: false, message: "Nombre, apellido, cargo y departamento son obligatorios." };
+    }
+
+    const nextRole =
+      currentUser.role === ROLES.ADMINISTRATOR && currentUser.id !== userId
+        ? form.role
+        : targetUser.role;
+
+    const nextUsers = updateLocalUser(users, userId, {
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
+      email: cleanEmail,
+      jobTitle: cleanJobTitle,
+      department: cleanDepartment,
+      role: nextRole,
+      rol: nextRole,
+    });
+
+    setUsers(nextUsers);
+
+    if (currentUser.id === userId) {
+      const updatedSessionUser = nextUsers.find((user) => user.id === userId);
+      setCurrentUser(storeAuthenticatedUser(updatedSessionUser));
+    }
+
+    return { ok: true, message: "Usuario actualizado correctamente." };
+  }
+
+  function deactivateUser(userId) {
+    const targetUser = users.find((user) => user.id === userId);
+
+    if (!canDeactivateUser(currentUser, targetUser)) {
+      return { ok: false, message: "No tienes permisos para desactivar este usuario." };
+    }
+
+    setUsers((currentUsers) => deactivateLocalUser(currentUsers, userId));
+
+    return { ok: true, message: "Usuario desactivado correctamente." };
+  }
+
+  function resetPassword(userId) {
+    const targetUser = users.find((user) => user.id === userId);
+
+    if (!canResetUserPassword(currentUser, targetUser)) {
+      return { ok: false, message: "No tienes permisos para restablecer esta contrasena." };
+    }
+
+    setUsers((currentUsers) => resetLocalUserPassword(currentUsers, userId));
+
+    return { ok: true, message: "Contrase\u00f1a restablecida correctamente." };
   }
 
   function authorizeTechnicianReport({ technicianId }) {
-    if (!isSupervisor) {
-      return { ok: false, message: "Solo el supervisor puede descargar informes." };
+    if (!canDownloadReports(currentUser)) {
+      return { ok: false, message: "Solo el administrador puede descargar informes." };
     }
 
     const technician = users.find((user) => user.id === Number(technicianId) && isTechnicianUser(user));
@@ -514,7 +560,9 @@ export default function App() {
       return { ok: false, message: "No hay una sesion activa." };
     }
 
-    if (currentPassword !== currentUser.password) {
+    const fullUser = users.find((user) => user.id === currentUser.id);
+
+    if (!fullUser || currentPassword !== fullUser.password) {
       return { ok: false, message: "La contrasena actual no coincide." };
     }
 
@@ -528,39 +576,34 @@ export default function App() {
       return { ok: false, message: "La confirmacion no coincide." };
     }
 
-    setUsers((currentUsers) =>
-      currentUsers.map((user) => (user.id === currentUser.id ? { ...user, password: cleanPassword } : user)),
-    );
-    setCurrentUser((user) => (user ? { ...user, password: cleanPassword } : user));
+    setUsers((currentUsers) => resetLocalUserPassword(currentUsers, currentUser.id, cleanPassword));
 
     return { ok: true };
   }
 
-  if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
-  }
+  function renderActiveView() {
+    if (activeView === VIEW_IDS.ACCESS_DENIED) {
+      return <AccessDenied onGoHome={() => navigate(getDefaultView(currentUser))} />;
+    }
 
-  return (
-    <MainLayout
-      activeView={activeView}
-      canCreateTicket={canCreateTicket}
-      currentUser={currentUser}
-      darkMode={preferences.darkMode}
-      navigationMode={preferences.navigationMode}
-      onCreateTicket={() => navigate("create-ticket")}
-      onLogout={handleLogout}
-      onNavigate={navigate}
-    >
-      {activeView === "dashboard" && (isTechnician || isSupervisor) ? (
+    if (activeView === VIEW_IDS.DASHBOARD) {
+      return (
         <Dashboard
           onOpenTicket={openTicket}
-          scope={isTechnician ? "technician" : "supervisor"}
+          scope={dashboardScope}
           technicianRanking={technicianRanking}
           tickets={dashboardTickets}
         />
-      ) : null}
+      );
+    }
 
-      {activeView === "tickets" ? (
+    if (
+      activeView === VIEW_IDS.TICKETS ||
+      activeView === VIEW_IDS.AVAILABLE_TICKETS ||
+      activeView === VIEW_IDS.MY_TICKETS ||
+      activeView === VIEW_IDS.HISTORY
+    ) {
+      return (
         <Tickets
           canTakeTicket={canTakeTicket}
           onOpenTicket={openTicket}
@@ -569,9 +612,11 @@ export default function App() {
           tickets={visibleTickets}
           users={users}
         />
-      ) : null}
+      );
+    }
 
-      {activeView === "ticket-detail" ? (
+    if (activeView === VIEW_IDS.TICKET_DETAIL) {
+      return (
         <TicketDetailPage
           canCommentTicket={canCommentTicket}
           canManageTicket={canManageTicket}
@@ -582,13 +627,15 @@ export default function App() {
           onTakeTicket={takeTicket}
           ticket={selectedTicket}
         />
-      ) : null}
+      );
+    }
 
-      {activeView === "create-ticket" && canCreateTicket ? (
-        <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} users={users} />
-      ) : null}
+    if (activeView === VIEW_IDS.CREATE_TICKET) {
+      return <CreateTicket currentUser={currentUser} onCreateTicket={createTicket} />;
+    }
 
-      {activeView === "profile" ? (
+    if (activeView === VIEW_IDS.PROFILE) {
+      return (
         <TechnicianProfile
           currentUser={currentUser}
           onChangePassword={changePassword}
@@ -597,33 +644,71 @@ export default function App() {
           preferences={preferences}
           tickets={tickets}
         />
-      ) : null}
+      );
+    }
 
-      {activeView === "ranking" && (isTechnician || isSupervisor) ? (
+    if (activeView === VIEW_IDS.RANKING) {
+      return (
         <div className="page-stack">
           <TechnicianRanking technicians={technicianRanking} />
         </div>
-      ) : null}
+      );
+    }
 
-      {activeView === "information" && (isTechnician || isSupervisor) ? (
+    if (activeView === VIEW_IDS.INFORMATION) {
+      return (
         <InformationPanel
-          canDownloadReports={isSupervisor}
+          canDownloadReports={canDownloadReports(currentUser)}
           onAuthorizeReport={authorizeTechnicianReport}
           onOpenTicket={openTicket}
           tickets={tickets}
           users={users}
         />
-      ) : null}
+      );
+    }
 
-      {activeView === "users" && (isTechnician || isSupervisor) ? (
+    if (activeView === VIEW_IDS.REPORTS) {
+      return <Reports onAuthorizeReport={authorizeTechnicianReport} tickets={tickets} users={users} />;
+    }
+
+    if (activeView === VIEW_IDS.USERS) {
+      return (
         <Users
+          currentUser={currentUser}
           onCreateUser={createUser}
-          onDeleteUser={deleteUser}
-          onUpdateUserEmail={updateUserEmail}
+          onDeactivateUser={deactivateUser}
+          onResetPassword={resetPassword}
+          onUpdateUser={updateUser}
           users={users}
         />
-      ) : null}
+      );
+    }
 
+    return <AccessDenied onGoHome={() => navigate(getDefaultView(currentUser))} />;
+  }
+
+  if (!currentUser) {
+    return <Login message={loginMessage} onLogin={handleLogin} />;
+  }
+
+  return (
+    <MainLayout
+      activeView={activeView}
+      canCreateTicket={canCreateTicket}
+      currentUser={currentUser}
+      darkMode={preferences.darkMode}
+      navigationMode={preferences.navigationMode}
+      onCreateTicket={() => navigate(VIEW_IDS.CREATE_TICKET)}
+      onLogout={handleLogout}
+      onNavigate={navigate}
+    >
+      <RoleBasedRoute
+        currentUser={currentUser}
+        fallback={<AccessDenied onGoHome={() => navigate(getDefaultView(currentUser))} />}
+        view={activeView}
+      >
+        {renderActiveView()}
+      </RoleBasedRoute>
     </MainLayout>
   );
 }

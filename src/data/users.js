@@ -1,137 +1,164 @@
-export const ROLES = {
-  EMPLOYEE: "EMPLOYEE",
-  TECHNICIAN: "TECHNICIAN",
-  SUPERVISOR: "SUPERVISOR",
-};
+import {
+  ROLES,
+  getRoleLabel,
+  isAdministratorRole,
+  isEmployeeRole,
+  isTechnicianRole,
+} from "../config/roles";
 
-export const initialUsers = [
-  {
-    id: 1,
-    firstName: "Erickson",
-    lastName: "Lara",
-    username: "elara",
-    email: "elara@empresa.com",
-    password: "1234",
-    role: ROLES.TECHNICIAN,
-    jobTitle: "Tecnico de soporte senior",
-    department: "Tecnologia",
-  },
-  {
-    id: 2,
-    firstName: "Mariela",
-    lastName: "Santos",
-    username: "msantos",
-    email: "msantos@empresa.com",
-    password: "1234",
-    role: ROLES.TECHNICIAN,
-    jobTitle: "Tecnica de redes",
-    department: "Tecnologia",
-  },
-  {
-    id: 3,
-    firstName: "Carlos",
-    lastName: "Diaz",
-    username: "cdiaz",
-    email: "cdiaz@empresa.com",
-    password: "1234",
-    role: ROLES.TECHNICIAN,
-    jobTitle: "Especialista de infraestructura",
-    department: "Tecnologia",
-  },
-  {
-    id: 4,
-    firstName: "Ana",
-    lastName: "Rojas",
-    username: "arojas",
-    email: "arojas@empresa.com",
-    password: "1234",
-    role: ROLES.TECHNICIAN,
-    jobTitle: "Analista de soporte",
-    department: "Tecnologia",
-  },
+export { ROLES, getRoleLabel };
+
+export const mockUsers = [
   {
     id: 5,
-    firstName: "Supervisor",
-    lastName: "General",
-    username: "supervisor",
-    email: "supervisor@empresa.com",
+    nombre: "Administrador Principal",
+    usuario: "administrador",
+    email: "administrador@empresa.com",
     password: "1234",
-    role: ROLES.SUPERVISOR,
-    jobTitle: "Supervisor de soporte tecnico",
-    department: "Tecnologia",
+    rol: ROLES.ADMINISTRATOR,
+    departamento: "Tecnologia",
+    cargo: "Administrador del sistema",
+    activo: true,
+  },
+  {
+    id: 1,
+    nombre: "Erickson Lara",
+    usuario: "tecnico",
+    email: "tecnico@empresa.com",
+    password: "1234",
+    rol: ROLES.TECHNICIAN,
+    departamento: "Soporte Tecnico",
+    cargo: "Tecnico de soporte senior",
+    activo: true,
   },
   {
     id: 10,
-    firstName: "Juan",
-    lastName: "Perez",
-    username: "jperez",
-    email: "jperez@empresa.com",
+    nombre: "Juan Perez",
+    usuario: "empleado",
+    email: "empleado@empresa.com",
     password: "1234",
-    role: ROLES.EMPLOYEE,
-    jobTitle: "Analista de nomina",
-    department: "Finanzas",
+    rol: ROLES.EMPLOYEE,
+    departamento: "Administracion",
+    cargo: "Empleado general",
+    activo: true,
+  },
+  {
+    id: 2,
+    nombre: "Mariela Santos",
+    usuario: "msantos",
+    email: "msantos@empresa.com",
+    password: "1234",
+    rol: ROLES.TECHNICIAN,
+    departamento: "Tecnologia",
+    cargo: "Tecnica de redes",
+    activo: true,
+  },
+  {
+    id: 3,
+    nombre: "Carlos Diaz",
+    usuario: "cdiaz",
+    email: "cdiaz@empresa.com",
+    password: "1234",
+    rol: ROLES.TECHNICIAN,
+    departamento: "Tecnologia",
+    cargo: "Especialista de infraestructura",
+    activo: true,
+  },
+  {
+    id: 4,
+    nombre: "Ana Rojas",
+    usuario: "arojas",
+    email: "arojas@empresa.com",
+    password: "1234",
+    rol: ROLES.TECHNICIAN,
+    departamento: "Tecnologia",
+    cargo: "Analista de soporte",
+    activo: true,
   },
   {
     id: 11,
-    firstName: "Laura",
-    lastName: "Mendez",
-    username: "lmendez",
+    nombre: "Laura Mendez",
+    usuario: "lmendez",
     email: "lmendez@empresa.com",
     password: "1234",
-    role: ROLES.EMPLOYEE,
-    jobTitle: "Coordinadora administrativa",
-    department: "Administracion",
+    rol: ROLES.EMPLOYEE,
+    departamento: "Administracion",
+    cargo: "Coordinadora administrativa",
+    activo: true,
   },
   {
     id: 12,
-    firstName: "Pedro",
-    lastName: "Nunez",
-    username: "pnunez",
+    nombre: "Pedro Nunez",
+    usuario: "pnunez",
     email: "pnunez@empresa.com",
     password: "1234",
-    role: ROLES.EMPLOYEE,
-    jobTitle: "Asistente de operaciones",
-    department: "Operaciones",
+    rol: ROLES.EMPLOYEE,
+    departamento: "Operaciones",
+    cargo: "Asistente de operaciones",
+    activo: true,
   },
   {
     id: 13,
-    firstName: "Sofia",
-    lastName: "Castillo",
-    username: "scastillo",
+    nombre: "Sofia Castillo",
+    usuario: "scastillo",
     email: "scastillo@empresa.com",
     password: "1234",
-    role: ROLES.EMPLOYEE,
-    jobTitle: "Ejecutiva comercial",
-    department: "Ventas",
+    rol: ROLES.EMPLOYEE,
+    departamento: "Ventas",
+    cargo: "Ejecutiva comercial",
+    activo: true,
   },
 ];
+
+function splitFullName(nombre) {
+  const parts = nombre.trim().split(/\s+/);
+  const firstName = parts.shift() ?? "";
+  const lastName = parts.join(" ");
+
+  return { firstName, lastName };
+}
+
+export function normalizeUser(user) {
+  const name = user.nombre ?? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
+  const { firstName, lastName } = splitFullName(name);
+  const role = user.rol ?? user.role;
+
+  return {
+    ...user,
+    firstName: user.firstName ?? firstName,
+    lastName: user.lastName ?? lastName,
+    username: user.username ?? user.usuario,
+    role,
+    jobTitle: user.jobTitle ?? user.cargo,
+    department: user.department ?? user.departamento,
+    active: user.active ?? user.activo ?? true,
+    nombre: name,
+    usuario: user.usuario ?? user.username,
+    rol: role,
+    cargo: user.cargo ?? user.jobTitle,
+    departamento: user.departamento ?? user.department,
+    activo: user.activo ?? user.active ?? true,
+  };
+}
+
+export const initialUsers = mockUsers.map(normalizeUser);
 
 export function getUserFullName(user) {
   if (!user) {
     return "Sin usuario";
   }
 
-  return `${user.firstName} ${user.lastName}`.trim();
+  return user.nombre ?? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
+}
+
+export function isAdministratorUser(user) {
+  return isAdministratorRole(user?.role);
 }
 
 export function isTechnicianUser(user) {
-  return user?.role === ROLES.TECHNICIAN;
-}
-
-export function isSupervisorUser(user) {
-  return user?.role === ROLES.SUPERVISOR;
+  return isTechnicianRole(user?.role);
 }
 
 export function isEmployeeUser(user) {
-  return user?.role === ROLES.EMPLOYEE;
-}
-
-export function getRoleLabel(role) {
-  const labels = {
-    [ROLES.EMPLOYEE]: "Empleado",
-    [ROLES.TECHNICIAN]: "Tecnico",
-    [ROLES.SUPERVISOR]: "Supervisor",
-  };
-
-  return labels[role] ?? role;
+  return isEmployeeRole(user?.role);
 }

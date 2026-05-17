@@ -1,37 +1,65 @@
 import { useState } from "react";
-import { Check, Pencil, Trash2, X } from "lucide-react";
+import { Check, KeyRound, Pencil, UserX, X } from "lucide-react";
 import Button from "../common/Button";
 import EmptyState from "../common/EmptyState";
+import {
+  canChangeUserRole,
+  canDeactivateUser,
+  canEditUser,
+  canResetUserPassword,
+} from "../../config/permissions";
+import { ROLES, getRoleLabel, getUserFullName } from "../../data/users";
 
-export default function UserTable({ onDeleteUser, onUpdateUserEmail, users }) {
+const editableRoles = [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE];
+
+function getEditForm(user) {
+  return {
+    firstName: user.firstName ?? "",
+    lastName: user.lastName ?? "",
+    email: user.email ?? "",
+    jobTitle: user.jobTitle ?? "",
+    department: user.department ?? "",
+    role: user.role,
+  };
+}
+
+export default function UserTable({
+  currentUser,
+  onDeactivateUser,
+  onResetPassword,
+  onUpdateUser,
+  users,
+}) {
   const [editingUserId, setEditingUserId] = useState(null);
-  const [editingEmail, setEditingEmail] = useState("");
+  const [editForm, setEditForm] = useState(getEditForm({}));
   const [error, setError] = useState("");
 
   if (!users.length) {
-    return <EmptyState title="Sin usuarios" message="Los empleados registrados se mostraran aqui." />;
+    return <EmptyState title="Sin usuarios" message="Los usuarios registrados se mostraran aqui." />;
   }
 
-  function confirmDelete(user) {
-    if (window.confirm("Esta seguro de que desea eliminar este usuario?")) {
-      onDeleteUser(user.id);
-    }
+  function updateField(field, value) {
+    setEditForm((current) => ({ ...current, [field]: value }));
   }
 
   function startEditing(user) {
+    if (!canEditUser(currentUser, user)) {
+      return;
+    }
+
     setEditingUserId(user.id);
-    setEditingEmail(user.email);
+    setEditForm(getEditForm(user));
     setError("");
   }
 
   function cancelEditing() {
     setEditingUserId(null);
-    setEditingEmail("");
+    setEditForm(getEditForm({}));
     setError("");
   }
 
-  function saveEmail(user) {
-    const result = onUpdateUserEmail(user.id, editingEmail);
+  function saveUser(user) {
+    const result = onUpdateUser(user.id, editForm);
 
     if (result?.ok === false) {
       setError(result.message);
@@ -41,98 +69,179 @@ export default function UserTable({ onDeleteUser, onUpdateUserEmail, users }) {
     cancelEditing();
   }
 
-  function handleEmailKeyDown(event, user) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      saveEmail(user);
-    }
-
-    if (event.key === "Escape") {
-      cancelEditing();
+  function confirmDeactivate(user) {
+    if (window.confirm("Desea desactivar este usuario?")) {
+      onDeactivateUser(user.id);
     }
   }
 
   return (
     <div className="table-wrap">
-      <table className="data-table">
+      <table className="data-table user-management-table">
         <thead>
           <tr>
             <th>Nombre</th>
             <th>Usuario</th>
             <th>Correo</th>
+            <th>Rol</th>
             <th>Cargo</th>
             <th>Area/departamento</th>
+            <th>Estado</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td>
-                <strong>{user.firstName} {user.lastName}</strong>
-              </td>
-              <td>{user.username}</td>
-              <td>
-                {editingUserId === user.id ? (
-                  <div className="email-edit-cell">
-                    <input
-                      aria-label={`Correo de ${user.firstName} ${user.lastName}`}
-                      type="email"
-                      value={editingEmail}
-                      onChange={(event) => setEditingEmail(event.target.value)}
-                      onKeyDown={(event) => handleEmailKeyDown(event, user)}
-                    />
-                    {error ? <span>{error}</span> : null}
-                  </div>
-                ) : (
-                  user.email
-                )}
-              </td>
-              <td>{user.jobTitle}</td>
-              <td>{user.department}</td>
-              <td>
-                <div className="user-row-actions">
-                  {editingUserId === user.id ? (
-                    <>
-                      <Button
-                        aria-label={`Guardar correo de ${user.firstName} ${user.lastName}`}
-                        className="user-icon-button user-save-button"
-                        icon={Check}
-                        title="Guardar correo"
-                        variant="ghost"
-                        onClick={() => saveEmail(user)}
+          {users.map((user) => {
+            const isEditing = editingUserId === user.id;
+            const canEdit = canEditUser(currentUser, user);
+            const canChangeRole = canChangeUserRole(currentUser) && currentUser.id !== user.id;
+            const canDeactivate = canDeactivateUser(currentUser, user);
+            const canResetPassword = canResetUserPassword(currentUser, user);
+            const hasActions = canEdit || canResetPassword || canDeactivate;
+
+            return (
+              <tr key={user.id}>
+                <td>
+                  {isEditing ? (
+                    <div className="user-edit-grid">
+                      <input
+                        aria-label={`Nombre de ${getUserFullName(user)}`}
+                        value={editForm.firstName}
+                        onChange={(event) => updateField("firstName", event.target.value)}
                       />
-                      <Button
-                        aria-label={`Cancelar edicion de correo de ${user.firstName} ${user.lastName}`}
-                        className="user-icon-button user-cancel-button"
-                        icon={X}
-                        title="Cancelar"
-                        variant="ghost"
-                        onClick={cancelEditing}
+                      <input
+                        aria-label={`Apellido de ${getUserFullName(user)}`}
+                        value={editForm.lastName}
+                        onChange={(event) => updateField("lastName", event.target.value)}
                       />
-                    </>
+                    </div>
                   ) : (
-                    <Button
-                      aria-label={`Editar correo de ${user.firstName} ${user.lastName}`}
-                      className="user-icon-button user-edit-button"
-                      icon={Pencil}
-                      title="Editar correo"
-                      variant="ghost"
-                      onClick={() => startEditing(user)}
-                    />
+                    <strong>{getUserFullName(user)}</strong>
                   )}
-                  <Button
-                    aria-label={`Borrar usuario ${user.firstName} ${user.lastName}`}
-                    className="user-icon-button user-delete-button"
-                    icon={Trash2}
-                    title="Borrar usuario"
-                    variant="ghost"
-                    onClick={() => confirmDelete(user)}
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td>{user.username}</td>
+                <td>
+                  {isEditing ? (
+                    <input
+                      aria-label={`Correo de ${getUserFullName(user)}`}
+                      className="table-inline-input"
+                      type="email"
+                      value={editForm.email}
+                      onChange={(event) => updateField("email", event.target.value)}
+                    />
+                  ) : (
+                    user.email
+                  )}
+                </td>
+                <td>
+                  {isEditing && canChangeRole ? (
+                    <select
+                      aria-label={`Rol de ${getUserFullName(user)}`}
+                      className="table-inline-input"
+                      value={editForm.role}
+                      onChange={(event) => updateField("role", event.target.value)}
+                    >
+                      {editableRoles.map((role) => (
+                        <option key={role} value={role}>
+                          {getRoleLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    getRoleLabel(user.role)
+                  )}
+                </td>
+                <td>
+                  {isEditing ? (
+                    <input
+                      aria-label={`Cargo de ${getUserFullName(user)}`}
+                      className="table-inline-input"
+                      value={editForm.jobTitle}
+                      onChange={(event) => updateField("jobTitle", event.target.value)}
+                    />
+                  ) : (
+                    user.jobTitle
+                  )}
+                </td>
+                <td>
+                  {isEditing ? (
+                    <input
+                      aria-label={`Departamento de ${getUserFullName(user)}`}
+                      className="table-inline-input"
+                      value={editForm.department}
+                      onChange={(event) => updateField("department", event.target.value)}
+                    />
+                  ) : (
+                    user.department
+                  )}
+                </td>
+                <td>
+                  <span className={`user-status-pill ${user.active === false ? "inactive" : "active"}`}>
+                    {user.active === false ? "Inactivo" : "Activo"}
+                  </span>
+                </td>
+                <td>
+                  <div className="user-row-actions">
+                    {isEditing ? (
+                      <>
+                        <Button
+                          aria-label={`Guardar usuario ${getUserFullName(user)}`}
+                          className="user-icon-button user-save-button"
+                          icon={Check}
+                          title="Guardar usuario"
+                          variant="ghost"
+                          onClick={() => saveUser(user)}
+                        />
+                        <Button
+                          aria-label={`Cancelar edicion de ${getUserFullName(user)}`}
+                          className="user-icon-button user-cancel-button"
+                          icon={X}
+                          title="Cancelar"
+                          variant="ghost"
+                          onClick={cancelEditing}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {canEdit ? (
+                          <Button
+                            aria-label={`Editar usuario ${getUserFullName(user)}`}
+                            className="user-icon-button user-edit-button"
+                            icon={Pencil}
+                            title="Editar usuario"
+                            variant="ghost"
+                            onClick={() => startEditing(user)}
+                          />
+                        ) : null}
+                        {canResetPassword ? (
+                          <Button
+                            aria-label={`Restablecer contrasena de ${getUserFullName(user)}`}
+                            className="user-icon-button user-reset-button"
+                            icon={KeyRound}
+                            title="Restablecer contrasena"
+                            variant="ghost"
+                            onClick={() => onResetPassword(user.id)}
+                          />
+                        ) : null}
+                        {canDeactivate ? (
+                          <Button
+                            aria-label={`Desactivar usuario ${getUserFullName(user)}`}
+                            className="user-icon-button user-delete-button"
+                            icon={UserX}
+                            title="Desactivar usuario"
+                            variant="ghost"
+                            onClick={() => confirmDeactivate(user)}
+                          />
+                        ) : null}
+                        {!hasActions ? <span className="muted-note">Sin acciones</span> : null}
+                      </>
+                    )}
+                  </div>
+                  {isEditing && error ? <p className="table-row-error">{error}</p> : null}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

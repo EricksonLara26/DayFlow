@@ -1,0 +1,26 @@
+.access-denied-page {
+  max-width: 720px;
+}
+
+.access-denied-panel {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.access-denied-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff1f0;
+  color: var(--red);
+}
+
+@media (max-width: 720px) {
+  .access-denied-panel {
+    grid-template-columns: 1fr;
+  }
+}

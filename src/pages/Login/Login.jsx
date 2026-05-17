@@ -1,14 +1,12 @@
 import { LockKeyhole, UserRound } from "lucide-react";
 import { useState } from "react";
 import Button from "../../components/common/Button";
-import { ROLES } from "../../data/users";
 import "./Login.css";
 
-export default function Login({ onLogin }) {
+export default function Login({ message, onLogin }) {
   const [form, setForm] = useState({
-    username: "",
+    identifier: "",
     password: "",
-    userType: ROLES.EMPLOYEE,
   });
   const [error, setError] = useState("");
 
@@ -41,20 +39,20 @@ export default function Login({ onLogin }) {
 
         <div>
           <p className="eyebrow">Acceso seguro</p>
-          <h1>Accede al panel de soporte tecnico</h1>
+          <h1>Accede a DayFlow</h1>
           <p className="login-copy">
-            Ingresa con tus credenciales corporativas para gestionar solicitudes y seguimiento operativo.
+            Ingresa con tus credenciales corporativas. El sistema identificara tu rol automaticamente.
           </p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
           <label className="field">
-            <span>Nombre de usuario</span>
+            <span>Usuario, correo o nombre de usuario</span>
             <div className="input-icon">
               <UserRound size={17} aria-hidden="true" />
               <input
-                value={form.username}
-                onChange={(event) => updateField("username", event.target.value)}
+                value={form.identifier}
+                onChange={(event) => updateField("identifier", event.target.value)}
                 autoComplete="username"
               />
             </div>
@@ -73,15 +71,7 @@ export default function Login({ onLogin }) {
             </div>
           </label>
 
-          <label className="field">
-            <span>Tipo de usuario</span>
-            <select value={form.userType} onChange={(event) => updateField("userType", event.target.value)}>
-              <option value={ROLES.EMPLOYEE}>Empleado</option>
-              <option value={ROLES.TECHNICIAN}>Tecnico</option>
-              <option value={ROLES.SUPERVISOR}>Supervisor</option>
-            </select>
-          </label>
-
+          {message ? <p className="form-success">{message}</p> : null}
           {error ? <p className="form-error">{error}</p> : null}
 
           <Button className="wide" type="submit">

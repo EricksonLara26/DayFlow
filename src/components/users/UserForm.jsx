@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import Button from "../common/Button";
+import { ROLES, getRoleLabel } from "../../data/users";
 
 const initialForm = {
   firstName: "",
@@ -8,6 +9,7 @@ const initialForm = {
   username: "",
   email: "",
   password: "",
+  role: ROLES.EMPLOYEE,
   jobTitle: "",
   department: "",
 };
@@ -56,16 +58,23 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
       return;
     }
 
-    onCreateUser({
+    const result = onCreateUser({
       ...form,
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       username,
       email,
       password: form.password.trim(),
+      role: form.role,
       jobTitle: form.jobTitle.trim(),
       department: form.department.trim(),
     });
+
+    if (result?.ok === false) {
+      setError(result.message);
+      return;
+    }
+
     setForm(initialForm);
     setError("");
   }
@@ -75,7 +84,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Registro</p>
-          <h2 id="new-user-title">Nuevo empleado</h2>
+          <h2 id="new-user-title">Nuevo usuario</h2>
         </div>
       </div>
       <div className="form-grid two-columns">
@@ -104,7 +113,14 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
           />
         </label>
         <label className="field">
-          <span>Cargo del empleado</span>
+          <span>Rol</span>
+          <select value={form.role} onChange={(event) => updateField("role", event.target.value)}>
+            <option value={ROLES.EMPLOYEE}>{getRoleLabel(ROLES.EMPLOYEE)}</option>
+            <option value={ROLES.TECHNICIAN}>{getRoleLabel(ROLES.TECHNICIAN)}</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>Cargo</span>
           <input value={form.jobTitle} onChange={(event) => updateField("jobTitle", event.target.value)} />
         </label>
         <label className="field span-2">
@@ -120,7 +136,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
           </Button>
         ) : null}
         <Button icon={UserPlus} type="submit">
-          Crear empleado
+          Crear usuario
         </Button>
       </div>
     </form>

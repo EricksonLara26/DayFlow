@@ -1,39 +1,60 @@
 import { CalendarClock, PlusCircle } from "lucide-react";
 import Button from "../common/Button";
+import { VIEW_IDS } from "../../config/permissions";
 import { getRoleLabel } from "../../data/users";
 
 const viewTitles = {
-  dashboard: {
+  [VIEW_IDS.ACCESS_DENIED]: {
+    eyebrow: "Acceso restringido",
+    title: "Permisos insuficientes",
+  },
+  [VIEW_IDS.AVAILABLE_TICKETS]: {
+    eyebrow: "Solicitudes",
+    title: "Solicitudes disponibles",
+  },
+  [VIEW_IDS.DASHBOARD]: {
     eyebrow: "Dashboard operativo",
     title: "Estado operativo",
   },
-  tickets: {
-    eyebrow: "Solicitudes",
-    title: "Gestion de tickets",
+  [VIEW_IDS.HISTORY]: {
+    eyebrow: "Historial",
+    title: "Solicitudes cerradas",
   },
-  "ticket-detail": {
-    eyebrow: "Detalle",
-    title: "Seguimiento de solicitud",
+  [VIEW_IDS.INFORMATION]: {
+    eyebrow: "Panel de informacion",
+    title: "Analitica y operacion",
   },
-  "create-ticket": {
-    eyebrow: "Nueva solicitud",
-    title: "Crear ticket de soporte",
+  [VIEW_IDS.MY_TICKETS]: {
+    eyebrow: "Mis solicitudes",
+    title: "Trabajo asignado",
   },
-  profile: {
+  [VIEW_IDS.PROFILE]: {
     eyebrow: "Mi perfil",
     title: "Datos y preferencias",
   },
-  ranking: {
-    eyebrow: "Ranking tecnico",
-    title: "Cierres por tecnico",
+  [VIEW_IDS.RANKING]: {
+    eyebrow: "Metricas",
+    title: "Ranking de tecnicos",
   },
-  information: {
-    eyebrow: "Panel de informacion",
-    title: "Analitica y exportacion",
+  [VIEW_IDS.REPORTS]: {
+    eyebrow: "Informes",
+    title: "Exportacion administrativa",
   },
-  users: {
+  [VIEW_IDS.TICKETS]: {
+    eyebrow: "Solicitudes",
+    title: "Gestion de tickets",
+  },
+  [VIEW_IDS.TICKET_DETAIL]: {
+    eyebrow: "Detalle",
+    title: "Seguimiento de solicitud",
+  },
+  [VIEW_IDS.CREATE_TICKET]: {
+    eyebrow: "Nueva solicitud",
+    title: "Crear ticket de soporte",
+  },
+  [VIEW_IDS.USERS]: {
     eyebrow: "Gestion de usuarios",
-    title: "Administracion de empleados",
+    title: "Administracion de usuarios",
   },
 };
 
@@ -51,7 +72,7 @@ export default function Header({ activeView, canCreateTicket, currentUser, onCre
           <CalendarClock size={16} aria-hidden="true" />
           {getRoleLabel(currentUser.role)}
         </span>
-        {canCreateTicket && activeView !== "create-ticket" ? (
+        {canCreateTicket && activeView !== VIEW_IDS.CREATE_TICKET ? (
           <Button icon={PlusCircle} onClick={onCreateTicket}>
             Crear solicitud
           </Button>

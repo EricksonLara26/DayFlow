@@ -4,12 +4,12 @@ DayFlow es una aplicacion frontend construida con React y Vite para la gestion i
 
 El sistema permite simular el flujo principal de soporte:
 
-- Inicio de sesion por rol.
+- Inicio de sesion con deteccion automatica de rol.
 - Creacion de solicitudes.
 - Gestion de tickets por tecnicos.
 - Comentarios e historial de actividad.
 - Dashboard con metricas de rendimiento.
-- Gestion de usuarios empleados.
+- Gestion de usuarios por permisos de Administrador y Tecnico.
 
 ## Requisitos
 
@@ -146,24 +146,24 @@ pnpm preview
 
 ## Usuarios de prueba
 
-Supervisor:
+Administrador:
 
 ```text
-usuario: supervisor
+usuario: administrador
 contrasena: 1234
 ```
 
 Tecnico:
 
 ```text
-usuario: elara
+usuario: tecnico
 contrasena: 1234
 ```
 
 Empleado:
 
 ```text
-usuario: jperez
+usuario: empleado
 contrasena: 1234
 ```
 
@@ -171,8 +171,11 @@ contrasena: 1234
 
 ```text
 src/
+  config/
   components/
   data/
+  routes/
+  services/
   pages/
   styles/
   utils/
