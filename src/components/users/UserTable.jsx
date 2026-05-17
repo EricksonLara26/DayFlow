@@ -215,10 +215,10 @@ export default function UserTable({
                         ) : null}
                         {canResetPassword ? (
                           <Button
-                            aria-label={`Restablecer contrasena de ${getUserFullName(user)}`}
+                            aria-label={`Restablecer contrase\u00f1a de ${getUserFullName(user)}`}
                             className="user-icon-button user-reset-button"
                             icon={KeyRound}
-                            title="Restablecer contrasena"
+                            title="Restablecer contrase\u00f1a"
                             variant="ghost"
                             onClick={() => onResetPassword(user.id)}
                           />

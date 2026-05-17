@@ -1,3 +1,4 @@
+import { ROLES } from "../config/roles";
 import { getUserFullName, normalizeUser } from "../data/users";
 
 const AUTH_STORAGE_KEY = "dayflow-auth-user";
@@ -35,7 +36,18 @@ export function sanitizeAuthenticatedUser(user) {
 export function getStoredAuthenticatedUser() {
   try {
     const rawUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    return rawUser ? JSON.parse(rawUser) : null;
+    const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+
+    if (!parsedUser) {
+      return null;
+    }
+
+    if (!Object.values(ROLES).includes(parsedUser.role)) {
+      clearAuthenticatedUser();
+      return null;
+    }
+
+    return parsedUser;
   } catch {
     return null;
   }

@@ -65,7 +65,7 @@ export default function Users({
     const result = onResetPassword(userId);
 
     if (result?.ok !== false) {
-      setMessage(result?.message ?? "Contrasena restablecida correctamente.");
+      setMessage(result?.message ?? "Contrase\u00f1a restablecida correctamente.");
     }
 
     return result;

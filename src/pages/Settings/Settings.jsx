@@ -50,7 +50,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
       confirmPassword: "",
     });
     setError("");
-    setMessage("Contrasena actualizada correctamente.");
+    setMessage("Contrase\u00f1a actualizada correctamente.");
   }
 
   return (
@@ -109,13 +109,13 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
         <div className="section-heading">
           <div>
             <p className="eyebrow">Seguridad</p>
-            <h2>Cambio de contrasena</h2>
+            <h2>{"Cambio de contrase\u00f1a"}</h2>
           </div>
           <KeyRound size={20} aria-hidden="true" />
         </div>
         <form className="password-form" onSubmit={handlePasswordSubmit}>
           <label className="field">
-            <span>Contrasena actual</span>
+            <span>{"Contrase\u00f1a actual"}</span>
             <input
               type="password"
               value={passwordForm.currentPassword}
@@ -124,7 +124,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
           </label>
           <div className="form-grid two-columns">
             <label className="field">
-              <span>Nueva contrasena</span>
+              <span>{"Nueva contrase\u00f1a"}</span>
               <input
                 type="password"
                 value={passwordForm.newPassword}
@@ -132,7 +132,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
               />
             </label>
             <label className="field">
-              <span>Confirmar contrasena</span>
+              <span>{"Confirmar contrase\u00f1a"}</span>
               <input
                 type="password"
                 value={passwordForm.confirmPassword}
@@ -144,7 +144,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
           {message ? <p className="form-success">{message}</p> : null}
           <div className="form-actions">
             <Button icon={KeyRound} type="submit">
-              Actualizar contrasena
+              {"Actualizar contrase\u00f1a"}
             </Button>
           </div>
         </form>

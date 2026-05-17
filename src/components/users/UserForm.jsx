@@ -49,7 +49,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
     }
 
     if (!form.password.trim()) {
-      setError("La contrasena no debe estar vacia.");
+      setError("La contrase\u00f1a no debe estar vacia.");
       return;
     }
 
@@ -105,7 +105,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
           <input type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} />
         </label>
         <label className="field">
-          <span>Contrasena</span>
+          <span>{"Contrase\u00f1a"}</span>
           <input
             type="password"
             value={form.password}

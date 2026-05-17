@@ -59,7 +59,7 @@ export default function Login({ message, onLogin }) {
           </label>
 
           <label className="field">
-            <span>Contrasena</span>
+            <span>{"Contrase\u00f1a"}</span>
             <div className="input-icon">
               <LockKeyhole size={17} aria-hidden="true" />
               <input

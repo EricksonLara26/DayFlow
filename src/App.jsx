@@ -521,7 +521,7 @@ export default function App() {
     const targetUser = users.find((user) => user.id === userId);
 
     if (!canResetUserPassword(currentUser, targetUser)) {
-      return { ok: false, message: "No tienes permisos para restablecer esta contrasena." };
+      return { ok: false, message: "No tienes permisos para restablecer esta contrase\u00f1a." };
     }
 
     setUsers((currentUsers) => resetLocalUserPassword(currentUsers, userId));
@@ -563,13 +563,13 @@ export default function App() {
     const fullUser = users.find((user) => user.id === currentUser.id);
 
     if (!fullUser || currentPassword !== fullUser.password) {
-      return { ok: false, message: "La contrasena actual no coincide." };
+      return { ok: false, message: "La contrase\u00f1a actual no coincide." };
     }
 
     const cleanPassword = newPassword.trim();
 
     if (cleanPassword.length < 4) {
-      return { ok: false, message: "La nueva contrasena debe tener al menos 4 caracteres." };
+      return { ok: false, message: "La nueva contrase\u00f1a debe tener al menos 4 caracteres." };
     }
 
     if (cleanPassword !== confirmPassword.trim()) {
