@@ -1,5 +1,7 @@
 import { ArrowLeft, CheckCircle2, CirclePause, ClipboardCheck, PlayCircle, XCircle } from "lucide-react";
+import { useState } from "react";
 import Button from "../common/Button";
+import LoadingButton from "../common/LoadingButton";
 import { TICKET_STATUSES } from "../../data/tickets";
 import { formatDate, formatDateTime } from "../../utils/dateUtils";
 import { getStatusLabel, getTicketTakenAt, terminalTicketStatuses } from "../../utils/ticketUtils";
@@ -18,8 +20,17 @@ export default function TicketDetail({
   onTakeTicket,
   ticket,
 }) {
+  const [loadingAction, setLoadingAction] = useState("");
   const isTerminal = terminalTicketStatuses.includes(ticket.status);
   const takenAt = getTicketTakenAt(ticket);
+
+  function runTicketAction(action, callback) {
+    setLoadingAction(action);
+    window.setTimeout(() => {
+      callback();
+      setLoadingAction("");
+    }, 300);
+  }
 
   return (
     <div className="ticket-detail-page">
@@ -94,40 +105,63 @@ export default function TicketDetail({
               <h2>Acciones</h2>
             </div>
             {canTake ? (
-              <Button icon={ClipboardCheck} className="wide" onClick={() => onTakeTicket(ticket.id)}>
+              <LoadingButton
+                className="wide"
+                icon={ClipboardCheck}
+                loading={loadingAction === "take"}
+                onClick={() => runTicketAction("take", () => onTakeTicket(ticket.id))}
+              >
                 Tomar ticket
-              </Button>
+              </LoadingButton>
             ) : null}
             {canManage && !isTerminal ? (
               <div className="action-stack">
-                <Button
+                <LoadingButton
                   icon={PlayCircle}
+                  loading={loadingAction === TICKET_STATUSES.IN_PROGRESS}
                   variant="soft"
-                  onClick={() => onChangeStatus(ticket.id, TICKET_STATUSES.IN_PROGRESS)}
+                  onClick={() =>
+                    runTicketAction(TICKET_STATUSES.IN_PROGRESS, () =>
+                      onChangeStatus(ticket.id, TICKET_STATUSES.IN_PROGRESS),
+                    )
+                  }
                 >
                   Cambiar a En proceso
-                </Button>
-                <Button
+                </LoadingButton>
+                <LoadingButton
                   icon={CirclePause}
+                  loading={loadingAction === TICKET_STATUSES.ON_HOLD}
                   variant="warning"
-                  onClick={() => onChangeStatus(ticket.id, TICKET_STATUSES.ON_HOLD)}
+                  onClick={() =>
+                    runTicketAction(TICKET_STATUSES.ON_HOLD, () => onChangeStatus(ticket.id, TICKET_STATUSES.ON_HOLD))
+                  }
                 >
                   Cambiar a En hold
-                </Button>
-                <Button
+                </LoadingButton>
+                <LoadingButton
                   icon={CheckCircle2}
+                  loading={loadingAction === TICKET_STATUSES.COMPLETED}
                   variant="success"
-                  onClick={() => onChangeStatus(ticket.id, TICKET_STATUSES.COMPLETED)}
+                  onClick={() =>
+                    runTicketAction(TICKET_STATUSES.COMPLETED, () =>
+                      onChangeStatus(ticket.id, TICKET_STATUSES.COMPLETED),
+                    )
+                  }
                 >
                   Marcar como completado
-                </Button>
-                <Button
+                </LoadingButton>
+                <LoadingButton
                   icon={XCircle}
+                  loading={loadingAction === TICKET_STATUSES.DISMISSED}
                   variant="dark"
-                  onClick={() => onChangeStatus(ticket.id, TICKET_STATUSES.DISMISSED)}
+                  onClick={() =>
+                    runTicketAction(TICKET_STATUSES.DISMISSED, () =>
+                      onChangeStatus(ticket.id, TICKET_STATUSES.DISMISSED),
+                    )
+                  }
                 >
                   Desestimar por área técnica
-                </Button>
+                </LoadingButton>
               </div>
             ) : null}
             {!canTake && (!canManage || isTerminal) ? (

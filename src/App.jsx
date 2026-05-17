@@ -89,12 +89,22 @@ const defaultPreferences = {
   navigationMode: "top",
 };
 
+function getSystemDarkModePreference() {
+  return Boolean(window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+}
+
 function readStoredPreferences() {
   try {
     const rawPreferences = window.localStorage.getItem("dayflow-preferences");
     const parsedPreferences = rawPreferences ? JSON.parse(rawPreferences) : {};
+
+    const darkMode =
+      parsedPreferences.darkMode !== undefined
+        ? Boolean(parsedPreferences.darkMode)
+        : getSystemDarkModePreference();
+
     return {
-      darkMode: Boolean(parsedPreferences.darkMode),
+      darkMode,
       navigationMode: "top",
     };
   } catch {
@@ -176,6 +186,28 @@ export default function App() {
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, [currentUser]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+
+    if (!mediaQuery?.addEventListener) {
+      return undefined;
+    }
+
+    function handleSystemThemeChange(event) {
+      if (window.localStorage.getItem("dayflow-preferences")) {
+        return;
+      }
+
+      setPreferences((currentPreferences) => ({
+        ...currentPreferences,
+        darkMode: event.matches,
+      }));
+    }
+
+    mediaQuery.addEventListener("change", handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+  }, []);
 
   function navigate(view) {
     const nextView = canAccessView(currentUser, view) ? view : VIEW_IDS.ACCESS_DENIED;
@@ -656,7 +688,7 @@ export default function App() {
     if (activeView === VIEW_IDS.INFORMATION) {
       return (
         <InformationPanel
-          canDownloadReports={false}
+          canDownloadReports={canDownloadReports(currentUser)}
           onAuthorizeReport={authorizeTechnicianReport}
           onOpenTicket={openTicket}
           tickets={tickets}
@@ -686,7 +718,11 @@ export default function App() {
   }
 
   if (!currentUser) {
-    return <Login message={loginMessage} onLogin={handleLogin} />;
+    return (
+      <div className={preferences.darkMode ? "theme-dark" : ""}>
+        <Login message={loginMessage} onLogin={handleLogin} />
+      </div>
+    );
   }
 
   return (

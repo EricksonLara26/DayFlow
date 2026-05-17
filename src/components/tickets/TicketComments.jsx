@@ -1,12 +1,13 @@
 import { Send } from "lucide-react";
 import { useState } from "react";
-import Button from "../common/Button";
+import LoadingButton from "../common/LoadingButton";
 import EmptyState from "../common/EmptyState";
 import { getRoleLabel } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
 
 export default function TicketComments({ canComment, comments, onAddComment }) {
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -16,8 +17,13 @@ export default function TicketComments({ canComment, comments, onAddComment }) {
       return;
     }
 
-    onAddComment(cleanMessage);
-    setMessage("");
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      onAddComment(cleanMessage);
+      setMessage("");
+      setIsLoading(false);
+    }, 300);
   }
 
   return (
@@ -49,15 +55,16 @@ export default function TicketComments({ canComment, comments, onAddComment }) {
           <label className="field">
             <span>Agregar comentario</span>
             <textarea
+              disabled={isLoading}
               rows="4"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Escribe una actualizacion clara para el historial del ticket"
             />
           </label>
-          <Button icon={Send} type="submit">
+          <LoadingButton icon={Send} loading={isLoading} type="submit">
             Comentar
-          </Button>
+          </LoadingButton>
         </form>
       ) : null}
     </section>

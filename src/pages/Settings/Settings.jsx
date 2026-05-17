@@ -1,6 +1,6 @@
 import { KeyRound, Moon } from "lucide-react";
 import { useState } from "react";
-import Button from "../../components/common/Button";
+import LoadingButton from "../../components/common/LoadingButton";
 import "./Settings.css";
 
 export function SettingsContent({ onChangePassword, onUpdatePreferences, preferences }) {
@@ -11,6 +11,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   function updatePasswordField(field, value) {
     setPasswordForm((current) => ({ ...current, [field]: value }));
@@ -18,25 +19,33 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
 
   function handlePasswordSubmit(event) {
     event.preventDefault();
-    const result = onChangePassword(passwordForm);
-
-    if (!result.ok) {
-      setError(result.message);
-      setMessage("");
-      return;
-    }
-
-    setPasswordForm({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+    const currentForm = passwordForm;
     setError("");
-    setMessage("Contraseña actualizada correctamente.");
+    setMessage("");
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      const result = onChangePassword(currentForm);
+      setIsLoading(false);
+
+      if (!result.ok) {
+        setError(result.message);
+        setMessage("");
+        return;
+      }
+
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setError("");
+      setMessage("Contraseña actualizada correctamente.");
+    }, 300);
   }
 
   return (
-    <>
+    <div className="settings-content-grid">
       <section className="panel settings-panel">
         <div className="section-heading">
           <div>
@@ -70,6 +79,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
           <label className="field">
             <span>Contraseña actual</span>
             <input
+              disabled={isLoading}
               type="password"
               value={passwordForm.currentPassword}
               onChange={(event) => updatePasswordField("currentPassword", event.target.value)}
@@ -79,6 +89,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
             <label className="field">
               <span>Nueva contraseña</span>
               <input
+                disabled={isLoading}
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={(event) => updatePasswordField("newPassword", event.target.value)}
@@ -87,6 +98,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
             <label className="field">
               <span>Confirmar contraseña</span>
               <input
+                disabled={isLoading}
                 type="password"
                 value={passwordForm.confirmPassword}
                 onChange={(event) => updatePasswordField("confirmPassword", event.target.value)}
@@ -96,13 +108,13 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
           {error ? <p className="form-error">{error}</p> : null}
           {message ? <p className="form-success">{message}</p> : null}
           <div className="form-actions">
-            <Button icon={KeyRound} type="submit">
+            <LoadingButton icon={KeyRound} loading={isLoading} type="submit">
               Actualizar contraseña
-            </Button>
+            </LoadingButton>
           </div>
         </form>
       </section>
-    </>
+    </div>
   );
 }
 

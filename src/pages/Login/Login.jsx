@@ -1,6 +1,6 @@
 import { LockKeyhole, UserRound } from "lucide-react";
 import { useState } from "react";
-import Button from "../../components/common/Button";
+import LoadingButton from "../../components/common/LoadingButton";
 import "./Login.css";
 
 export default function Login({ message, onLogin }) {
@@ -9,6 +9,7 @@ export default function Login({ message, onLogin }) {
     password: "",
   });
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -16,14 +17,28 @@ export default function Login({ message, onLogin }) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    const result = onLogin(form);
+    const identifier = form.identifier.trim();
+    const password = form.password.trim();
 
-    if (!result.ok) {
-      setError(result.message);
+    if (!identifier || !password) {
+      setError("Completa usuario y contrasena.");
       return;
     }
 
     setError("");
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      const result = onLogin({ identifier, password });
+      setIsLoading(false);
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setError("");
+    }, 300);
   }
 
   return (
@@ -51,6 +66,9 @@ export default function Login({ message, onLogin }) {
             <div className="input-icon">
               <UserRound size={17} aria-hidden="true" />
               <input
+                aria-label="Usuario, correo o nombre"
+                disabled={isLoading}
+                placeholder="Usuario, correo o nombre"
                 value={form.identifier}
                 onChange={(event) => updateField("identifier", event.target.value)}
                 autoComplete="username"
@@ -63,6 +81,9 @@ export default function Login({ message, onLogin }) {
             <div className="input-icon">
               <LockKeyhole size={17} aria-hidden="true" />
               <input
+                aria-label="Contrasena"
+                disabled={isLoading}
+                placeholder="Contrasena"
                 type="password"
                 value={form.password}
                 onChange={(event) => updateField("password", event.target.value)}
@@ -74,9 +95,9 @@ export default function Login({ message, onLogin }) {
           {message ? <p className="form-success">{message}</p> : null}
           {error ? <p className="form-error">{error}</p> : null}
 
-          <Button className="wide" type="submit">
+          <LoadingButton className="wide" loading={isLoading} type="submit">
             Iniciar sesión
-          </Button>
+          </LoadingButton>
         </form>
       </section>
     </main>

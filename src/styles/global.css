@@ -5,6 +5,9 @@
   --text: #172033;
   --muted: #657083;
   --border: #dce3ea;
+  --button-primary: #2563eb;
+  --button-primary-hover: #1d4ed8;
+  --button-primary-light: #e9f1ff;
   --blue: #2563eb;
   --blue-soft: #e9f1ff;
   --cyan: #0f8ea8;
@@ -16,6 +19,9 @@
   --dark-button: #303947;
   --shadow: 0 14px 34px rgba(23, 32, 51, 0.08);
   --shadow-lg: 0 24px 70px rgba(23, 32, 51, 0.14);
+  --login-bg: #eef3f8;
+  --login-gradient-start: rgba(245, 249, 255, 0.95);
+  --login-gradient-end: rgba(235, 240, 247, 0.92);
   color: var(--text);
   background: var(--bg);
   font-family:
@@ -31,6 +37,9 @@
   --text: #f8fafc;
   --muted: #b6c2d2;
   --border: #334155;
+  --button-primary: #60a5fa;
+  --button-primary-hover: #3b82f6;
+  --button-primary-light: rgba(96, 165, 250, 0.16);
   --blue: #60a5fa;
   --blue-soft: rgba(96, 165, 250, 0.16);
   --cyan: #22d3ee;
@@ -42,6 +51,9 @@
   --dark-button: #0b1220;
   --shadow: 0 16px 38px rgba(0, 0, 0, 0.32);
   --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.46);
+  --login-bg: #0f172a;
+  --login-gradient-start: rgba(15, 23, 42, 0.96);
+  --login-gradient-end: rgba(30, 41, 59, 0.92);
   color: var(--text);
   background: var(--bg);
 }
@@ -537,8 +549,12 @@ h3 {
 }
 
 .btn-primary {
-  background: var(--blue);
+  background: var(--button-primary);
   color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--button-primary-hover);
 }
 
 .btn-ghost {
@@ -549,8 +565,8 @@ h3 {
 
 .btn-soft {
   border-color: #bdd2f7;
-  background: var(--blue-soft);
-  color: var(--blue);
+  background: var(--button-primary-light);
+  color: var(--button-primary);
 }
 
 .btn-warning {
@@ -634,6 +650,8 @@ h3 {
 
 .input-icon input,
 .search-input input {
+  flex: 1;
+  min-width: 0;
   min-height: 38px;
   padding: 0;
   border: 0;
@@ -697,6 +715,70 @@ h3 {
   color: var(--green);
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.loading-spinner {
+  display: inline-block;
+  flex: 0 0 auto;
+  color: var(--button-primary);
+  animation: dayflow-spin 0.9s linear infinite;
+}
+
+.loading-spinner-sm {
+  width: 16px;
+  height: 16px;
+}
+
+.loading-spinner-md {
+  width: 20px;
+  height: 20px;
+}
+
+.loading-spinner-lg {
+  width: 26px;
+  height: 26px;
+}
+
+.button-spinner {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: dayflow-spin 0.8s linear infinite;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.loading-overlay-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 160px;
+  justify-items: center;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.loading-overlay-panel p {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+@keyframes dayflow-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .filter-panel {
@@ -1370,6 +1452,16 @@ h3 {
   border-color: rgba(74, 222, 128, 0.3);
   background: rgba(74, 222, 128, 0.14);
   color: #86efac;
+}
+
+.app-shell,
+.app-shell *,
+.login-page,
+.login-page * {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 @media (max-width: 1180px) {

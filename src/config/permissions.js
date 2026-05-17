@@ -22,7 +22,6 @@ export const NAVIGATION_BY_ROLE = {
     { id: VIEW_IDS.TICKETS, label: "Gestión de solicitudes" },
     { id: VIEW_IDS.INFORMATION, label: "Panel de información" },
     { id: VIEW_IDS.USERS, label: "Gestión de usuarios" },
-    { id: VIEW_IDS.RANKING, label: "Métricas" },
     { id: VIEW_IDS.REPORTS, label: "Informes" },
   ],
   [ROLES.TECHNICIAN]: [
@@ -31,11 +30,10 @@ export const NAVIGATION_BY_ROLE = {
     { id: VIEW_IDS.AVAILABLE_TICKETS, label: "Solicitudes disponibles" },
     { id: VIEW_IDS.MY_TICKETS, label: "Mis solicitudes" },
     { id: VIEW_IDS.HISTORY, label: "Historial" },
-    { id: VIEW_IDS.USERS, label: "Usuarios" },
+    { id: VIEW_IDS.INFORMATION, label: "Panel de información" },
   ],
   [ROLES.EMPLOYEE]: [
     { id: VIEW_IDS.DASHBOARD, label: "Inicio" },
-    { id: VIEW_IDS.CREATE_TICKET, label: "Crear solicitud" },
     { id: VIEW_IDS.TICKETS, label: "Mis solicitudes" },
   ],
 };
@@ -45,7 +43,7 @@ const VIEW_ROLES = {
   [VIEW_IDS.AVAILABLE_TICKETS]: [ROLES.TECHNICIAN],
   [VIEW_IDS.DASHBOARD]: [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE],
   [VIEW_IDS.HISTORY]: [ROLES.TECHNICIAN],
-  [VIEW_IDS.INFORMATION]: [ROLES.ADMINISTRATOR],
+  [VIEW_IDS.INFORMATION]: [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN],
   [VIEW_IDS.MY_TICKETS]: [ROLES.TECHNICIAN],
   [VIEW_IDS.PROFILE]: [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE],
   [VIEW_IDS.RANKING]: [ROLES.ADMINISTRATOR],
@@ -53,7 +51,7 @@ const VIEW_ROLES = {
   [VIEW_IDS.TICKET_DETAIL]: [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE],
   [VIEW_IDS.TICKETS]: [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE],
   [VIEW_IDS.CREATE_TICKET]: [ROLES.EMPLOYEE],
-  [VIEW_IDS.USERS]: [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN],
+  [VIEW_IDS.USERS]: [ROLES.ADMINISTRATOR],
 };
 
 export function getNavigationItems(user) {

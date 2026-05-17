@@ -125,6 +125,10 @@
   gap: 16px;
 }
 
+.profile-settings-grid .settings-content-grid {
+  grid-template-columns: minmax(300px, 0.78fr) minmax(420px, 1.22fr);
+}
+
 .performance-panel {
   align-content: start;
 }
@@ -140,7 +144,8 @@
 
 @media (max-width: 1180px) {
   .profile-grid,
-  .profile-focus-grid {
+  .profile-focus-grid,
+  .profile-settings-grid .settings-content-grid {
     grid-template-columns: 1fr;
   }
 

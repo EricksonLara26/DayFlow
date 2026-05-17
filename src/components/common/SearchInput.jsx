@@ -5,6 +5,9 @@ export default function SearchInput({ className = "", value, onChange, placehold
     <label className={`search-input ${className}`.trim()}>
       <Search size={17} aria-hidden="true" />
       <input
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck="false"
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}

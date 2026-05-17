@@ -4,8 +4,8 @@
   place-items: center;
   padding: 28px;
   background:
-    linear-gradient(135deg, rgba(245, 249, 255, 0.95), rgba(235, 240, 247, 0.92)),
-    #eef3f8;
+    linear-gradient(135deg, var(--login-gradient-start), var(--login-gradient-end)),
+    var(--login-bg);
 }
 
 .login-card {

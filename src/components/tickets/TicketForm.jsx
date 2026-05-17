@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
-import Button from "../common/Button";
+import LoadingButton from "../common/LoadingButton";
 import { TICKET_CATEGORIES, TICKET_PRIORITIES } from "../../data/tickets";
 import { getPriorityLabel } from "../../utils/ticketUtils";
 
@@ -15,10 +15,15 @@ function getInitialForm(currentUser) {
   };
 }
 
-export default function TicketForm({ currentUser, requesters, onSubmit }) {
+export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requesters, users = [] }) {
   const [form, setForm] = useState(() => getInitialForm(currentUser));
   const [error, setError] = useState("");
-  const requesterOptions = useMemo(() => requesters.length ? requesters : [currentUser], [currentUser, requesters]);
+  const [isLoading, setIsLoading] = useState(false);
+  const requesterOptions = useMemo(() => {
+    const availableRequesters = requesters?.length ? requesters : users;
+    return availableRequesters?.length ? availableRequesters : [currentUser];
+  }, [currentUser, requesters, users]);
+  const submitTicket = onSubmit ?? onCreateTicket;
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -36,14 +41,27 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
 
     const requester = requesterOptions.find((user) => String(user.id) === String(form.requesterId)) ?? currentUser;
 
-    onSubmit({
-      ...form,
-      title,
-      description,
-      requester,
-    });
-    setForm(getInitialForm(currentUser));
     setError("");
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      const result = submitTicket?.({
+        ...form,
+        title,
+        description,
+        requester,
+      });
+
+      setIsLoading(false);
+
+      if (result?.ok === false) {
+        setError(result.message);
+        return;
+      }
+
+      setForm(getInitialForm(currentUser));
+      setError("");
+    }, 300);
   }
 
   return (
@@ -52,15 +70,17 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
         <label className="field span-2">
           <span>Titulo</span>
           <input
+            disabled={isLoading}
             value={form.title}
             onChange={(event) => updateField("title", event.target.value)}
-            placeholder="Ej. No puedo acceder al correo"
+            placeholder="Titulo de la solicitud"
           />
         </label>
 
         <label className="field span-2">
           <span>Descripcion</span>
           <textarea
+            disabled={isLoading}
             rows="6"
             value={form.description}
             onChange={(event) => updateField("description", event.target.value)}
@@ -70,7 +90,11 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
 
         <label className="field">
           <span>Categoria</span>
-          <select value={form.category} onChange={(event) => updateField("category", event.target.value)}>
+          <select
+            disabled={isLoading}
+            value={form.category}
+            onChange={(event) => updateField("category", event.target.value)}
+          >
             {TICKET_CATEGORIES.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -81,7 +105,11 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
 
         <label className="field">
           <span>Prioridad</span>
-          <select value={form.priority} onChange={(event) => updateField("priority", event.target.value)}>
+          <select
+            disabled={isLoading}
+            value={form.priority}
+            onChange={(event) => updateField("priority", event.target.value)}
+          >
             {Object.values(TICKET_PRIORITIES).map((priority) => (
               <option key={priority} value={priority}>
                 {getPriorityLabel(priority)}
@@ -93,7 +121,7 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
         <label className="field">
           <span>Solicitante</span>
           <select
-            disabled={requesterOptions.length === 1}
+            disabled={isLoading || requesterOptions.length === 1}
             value={form.requesterId}
             onChange={(event) => updateField("requesterId", event.target.value)}
           >
@@ -108,6 +136,7 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
         <label className="field">
           <span>Fecha limite</span>
           <input
+            disabled={isLoading}
             type="date"
             value={form.dueDate}
             onChange={(event) => updateField("dueDate", event.target.value)}
@@ -118,9 +147,9 @@ export default function TicketForm({ currentUser, requesters, onSubmit }) {
       {error ? <p className="form-error">{error}</p> : null}
 
       <div className="form-actions">
-        <Button icon={PlusCircle} type="submit">
+        <LoadingButton icon={PlusCircle} loading={isLoading} type="submit">
           Guardar solicitud
-        </Button>
+        </LoadingButton>
       </div>
     </form>
   );
