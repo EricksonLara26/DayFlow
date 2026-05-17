@@ -21,7 +21,7 @@ export default function TicketTimeline({ history }) {
             </article>
           ))
         ) : (
-          <EmptyState title="Sin historial" message="Los cambios importantes se registraran aqui." />
+          <EmptyState title="Sin historial" message="Los cambios importantes se registrarán aquí." />
         )}
       </div>
     </section>

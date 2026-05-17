@@ -1,15 +1,15 @@
 # DayFlow
 
-DayFlow es una aplicacion frontend construida con React y Vite para la gestion interna de tickets de soporte tecnico.
+DayFlow es una aplicación frontend construida con React y Vite para la gestión interna de tickets de soporte técnico.
 
 El sistema permite simular el flujo principal de soporte:
 
-- Inicio de sesion con deteccion automatica de rol.
-- Creacion de solicitudes.
-- Gestion de tickets por tecnicos.
+- Inicio de sesión con detección automática de rol.
+- Creación de solicitudes.
+- Gestión de tickets por técnicos.
 - Comentarios e historial de actividad.
 - Dashboard con metricas de rendimiento.
-- Gestion de usuarios por permisos de Administrador y Tecnico.
+- Gestión de usuarios por permisos de Administrador y Técnico.
 
 ## Requisitos
 
@@ -28,7 +28,7 @@ cd DayFlow
 
 El proyecto usa pnpm como gestor de paquetes.
 
-Para verificar que pnpm esta disponible mediante Corepack:
+Para verificar que pnpm está disponible mediante Corepack:
 
 ```bash
 corepack pnpm --version
@@ -58,7 +58,7 @@ Esto crea la carpeta `node_modules` y usa el archivo `pnpm-lock.yaml` como lockf
 
 ## Ejecutar en desarrollo
 
-Para iniciar la aplicacion en modo desarrollo:
+Para iniciar la aplicación en modo desarrollo:
 
 ```bash
 corepack pnpm dev
@@ -70,15 +70,15 @@ O con el comando directo:
 pnpm dev
 ```
 
-La terminal mostrara una URL local. Normalmente sera:
+La terminal mostrará una URL local. Normalmente será:
 
 ```text
 http://127.0.0.1:5173/
 ```
 
-Abre esa direccion en el navegador.
+Abre esa dirección en el navegador.
 
-Mientras el servidor este activo, la aplicacion se actualizara automaticamente cuando guardes cambios.
+Mientras el servidor esté activo, la aplicación se actualizará automáticamente cuando guardes cambios.
 
 Para detener el servidor:
 
@@ -86,7 +86,7 @@ Para detener el servidor:
 Ctrl + C
 ```
 
-## Compilar para produccion
+## Compilar para producción
 
 Para generar la version optimizada:
 
@@ -120,7 +120,7 @@ O:
 pnpm preview
 ```
 
-La terminal mostrara una URL similar a:
+La terminal mostrará una URL similar a:
 
 ```text
 http://127.0.0.1:4173/
@@ -131,11 +131,11 @@ http://127.0.0.1:4173/
 | Comando | Uso |
 | --- | --- |
 | `corepack pnpm install` | Instala dependencias. |
-| `corepack pnpm dev` | Ejecuta la aplicacion en desarrollo. |
-| `corepack pnpm build` | Compila la aplicacion para produccion. |
+| `corepack pnpm dev` | Ejecuta la aplicación en desarrollo. |
+| `corepack pnpm build` | Compila la aplicación para producción. |
 | `corepack pnpm preview` | Prueba localmente la version compilada. |
 
-Si pnpm esta habilitado directamente, puedes usar las versiones cortas:
+Si pnpm está habilitado directamente, puedes usar las versiones cortas:
 
 ```bash
 pnpm install
@@ -150,21 +150,21 @@ Administrador:
 
 ```text
 usuario: administrador
-contrasena: 1234
+contraseña: 1234
 ```
 
-Tecnico:
+Técnico:
 
 ```text
 usuario: tecnico
-contrasena: 1234
+contraseña: 1234
 ```
 
 Empleado:
 
 ```text
 usuario: empleado
-contrasena: 1234
+contraseña: 1234
 ```
 
 ## Estructura principal
@@ -185,10 +185,10 @@ src/
 
 ## Notas utiles
 
-- Ejecuta la aplicacion con Vite usando los scripts del proyecto.
+- Ejecuta la aplicación con Vite usando los scripts del proyecto.
 - No abras directamente archivos dentro de `src/`.
 - Manten versionado `pnpm-lock.yaml`.
-- Si necesitas reinstalar dependencias desde cero, elimina `node_modules` y vuelve a ejecutar la instalacion.
+- Si necesitas reinstalar dependencias desde cero, elimina `node_modules` y vuelve a ejecutar la instalación.
 
 Windows PowerShell:
 

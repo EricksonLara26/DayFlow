@@ -195,6 +195,15 @@ h3 {
   white-space: nowrap;
 }
 
+.top-navigation .top-icon-button {
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
 .top-navigation .logout-link {
   color: var(--red);
 }
@@ -392,6 +401,20 @@ h3 {
 .top-navigation .profile-access-button {
   width: auto;
   min-width: 170px;
+}
+
+.top-navigation .profile-access-button.icon-only {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 3px;
+}
+
+.top-navigation .profile-access-button.icon-only .profile-access-icon {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
 }
 
 .nav-profile-button.icon-only:hover,

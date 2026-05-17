@@ -21,8 +21,8 @@ const viewTitles = {
     title: "Solicitudes cerradas",
   },
   [VIEW_IDS.INFORMATION]: {
-    eyebrow: "Panel de informacion",
-    title: "Analitica y operacion",
+    eyebrow: "Panel de información",
+    title: "Analítica y operación",
   },
   [VIEW_IDS.MY_TICKETS]: {
     eyebrow: "Mis solicitudes",
@@ -34,7 +34,7 @@ const viewTitles = {
   },
   [VIEW_IDS.RANKING]: {
     eyebrow: "Metricas",
-    title: "Ranking de tecnicos",
+    title: "Ranking de técnicos",
   },
   [VIEW_IDS.REPORTS]: {
     eyebrow: "Informes",
@@ -42,7 +42,7 @@ const viewTitles = {
   },
   [VIEW_IDS.TICKETS]: {
     eyebrow: "Solicitudes",
-    title: "Gestion de tickets",
+    title: "Gestión de tickets",
   },
   [VIEW_IDS.TICKET_DETAIL]: {
     eyebrow: "Detalle",
@@ -53,8 +53,8 @@ const viewTitles = {
     title: "Crear ticket de soporte",
   },
   [VIEW_IDS.USERS]: {
-    eyebrow: "Gestion de usuarios",
-    title: "Administracion de usuarios",
+    eyebrow: "Gestión de usuarios",
+    title: "Administración de usuarios",
   },
 };
 

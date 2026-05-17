@@ -1,25 +1,7 @@
-import { Check, KeyRound, LayoutDashboard, Moon, PanelLeft, PanelLeftDashed, PanelTop } from "lucide-react";
+import { KeyRound, Moon } from "lucide-react";
 import { useState } from "react";
 import Button from "../../components/common/Button";
 import "./Settings.css";
-
-const navigationOptions = [
-  {
-    id: "sidebar",
-    label: "Barra lateral",
-    icon: PanelLeft,
-  },
-  {
-    id: "top",
-    label: "Barra superior",
-    icon: PanelTop,
-  },
-  {
-    id: "compact",
-    label: "Sidebar compacto",
-    icon: PanelLeftDashed,
-  },
-];
 
 export function SettingsContent({ onChangePassword, onUpdatePreferences, preferences }) {
   const [passwordForm, setPasswordForm] = useState({
@@ -50,40 +32,11 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
       confirmPassword: "",
     });
     setError("");
-    setMessage("Contrase\u00f1a actualizada correctamente.");
+    setMessage("Contraseña actualizada correctamente.");
   }
 
   return (
     <>
-      <section className="panel settings-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Navegacion</p>
-            <h2>Posicion del menu</h2>
-          </div>
-          <LayoutDashboard size={20} aria-hidden="true" />
-        </div>
-        <div className="segmented-options">
-          {navigationOptions.map((option) => {
-            const Icon = option.icon;
-            const isActive = preferences.navigationMode === option.id;
-
-            return (
-              <button
-                className={`segmented-option ${isActive ? "active" : ""}`}
-                key={option.id}
-                type="button"
-                onClick={() => onUpdatePreferences({ navigationMode: option.id })}
-              >
-                <Icon size={18} aria-hidden="true" />
-                <span>{option.label}</span>
-                {isActive ? <Check size={16} aria-hidden="true" /> : null}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       <section className="panel settings-panel">
         <div className="section-heading">
           <div>
@@ -95,7 +48,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
         <label className="toggle-row">
           <span>
             <strong>Activar modo oscuro</strong>
-            <small>Aplica colores de alto contraste en paneles, tablas, formularios y navegacion.</small>
+            <small>Aplica colores de alto contraste en paneles, tablas, formularios y navegación.</small>
           </span>
           <input
             checked={preferences.darkMode}
@@ -109,13 +62,13 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
         <div className="section-heading">
           <div>
             <p className="eyebrow">Seguridad</p>
-            <h2>{"Cambio de contrase\u00f1a"}</h2>
+            <h2>Cambio de contraseña</h2>
           </div>
           <KeyRound size={20} aria-hidden="true" />
         </div>
         <form className="password-form" onSubmit={handlePasswordSubmit}>
           <label className="field">
-            <span>{"Contrase\u00f1a actual"}</span>
+            <span>Contraseña actual</span>
             <input
               type="password"
               value={passwordForm.currentPassword}
@@ -124,7 +77,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
           </label>
           <div className="form-grid two-columns">
             <label className="field">
-              <span>{"Nueva contrase\u00f1a"}</span>
+              <span>Nueva contraseña</span>
               <input
                 type="password"
                 value={passwordForm.newPassword}
@@ -132,7 +85,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
               />
             </label>
             <label className="field">
-              <span>{"Confirmar contrase\u00f1a"}</span>
+              <span>Confirmar contraseña</span>
               <input
                 type="password"
                 value={passwordForm.confirmPassword}
@@ -144,7 +97,7 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
           {message ? <p className="form-success">{message}</p> : null}
           <div className="form-actions">
             <Button icon={KeyRound} type="submit">
-              {"Actualizar contrase\u00f1a"}
+              Actualizar contraseña
             </Button>
           </div>
         </form>
@@ -158,8 +111,8 @@ export default function Settings({ onChangePassword, onUpdatePreferences, prefer
     <div className="page-stack settings-page">
       <section className="panel page-intro">
         <div>
-          <p className="eyebrow">Personalizacion del sistema</p>
-          <h2>Configuracion visual y seguridad</h2>
+          <p className="eyebrow">Personalización del sistema</p>
+          <h2>Configuración visual y seguridad</h2>
         </div>
         <strong>{preferences.darkMode ? "Modo oscuro" : "Modo claro"}</strong>
       </section>

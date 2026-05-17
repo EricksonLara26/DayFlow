@@ -41,11 +41,11 @@ export default function Tickets({
       title: "Tickets activos asignados a ti",
     },
     "technician-history": {
-      eyebrow: "Historial tecnico",
+      eyebrow: "Historial técnico",
       title: "Solicitudes cerradas por ti",
     },
     administrator: {
-      eyebrow: "Gestion administrativa",
+      eyebrow: "Gestión administrativa",
       title: "Todas las solicitudes del sistema",
     },
   }[scope];

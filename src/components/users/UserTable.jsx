@@ -35,7 +35,7 @@ export default function UserTable({
   const [error, setError] = useState("");
 
   if (!users.length) {
-    return <EmptyState title="Sin usuarios" message="Los usuarios registrados se mostraran aqui." />;
+    return <EmptyState title="Sin usuarios" message="Los usuarios registrados se mostrarán aquí." />;
   }
 
   function updateField(field, value) {
@@ -85,7 +85,7 @@ export default function UserTable({
             <th>Correo</th>
             <th>Rol</th>
             <th>Cargo</th>
-            <th>Area/departamento</th>
+            <th>Área/departamento</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -193,7 +193,7 @@ export default function UserTable({
                           onClick={() => saveUser(user)}
                         />
                         <Button
-                          aria-label={`Cancelar edicion de ${getUserFullName(user)}`}
+                          aria-label={`Cancelar edición de ${getUserFullName(user)}`}
                           className="user-icon-button user-cancel-button"
                           icon={X}
                           title="Cancelar"
@@ -215,10 +215,10 @@ export default function UserTable({
                         ) : null}
                         {canResetPassword ? (
                           <Button
-                            aria-label={`Restablecer contrase\u00f1a de ${getUserFullName(user)}`}
+                            aria-label={`Restablecer contraseña de ${getUserFullName(user)}`}
                             className="user-icon-button user-reset-button"
                             icon={KeyRound}
-                            title="Restablecer contrase\u00f1a"
+                            title="Restablecer contraseña"
                             variant="ghost"
                             onClick={() => onResetPassword(user.id)}
                           />

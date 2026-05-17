@@ -48,7 +48,7 @@ function getReportYears(tickets) {
 function buildReportRows({ reportTickets, selectedTechnician, selectedYear, users }) {
   return [
     [`Informe ${selectedYear}`],
-    ["Tecnico", `${selectedTechnician.firstName} ${selectedTechnician.lastName}`],
+    ["Técnico", `${selectedTechnician.firstName} ${selectedTechnician.lastName}`],
     ["Generado", new Date().toLocaleString()],
     [],
     [
@@ -57,10 +57,10 @@ function buildReportRows({ reportTickets, selectedTechnician, selectedYear, user
       "Categoria",
       "Departamento",
       "Usuario solicitante",
-      "Tecnico responsable",
-      "Fecha creacion",
+      "Técnico responsable",
+      "Fecha creación",
       "Fecha tomada",
-      "Fecha finalizacion",
+      "Fecha finalización",
       "Estado",
       "Tiempo resolucion",
     ],
@@ -113,7 +113,7 @@ function BarInsight({ emptyTitle, eyebrow, items, title }) {
           })}
         </div>
       ) : (
-        <EmptyState title={emptyTitle} message="No hay informacion suficiente para mostrar este grafico." />
+        <EmptyState title={emptyTitle} message="No hay información suficiente para mostrar este gráfico." />
       )}
     </section>
   );
@@ -165,7 +165,7 @@ export default function InformationPanel({
     }
 
     if (!selectedTechnician || !reportTickets.length) {
-      setReportError("Este tecnico no tiene solicitudes completadas en el año seleccionado.");
+      setReportError("Este técnico no tiene solicitudes completadas en el año seleccionado.");
       return;
     }
 
@@ -180,8 +180,8 @@ export default function InformationPanel({
     <div className="page-stack information-page">
       <section className="panel page-intro">
         <div>
-          <p className="eyebrow">Informacion operativa</p>
-          <h2>Panel de informacion</h2>
+          <p className="eyebrow">Información operativa</p>
+          <h2>Panel de información</h2>
         </div>
         <strong>{stats.total} tickets</strong>
       </section>
@@ -216,7 +216,7 @@ export default function InformationPanel({
           <div className="section-heading">
             <div>
               <p className="eyebrow">Solicitudes completadas</p>
-              <h2>Gestion de cierres</h2>
+              <h2>Gestión de cierres</h2>
             </div>
             <span>{completedTickets.length}</span>
           </div>
@@ -241,7 +241,7 @@ export default function InformationPanel({
           ) : (
             <EmptyState
               title="Sin solicitudes completadas"
-              message="Las solicitudes cerradas se mostraran aqui para consulta y exportacion."
+              message="Las solicitudes cerradas se mostrarán aquí para consulta y exportación."
             />
           )}
         </section>
@@ -271,7 +271,7 @@ export default function InformationPanel({
             ))}
           </div>
         ) : (
-          <EmptyState title="Sin historial" message="Las acciones del sistema se mostraran aqui." />
+          <EmptyState title="Sin historial" message="Las acciones del sistema se mostrarán aquí." />
         )}
       </section>
 
@@ -280,7 +280,7 @@ export default function InformationPanel({
           <div className="section-heading">
             <div>
               <p className="eyebrow">Descargar informe</p>
-              <h2>Informe anual por tecnico</h2>
+              <h2>Informe anual por técnico</h2>
             </div>
             <Button icon={Download} onClick={handleDownloadReport}>
               Descargar Excel
@@ -289,7 +289,7 @@ export default function InformationPanel({
 
           <div className="report-controls">
             <label className="field compact-field">
-              <span>Tecnico</span>
+              <span>Técnico</span>
               <select value={selectedTechnicianId} onChange={(event) => setSelectedTechnicianId(event.target.value)}>
                 {technicians.map((technician) => (
                   <option key={technician.id} value={technician.id}>
@@ -322,10 +322,10 @@ export default function InformationPanel({
                     <th>Categoria</th>
                     <th>Departamento</th>
                     <th>Usuario solicitante</th>
-                    <th>Tecnico responsable</th>
-                    <th>Fecha creacion</th>
+                    <th>Técnico responsable</th>
+                    <th>Fecha creación</th>
                     <th>Fecha tomada</th>
-                    <th>Fecha finalizacion</th>
+                    <th>Fecha finalización</th>
                     <th>Estado</th>
                     <th>Tiempo resolucion</th>
                   </tr>
@@ -356,7 +356,7 @@ export default function InformationPanel({
           ) : (
             <EmptyState
               title="Sin solicitudes completadas"
-              message="Este tecnico no tiene solicitudes completadas en el año seleccionado."
+              message="Este técnico no tiene solicitudes completadas en el año seleccionado."
             />
           )}
         </section>

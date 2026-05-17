@@ -12,7 +12,7 @@ export default function TicketFilters({ filters, onChange }) {
       <SearchInput
         value={filters.query}
         onChange={(value) => updateFilter("query", value)}
-        placeholder="Buscar por titulo, solicitante o tecnico"
+        placeholder="Buscar por título, solicitante o técnico"
       />
 
       <label className="field compact-field">

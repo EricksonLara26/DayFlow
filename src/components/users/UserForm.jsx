@@ -34,7 +34,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
     }
 
     if (!form.jobTitle.trim() || !form.department.trim()) {
-      setError("Cargo y area/departamento son obligatorios.");
+      setError("Cargo y área/departamento son obligatorios.");
       return;
     }
 
@@ -49,12 +49,12 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
     }
 
     if (!form.password.trim()) {
-      setError("La contrase\u00f1a no debe estar vacia.");
+      setError("La contraseña no debe estar vacía.");
       return;
     }
 
     if (!emailPattern.test(email) || !email.endsWith(".com")) {
-      setError("El correo debe tener formato valido y terminar en .com.");
+      setError("El correo debe tener formato válido y terminar en .com.");
       return;
     }
 
@@ -105,7 +105,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
           <input type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} />
         </label>
         <label className="field">
-          <span>{"Contrase\u00f1a"}</span>
+          <span>Contraseña</span>
           <input
             type="password"
             value={form.password}
@@ -124,7 +124,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
           <input value={form.jobTitle} onChange={(event) => updateField("jobTitle", event.target.value)} />
         </label>
         <label className="field span-2">
-          <span>Area/departamento</span>
+          <span>Área/departamento</span>
           <input value={form.department} onChange={(event) => updateField("department", event.target.value)} />
         </label>
       </div>

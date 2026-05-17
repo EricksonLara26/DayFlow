@@ -9,7 +9,7 @@ export default function TechnicianRanking({ technicians }) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Ranking</p>
-          <h2>Cierres por tecnico</h2>
+          <h2>Cierres por técnico</h2>
         </div>
       </div>
       {rankedTechnicians.length ? (
@@ -31,8 +31,8 @@ export default function TechnicianRanking({ technicians }) {
         </div>
       ) : (
         <EmptyState
-          title="Sin tecnicos registrados"
-          message="El ranking se mostrara cuando existan tecnicos activos en el sistema."
+          title="Sin técnicos registrados"
+          message="El ranking se mostrará cuando existan técnicos activos en el sistema."
         />
       )}
     </section>

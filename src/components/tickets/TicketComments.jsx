@@ -40,7 +40,7 @@ export default function TicketComments({ canComment, comments, onAddComment }) {
             </article>
           ))
         ) : (
-          <EmptyState title="Sin comentarios" message="Los comentarios del ticket apareceran aqui." />
+          <EmptyState title="Sin comentarios" message="Los comentarios del ticket aparecerán aquí." />
         )}
       </div>
 

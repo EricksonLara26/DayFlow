@@ -59,7 +59,7 @@ export function storeAuthenticatedUser(user) {
   try {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(sessionUser));
   } catch {
-    // La sesion continua en memoria si el navegador bloquea almacenamiento local.
+    // La sesión continúa en memoria si el navegador bloquea almacenamiento local.
   }
 
   return sessionUser;
@@ -69,7 +69,7 @@ export function clearAuthenticatedUser() {
   try {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
   } catch {
-    // No hay accion adicional si el almacenamiento local no esta disponible.
+    // No hay acción adicional si el almacenamiento local no está disponible.
   }
 }
 

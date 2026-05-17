@@ -15,7 +15,7 @@ import "./TechnicianProfile.css";
 
 function TicketHistoryList({ emptyTitle, onOpenTicket, tickets }) {
   if (!tickets.length) {
-    return <EmptyState title={emptyTitle} message="Cuando cierres solicitudes se mostraran en esta lista." />;
+    return <EmptyState title={emptyTitle} message="Cuando cierres solicitudes se mostrarán en esta lista." />;
   }
 
   return (
@@ -42,7 +42,7 @@ function AccountDetails({ currentUser }) {
     { label: "Correo", value: currentUser.email },
     { label: "Rol", value: getRoleLabel(currentUser.role) },
     { label: "Cargo", value: currentUser.jobTitle || "Cargo no definido" },
-    { label: "Departamento", value: currentUser.department || "Area no definida" },
+    { label: "Departamento", value: currentUser.department || "Área no definida" },
   ];
 
   return (
@@ -50,7 +50,7 @@ function AccountDetails({ currentUser }) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Datos personales</p>
-          <h2>Informacion de cuenta</h2>
+          <h2>Información de cuenta</h2>
         </div>
         <UserCircle size={20} aria-hidden="true" />
       </div>
@@ -90,7 +90,7 @@ function ActivityPanel({ personalHistory }) {
           ))}
         </div>
       ) : (
-        <EmptyState title="Sin historial personal" message="Tus acciones quedaran registradas aqui." />
+        <EmptyState title="Sin historial personal" message="Tus acciones quedarán registradas aquí." />
       )}
     </section>
   );
@@ -130,7 +130,7 @@ export default function TechnicianProfile({
           <div className="profile-meta">
             <b>{getRoleLabel(currentUser.role)}</b>
             <b>{currentUser.jobTitle || "Cargo no definido"}</b>
-            <b>{currentUser.department || "Area no definida"}</b>
+            <b>{currentUser.department || "Área no definida"}</b>
           </div>
         </div>
       </section>

@@ -65,7 +65,7 @@ export default function Users({
     const result = onResetPassword(userId);
 
     if (result?.ok !== false) {
-      setMessage(result?.message ?? "Contrase\u00f1a restablecida correctamente.");
+      setMessage(result?.message ?? "Contraseña restablecida correctamente.");
     }
 
     return result;
@@ -85,8 +85,8 @@ export default function Users({
     <div className="page-stack users-page">
       <section className="panel page-intro">
         <div>
-          <p className="eyebrow">Administracion</p>
-          <h2>Gestion de usuarios</h2>
+          <p className="eyebrow">Administración</p>
+          <h2>Gestión de usuarios</h2>
         </div>
         <div className="users-page-actions">
           <strong>{users.length} usuario(s)</strong>
@@ -135,7 +135,7 @@ export default function Users({
               </select>
             </label>
             <label className="field compact-field">
-              <span>Area/departamento</span>
+              <span>Área/departamento</span>
               <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}>
                 <option value="ALL">Todos</option>
                 {departments.map((department) => (

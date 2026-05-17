@@ -86,20 +86,16 @@ function createCommentItem(ticket, message, user, createdAt = nowIso()) {
 
 const defaultPreferences = {
   darkMode: false,
-  navigationMode: "sidebar",
+  navigationMode: "top",
 };
 
 function readStoredPreferences() {
   try {
     const rawPreferences = window.localStorage.getItem("dayflow-preferences");
     const parsedPreferences = rawPreferences ? JSON.parse(rawPreferences) : {};
-    const navigationMode = ["sidebar", "top", "compact"].includes(parsedPreferences.navigationMode)
-      ? parsedPreferences.navigationMode
-      : defaultPreferences.navigationMode;
-
     return {
       darkMode: Boolean(parsedPreferences.darkMode),
-      navigationMode,
+      navigationMode: "top",
     };
   } catch {
     return defaultPreferences;
@@ -167,7 +163,9 @@ export default function App() {
 
       const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
       const nextView = canAccessView(currentUser, requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
-      setSelectedTicketId(null);
+      if (nextView !== VIEW_IDS.TICKET_DETAIL) {
+        setSelectedTicketId(null);
+      }
       setActiveView(nextView);
 
       if (nextView === VIEW_IDS.ACCESS_DENIED) {
@@ -209,7 +207,7 @@ export default function App() {
     setCurrentUser(null);
     setSelectedTicketId(null);
     setActiveView(VIEW_IDS.DASHBOARD);
-    setLoginMessage("Sesi\u00f3n cerrada correctamente.");
+    setLoginMessage("Sesión cerrada correctamente.");
   }
 
   function canViewTicket(ticket) {
@@ -239,7 +237,7 @@ export default function App() {
 
   function goBackFromTicket() {
     setSelectedTicketId(null);
-    navigate(isTechnician ? VIEW_IDS.MY_TICKETS : VIEW_IDS.TICKETS);
+    navigate(VIEW_IDS.TICKETS);
   }
 
   function canTakeTicket(ticket) {
@@ -334,7 +332,7 @@ export default function App() {
       nextStatus === TICKET_STATUSES.COMPLETED
         ? "Ticket completado"
         : nextStatus === TICKET_STATUSES.DISMISSED
-          ? "Ticket desestimado por area tecnica"
+          ? "Ticket desestimado por área técnica"
           : `Estado cambiado a ${getStatusLabel(nextStatus)}`;
 
     setTickets((currentTickets) =>
@@ -446,7 +444,7 @@ export default function App() {
     }
 
     if (users.some((user) => user.email.toLowerCase() === form.email.trim().toLowerCase())) {
-      return { ok: false, message: "Ese correo ya esta en uso." };
+      return { ok: false, message: "Ese correo ya está en uso." };
     }
 
     setUsers((currentUsers) => createLocalUser(currentUsers, form));
@@ -464,11 +462,11 @@ export default function App() {
     const cleanEmail = form.email.trim().toLowerCase();
 
     if (!validateEmail(cleanEmail)) {
-      return { ok: false, message: "El correo debe tener formato valido y terminar en .com." };
+      return { ok: false, message: "El correo debe tener formato válido y terminar en .com." };
     }
 
     if (users.some((user) => user.id !== userId && user.email.toLowerCase() === cleanEmail)) {
-      return { ok: false, message: "Ese correo ya esta en uso." };
+      return { ok: false, message: "Ese correo ya está en uso." };
     }
 
     const cleanFirstName = form.firstName.trim();
@@ -521,12 +519,12 @@ export default function App() {
     const targetUser = users.find((user) => user.id === userId);
 
     if (!canResetUserPassword(currentUser, targetUser)) {
-      return { ok: false, message: "No tienes permisos para restablecer esta contrase\u00f1a." };
+      return { ok: false, message: "No tienes permisos para restablecer esta contraseña." };
     }
 
     setUsers((currentUsers) => resetLocalUserPassword(currentUsers, userId));
 
-    return { ok: true, message: "Contrase\u00f1a restablecida correctamente." };
+    return { ok: true, message: "Contraseña restablecida correctamente." };
   }
 
   function authorizeTechnicianReport({ technicianId }) {
@@ -537,7 +535,7 @@ export default function App() {
     const technician = users.find((user) => user.id === Number(technicianId) && isTechnicianUser(user));
 
     if (!technician) {
-      return { ok: false, message: "Selecciona un tecnico valido." };
+      return { ok: false, message: "Selecciona un técnico válido." };
     }
 
     return { ok: true };
@@ -549,7 +547,7 @@ export default function App() {
       try {
         window.localStorage.setItem("dayflow-preferences", JSON.stringify(updatedPreferences));
       } catch {
-        // La configuracion sigue activa durante la sesion aunque el navegador bloquee almacenamiento local.
+        // La configuración sigue activa durante la sesión aunque el navegador bloquee almacenamiento local.
       }
       return updatedPreferences;
     });
@@ -557,23 +555,23 @@ export default function App() {
 
   function changePassword({ confirmPassword, currentPassword, newPassword }) {
     if (!currentUser) {
-      return { ok: false, message: "No hay una sesion activa." };
+      return { ok: false, message: "No hay una sesión activa." };
     }
 
     const fullUser = users.find((user) => user.id === currentUser.id);
 
     if (!fullUser || currentPassword !== fullUser.password) {
-      return { ok: false, message: "La contrase\u00f1a actual no coincide." };
+      return { ok: false, message: "La contraseña actual no coincide." };
     }
 
     const cleanPassword = newPassword.trim();
 
     if (cleanPassword.length < 4) {
-      return { ok: false, message: "La nueva contrase\u00f1a debe tener al menos 4 caracteres." };
+      return { ok: false, message: "La nueva contraseña debe tener al menos 4 caracteres." };
     }
 
     if (cleanPassword !== confirmPassword.trim()) {
-      return { ok: false, message: "La confirmacion no coincide." };
+      return { ok: false, message: "La confirmación no coincide." };
     }
 
     setUsers((currentUsers) => resetLocalUserPassword(currentUsers, currentUser.id, cleanPassword));
@@ -658,7 +656,7 @@ export default function App() {
     if (activeView === VIEW_IDS.INFORMATION) {
       return (
         <InformationPanel
-          canDownloadReports={canDownloadReports(currentUser)}
+          canDownloadReports={false}
           onAuthorizeReport={authorizeTechnicianReport}
           onOpenTicket={openTicket}
           tickets={tickets}
@@ -697,7 +695,7 @@ export default function App() {
       canCreateTicket={canCreateTicket}
       currentUser={currentUser}
       darkMode={preferences.darkMode}
-      navigationMode={preferences.navigationMode}
+      navigationMode="top"
       onCreateTicket={() => navigate(VIEW_IDS.CREATE_TICKET)}
       onLogout={handleLogout}
       onNavigate={navigate}

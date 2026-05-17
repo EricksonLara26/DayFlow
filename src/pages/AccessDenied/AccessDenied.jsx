@@ -11,7 +11,7 @@ export default function AccessDenied({ onGoHome }) {
         </div>
         <div>
           <p className="eyebrow">Acceso denegado</p>
-          <h2>{"No tienes permisos para acceder a esta secci\u00f3n."}</h2>
+          <h2>No tienes permisos para acceder a esta sección.</h2>
           <p className="muted-note">
             Tu rol actual no tiene acceso visual ni funcional a esta parte del sistema.
           </p>

@@ -36,7 +36,7 @@ export function getTicketsDueInThreeDays(tickets) {
 
 export function sortTechniciansByCompletedTickets(technicians) {
   return [...technicians].sort((first, second) => {
-    const completedDifference = (first.completedTickets ?? 0) - (second.completedTickets ?? 0);
+    const completedDifference = (second.completedTickets ?? 0) - (first.completedTickets ?? 0);
 
     if (completedDifference !== 0) {
       return completedDifference;
@@ -172,7 +172,7 @@ export function getStatusLabel(status) {
     [TICKET_STATUSES.IN_PROGRESS]: "En proceso",
     [TICKET_STATUSES.ON_HOLD]: "En hold",
     [TICKET_STATUSES.COMPLETED]: "Completado",
-    [TICKET_STATUSES.DISMISSED]: "Desestimado por area tecnica",
+    [TICKET_STATUSES.DISMISSED]: "Desestimado por área técnica",
   };
 
   return labels[status] ?? status;

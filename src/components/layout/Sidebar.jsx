@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  ChevronRight,
   ClipboardCheck,
   ClipboardList,
   FileDown,
@@ -58,17 +57,17 @@ function BrandBlock() {
 }
 
 function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate }) {
-  const profileDescription = isTechnicianUser(currentUser) ? "Metricas y preferencias" : "Datos y preferencias";
+  const profileDescription = isTechnicianUser(currentUser) ? "Métricas y preferencias" : "Datos y preferencias";
 
   return (
     <button
       aria-label="Abrir mi perfil"
       className={`nav-profile-button profile-access-button ${isCompact ? "icon-only" : ""} ${
-        activeView === "profile" ? "active" : ""
+        activeView === VIEW_IDS.PROFILE ? "active" : ""
       }`}
       title="Mi perfil"
       type="button"
-      onClick={() => onNavigate("profile")}
+      onClick={() => onNavigate(VIEW_IDS.PROFILE)}
     >
       <span className="profile-access-icon">
         <UserCircle size={22} aria-hidden="true" />
@@ -79,7 +78,6 @@ function ProfileButton({ activeView, currentUser, isCompact = false, onNavigate 
           <small>{profileDescription}</small>
         </span>
       ) : null}
-      {!isCompact ? <ChevronRight className="profile-access-chevron" size={18} aria-hidden="true" /> : null}
     </button>
   );
 }
@@ -89,7 +87,7 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
 
   if (navigationMode === "top") {
     return (
-      <header className="top-navigation" aria-label="Navegacion principal">
+      <header className="top-navigation" aria-label="Navegación principal">
         <BrandBlock />
         <nav className="sidebar-nav top-nav">
           {items.map((item) => (
@@ -97,10 +95,15 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
           ))}
         </nav>
         <div className="top-nav-actions">
-          <ProfileButton activeView={activeView} currentUser={currentUser} onNavigate={onNavigate} />
-          <button aria-label="Cerrar sesion" className="sidebar-link logout-link" type="button" onClick={onLogout}>
+          <ProfileButton activeView={activeView} currentUser={currentUser} isCompact onNavigate={onNavigate} />
+          <button
+            aria-label="Cerrar sesión"
+            className="sidebar-link logout-link top-icon-button"
+            title="Cerrar sesión"
+            type="button"
+            onClick={onLogout}
+          >
             <LogOut size={18} aria-hidden="true" />
-            <span>Cerrar sesion</span>
           </button>
         </div>
       </header>
@@ -110,7 +113,7 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
   return (
     <aside
       className={`sidebar ${navigationMode === "compact" ? "compact-sidebar" : ""}`}
-      aria-label="Navegacion principal"
+      aria-label="Navegación principal"
     >
       <BrandBlock />
 
@@ -128,14 +131,14 @@ export default function Sidebar({ activeView, currentUser, navigationMode, onNav
       />
 
       <button
-        aria-label="Cerrar sesion"
+        aria-label="Cerrar sesión"
         className="sidebar-link logout-link"
-        title="Cerrar sesion"
+        title="Cerrar sesión"
         type="button"
         onClick={onLogout}
       >
         <LogOut size={18} aria-hidden="true" />
-        <span>Cerrar sesion</span>
+        <span>Cerrar sesión</span>
       </button>
     </aside>
   );

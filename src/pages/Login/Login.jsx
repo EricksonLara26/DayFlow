@@ -33,7 +33,7 @@ export default function Login({ message, onLogin }) {
           <img src="/dayflow-mark.png" alt="" />
           <div>
             <strong>DayFlow</strong>
-            <span>Gestion interna de soporte</span>
+            <span>Gestión interna de soporte</span>
           </div>
         </div>
 
@@ -41,7 +41,7 @@ export default function Login({ message, onLogin }) {
           <p className="eyebrow">Acceso seguro</p>
           <h1>Accede a DayFlow</h1>
           <p className="login-copy">
-            Ingresa con tus credenciales corporativas. El sistema identificara tu rol automaticamente.
+            Ingresa con tus credenciales corporativas. El sistema identificará tu rol automáticamente.
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export default function Login({ message, onLogin }) {
           </label>
 
           <label className="field">
-            <span>{"Contrase\u00f1a"}</span>
+            <span>Contraseña</span>
             <div className="input-icon">
               <LockKeyhole size={17} aria-hidden="true" />
               <input
@@ -75,7 +75,7 @@ export default function Login({ message, onLogin }) {
           {error ? <p className="form-error">{error}</p> : null}
 
           <Button className="wide" type="submit">
-            Iniciar sesion
+            Iniciar sesión
           </Button>
         </form>
       </section>

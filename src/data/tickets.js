@@ -14,7 +14,7 @@ export const TICKET_PRIORITIES = {
 };
 
 export const TICKET_CATEGORIES = [
-  "Soporte Tecnico",
+  "Soporte Técnico",
   "Redes",
   "Hardware",
   "Software",
@@ -63,7 +63,7 @@ export const initialTickets = [
         10,
         "Juan Perez",
         "EMPLOYEE",
-        "Necesito el equipo para cierre de nomina.",
+        "Necesito el equipo para cierre de nómina.",
         "2026-05-12T09:20:00.000Z",
       ),
     ],
@@ -76,7 +76,7 @@ export const initialTickets = [
     id: 1002,
     title: "VPN corporativa se desconecta cada 10 minutos",
     description:
-      "La conexion remota se cae en sesiones largas y afecta el acceso al sistema contable.",
+      "La conexión remota se cae en sesiones largas y afecta el acceso al sistema contable.",
     category: "Redes",
     status: TICKET_STATUSES.IN_PROGRESS,
     priority: TICKET_PRIORITIES.CRITICAL,
@@ -138,7 +138,7 @@ export const initialTickets = [
   ticket({
     id: 1004,
     title: "Restablecer acceso a correo ejecutivo",
-    description: "La cuenta bloquea inicio de sesion por politicas de seguridad.",
+    description: "La cuenta bloquea inicio de sesión por políticas de seguridad.",
     category: "Correo",
     status: TICKET_STATUSES.COMPLETED,
     priority: TICKET_PRIORITIES.HIGH,
@@ -200,7 +200,7 @@ export const initialTickets = [
     id: 1007,
     title: "Actualizar antivirus en estacion de caja",
     description: "El equipo reporta proteccion desactualizada.",
-    category: "Soporte Tecnico",
+    category: "Soporte Técnico",
     status: TICKET_STATUSES.COMPLETED,
     priority: TICKET_PRIORITIES.MEDIUM,
     createdBy: 12,
@@ -218,7 +218,7 @@ export const initialTickets = [
   }),
   ticket({
     id: 1008,
-    title: "Solicitud de desbloqueo de pagina externa",
+    title: "Solicitud de desbloqueo de página externa",
     description: "Se solicita permitir un sitio no relacionado con operaciones.",
     category: "Redes",
     status: TICKET_STATUSES.DISMISSED,
@@ -233,13 +233,13 @@ export const initialTickets = [
     completedAt: "2026-04-21T14:10:00.000Z",
     history: [
       history(1, "Ticket creado por Sofia Castillo", 13, "Sofia Castillo", "2026-04-21T13:00:00.000Z"),
-      history(2, "Ticket desestimado por area tecnica", 1, "Erickson Lara", "2026-04-21T14:10:00.000Z"),
+      history(2, "Ticket desestimado por área técnica", 1, "Erickson Lara", "2026-04-21T14:10:00.000Z"),
     ],
   }),
   ticket({
     id: 1009,
     title: "Reinstalar suite de oficina",
-    description: "La aplicacion se cierra al abrir hojas de calculo.",
+    description: "La aplicación se cierra al abrir hojas de cálculo.",
     category: "Software",
     status: TICKET_STATUSES.COMPLETED,
     priority: TICKET_PRIORITIES.MEDIUM,
@@ -255,7 +255,7 @@ export const initialTickets = [
   }),
   ticket({
     id: 1010,
-    title: "Crear acceso temporal para auditoria",
+    title: "Crear acceso temporal para auditoría",
     description: "Auditoria interna necesita acceso limitado a repositorio documental.",
     category: "Accesos",
     status: TICKET_STATUSES.COMPLETED,
@@ -282,8 +282,8 @@ export const initialTickets = [
           "Revisar lentitud de PC",
           "Instalar driver de scanner",
         ][index],
-      description: "Solicitud resuelta dentro del SLA del area de soporte.",
-      category: ["Hardware", "Hardware", "Redes", "Correo", "Soporte Tecnico", "Impresoras"][index],
+      description: "Solicitud resuelta dentro del SLA del área de soporte.",
+      category: ["Hardware", "Hardware", "Redes", "Correo", "Soporte Técnico", "Impresoras"][index],
       status: TICKET_STATUSES.COMPLETED,
       priority: [TICKET_PRIORITIES.LOW, TICKET_PRIORITIES.LOW, TICKET_PRIORITIES.MEDIUM][index % 3],
       createdBy: [10, 11, 12, 13][index % 4],
@@ -299,7 +299,7 @@ export const initialTickets = [
   ),
   ticket({
     id: 1017,
-    title: "Permitir instalacion de juego en PC corporativa",
+    title: "Permitir instalación de juego en PC corporativa",
     description: "Solicitud fuera de politicas de uso del equipo.",
     category: "Software",
     status: TICKET_STATUSES.DISMISSED,
@@ -312,12 +312,12 @@ export const initialTickets = [
     updatedAt: "2026-04-05T10:00:00.000Z",
     dueDate: "2026-04-07",
     completedAt: "2026-04-05T10:00:00.000Z",
-    history: [history(1, "Ticket desestimado por area tecnica", 3, "Carlos Diaz", "2026-04-05T10:00:00.000Z")],
+    history: [history(1, "Ticket desestimado por área técnica", 3, "Carlos Diaz", "2026-04-05T10:00:00.000Z")],
   }),
   ticket({
     id: 1018,
-    title: "Cambio de laptop sin diagnostico",
-    description: "Se descarta cambio directo y se solicita diagnostico previo.",
+    title: "Cambio de laptop sin diagnóstico",
+    description: "Se descarta cambio directo y se solicita diagnóstico previo.",
     category: "Hardware",
     status: TICKET_STATUSES.DISMISSED,
     priority: TICKET_PRIORITIES.MEDIUM,
@@ -329,7 +329,7 @@ export const initialTickets = [
     updatedAt: "2026-04-03T16:20:00.000Z",
     dueDate: "2026-04-06",
     completedAt: "2026-04-03T16:20:00.000Z",
-    history: [history(1, "Ticket desestimado por area tecnica", 3, "Carlos Diaz", "2026-04-03T16:20:00.000Z")],
+    history: [history(1, "Ticket desestimado por área técnica", 3, "Carlos Diaz", "2026-04-03T16:20:00.000Z")],
   }),
   ticket({
     id: 1019,
@@ -363,6 +363,6 @@ export const initialTickets = [
     updatedAt: "2026-04-01T14:15:00.000Z",
     dueDate: "2026-04-04",
     completedAt: "2026-04-01T14:15:00.000Z",
-    history: [history(1, "Ticket desestimado por area tecnica", 4, "Ana Rojas", "2026-04-01T14:15:00.000Z")],
+    history: [history(1, "Ticket desestimado por área técnica", 4, "Ana Rojas", "2026-04-01T14:15:00.000Z")],
   }),
 ];

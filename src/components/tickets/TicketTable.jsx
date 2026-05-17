@@ -11,7 +11,7 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
     return (
       <EmptyState
         title="No hay solicitudes con esos filtros"
-        message="Ajusta la busqueda o crea una nueva solicitud de soporte."
+        message="Ajusta la búsqueda o crea una nueva solicitud de soporte."
       />
     );
   }
@@ -31,10 +31,10 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
                 <th>Departamento</th>
                 <th>Categoria</th>
                 <th>Estado</th>
-                <th>Tecnico asignado</th>
-                <th>Fecha de creacion</th>
+                <th>Técnico asignado</th>
+                <th>Fecha de creación</th>
                 <th>Fecha tomada</th>
-                <th>Fecha finalizacion</th>
+                <th>Fecha finalización</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -43,7 +43,7 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
               <tr>
                 <th>Ticket</th>
                 <th>Solicitante</th>
-                <th>Tecnico</th>
+                <th>Técnico</th>
                 <th>Estado</th>
                 <th>Prioridad</th>
                 <th>Fecha limite</th>

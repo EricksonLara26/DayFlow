@@ -38,7 +38,7 @@ function getReportYears(tickets) {
 function buildReportRows({ reportTickets, selectedTechnician, selectedYear, users }) {
   return [
     [`Informe ${selectedYear}`],
-    ["Tecnico", `${selectedTechnician.firstName} ${selectedTechnician.lastName}`],
+    ["Técnico", `${selectedTechnician.firstName} ${selectedTechnician.lastName}`],
     ["Generado", new Date().toLocaleString()],
     [],
     [
@@ -47,10 +47,10 @@ function buildReportRows({ reportTickets, selectedTechnician, selectedYear, user
       "Categoria",
       "Departamento",
       "Usuario solicitante",
-      "Tecnico responsable",
-      "Fecha creacion",
+      "Técnico responsable",
+      "Fecha creación",
       "Fecha tomada",
-      "Fecha finalizacion",
+      "Fecha finalización",
       "Estado",
       "Tiempo resolucion",
     ],
@@ -99,7 +99,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
     }
 
     if (!selectedTechnician || !reportTickets.length) {
-      setReportError("Este tecnico no tiene solicitudes completadas en el ano seleccionado.");
+      setReportError("Este técnico no tiene solicitudes completadas en el año seleccionado.");
       return;
     }
 
@@ -115,7 +115,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
       <section className="panel page-intro">
         <div>
           <p className="eyebrow">Informes administrativos</p>
-          <h2>Descarga de informes por tecnico</h2>
+          <h2>Descarga de informes por técnico</h2>
         </div>
         <strong>{reportTickets.length} ticket(s)</strong>
       </section>
@@ -124,7 +124,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
         <div className="section-heading">
           <div>
             <p className="eyebrow">Descargar informe</p>
-            <h2>Informe anual por tecnico</h2>
+            <h2>Informe anual por técnico</h2>
           </div>
           <Button icon={Download} onClick={handleDownloadReport}>
             Descargar Excel
@@ -133,7 +133,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
 
         <div className="report-controls">
           <label className="field compact-field">
-            <span>Tecnico</span>
+            <span>Técnico</span>
             <select value={selectedTechnicianId} onChange={(event) => setSelectedTechnicianId(event.target.value)}>
               {technicians.map((technician) => (
                 <option key={technician.id} value={technician.id}>
@@ -166,10 +166,10 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
                   <th>Categoria</th>
                   <th>Departamento</th>
                   <th>Usuario solicitante</th>
-                  <th>Tecnico responsable</th>
-                  <th>Fecha creacion</th>
+                  <th>Técnico responsable</th>
+                  <th>Fecha creación</th>
                   <th>Fecha tomada</th>
-                  <th>Fecha finalizacion</th>
+                  <th>Fecha finalización</th>
                   <th>Estado</th>
                   <th>Tiempo resolucion</th>
                 </tr>
@@ -200,7 +200,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
         ) : (
           <EmptyState
             title="Sin solicitudes completadas"
-            message="Este tecnico no tiene solicitudes completadas en el ano seleccionado."
+            message="Este técnico no tiene solicitudes completadas en el año seleccionado."
           />
         )}
       </section>

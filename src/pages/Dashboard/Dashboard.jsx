@@ -29,7 +29,7 @@ export default function Dashboard({ onOpenTicket, scope = "administrator", techn
       <section className="panel page-intro">
         <div>
           <p className="eyebrow">
-            {isTechnicianScope ? "Operacion tecnica" : isEmployeeScope ? "Panel de empleado" : "Monitoreo administrativo"}
+            {isTechnicianScope ? "Operación técnica" : isEmployeeScope ? "Panel de empleado" : "Monitoreo administrativo"}
           </p>
           <h2>
             {isTechnicianScope
@@ -84,7 +84,7 @@ export default function Dashboard({ onOpenTicket, scope = "administrator", techn
               ))}
             </div>
           ) : (
-            <EmptyState title="Sin vencimientos cercanos" message="No hay solicitudes activas que venzan en 3 dias." />
+            <EmptyState title="Sin vencimientos cercanos" message="No hay solicitudes activas que venzan en 3 días." />
           )}
         </section>
       </div>

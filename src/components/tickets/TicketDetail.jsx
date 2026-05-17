@@ -55,7 +55,7 @@ export default function TicketDetail({
                 <dd>{ticket.createdByName}</dd>
               </div>
               <div>
-                <dt>Tecnico asignado</dt>
+                <dt>Técnico asignado</dt>
                 <dd>{ticket.assignedToName ?? "Sin asignar"}</dd>
               </div>
               <div>
@@ -126,15 +126,15 @@ export default function TicketDetail({
                   variant="dark"
                   onClick={() => onChangeStatus(ticket.id, TICKET_STATUSES.DISMISSED)}
                 >
-                  Desestimar por area tecnica
+                  Desestimar por área técnica
                 </Button>
               </div>
             ) : null}
             {!canTake && (!canManage || isTerminal) ? (
               <p className="muted-note">
                 {isTerminal
-                  ? "Este ticket ya esta cerrado y queda disponible solo para consulta y comentarios."
-                  : "Las acciones tecnicas no estan disponibles para este usuario o asignacion."}
+                  ? "Este ticket ya está cerrado y queda disponible solo para consulta y comentarios."
+                  : "Las acciones técnicas no están disponibles para este usuario o asignación."}
               </p>
             ) : null}
           </section>

@@ -6,10 +6,10 @@ export const ROLES = {
 
 export const ROLE_LABELS = {
   [ROLES.ADMINISTRATOR]: "Administrador",
-  [ROLES.TECHNICIAN]: "Tecnico",
+  [ROLES.TECHNICIAN]: "Técnico",
   [ROLES.EMPLOYEE]: "Empleado",
   ADMINISTRATOR: "Administrador",
-  TECHNICIAN: "Tecnico",
+  TECHNICIAN: "Técnico",
   EMPLOYEE: "Empleado",
 };
 
