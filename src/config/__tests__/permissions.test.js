@@ -42,7 +42,7 @@ describe("permissions", () => {
   });
 
   describe("getNavigationItems", () => {
-    test("admin no muestra metricas duplicadas en la navegacion", () => {
+    test("admin no muestra metricas ni informes duplicados en la navegacion", () => {
       const items = getNavigationItems(admin);
 
       expect(items.map((item) => item.id)).toEqual([
@@ -50,7 +50,6 @@ describe("permissions", () => {
         VIEW_IDS.TICKETS,
         VIEW_IDS.INFORMATION,
         VIEW_IDS.USERS,
-        VIEW_IDS.REPORTS,
       ]);
     });
 

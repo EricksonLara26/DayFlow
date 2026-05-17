@@ -22,7 +22,6 @@ export const NAVIGATION_BY_ROLE = {
     { id: VIEW_IDS.TICKETS, label: "Gestión de solicitudes" },
     { id: VIEW_IDS.INFORMATION, label: "Panel de información" },
     { id: VIEW_IDS.USERS, label: "Gestión de usuarios" },
-    { id: VIEW_IDS.REPORTS, label: "Informes" },
   ],
   [ROLES.TECHNICIAN]: [
     { id: VIEW_IDS.DASHBOARD, label: "Inicio" },
