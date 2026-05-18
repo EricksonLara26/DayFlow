@@ -24,26 +24,144 @@ function columnName(index) {
   return name;
 }
 
+const COLUMN_WIDTH_LIMITS = [
+  { min: 11, max: 14 },
+  { min: 28, max: 46 },
+  { min: 16, max: 22 },
+  { min: 16, max: 24 },
+  { min: 20, max: 28 },
+  { min: 20, max: 28 },
+  { min: 20, max: 24 },
+  { min: 20, max: 24 },
+  { min: 20, max: 24 },
+  { min: 14, max: 18 },
+  { min: 17, max: 22 },
+];
+
+function getMaxColumnCount(rows) {
+  return Math.max(1, ...rows.map((row) => row.length));
+}
+
+function getHeaderRowIndex(rows) {
+  return rows.findIndex((row) => row[0] === "ID ticket");
+}
+
+function getColumnWidths(rows, maxColumnCount) {
+  return Array.from({ length: maxColumnCount }, (_, columnIndex) => {
+    const limits = COLUMN_WIDTH_LIMITS[columnIndex] ?? { min: 12, max: 32 };
+    const longestText = rows.reduce((longest, row, rowIndex) => {
+      const value = row[columnIndex];
+
+      if (rowIndex === 0 && columnIndex > 0) {
+        return longest;
+      }
+
+      return Math.max(longest, String(value ?? "").length);
+    }, 0);
+    const width = Math.max(limits.min, Math.min(limits.max, longestText + 2));
+
+    return Math.round(width * 10) / 10;
+  });
+}
+
+function getRowHeight(rowIndex, headerRowIndex) {
+  if (rowIndex === 0) {
+    return 30;
+  }
+
+  if (rowIndex === headerRowIndex) {
+    return 34;
+  }
+
+  if (rowIndex > headerRowIndex) {
+    return 24;
+  }
+
+  return rowIndex === headerRowIndex - 1 ? 10 : 22;
+}
+
+function getCellStyleId(rowIndex, columnIndex, headerRowIndex) {
+  if (rowIndex === 0) {
+    return 1;
+  }
+
+  if (rowIndex === 1 || rowIndex === 2) {
+    return columnIndex === 0 ? 2 : 3;
+  }
+
+  if (rowIndex === headerRowIndex) {
+    return 4;
+  }
+
+  if (headerRowIndex >= 0 && rowIndex > headerRowIndex) {
+    if (columnIndex === 0) {
+      return 6;
+    }
+
+    if ([6, 7, 8].includes(columnIndex)) {
+      return 7;
+    }
+
+    if (columnIndex === 9) {
+      return 8;
+    }
+
+    return 5;
+  }
+
+  return 0;
+}
+
+function createCellXml(value, reference, styleId) {
+  const styleAttribute = styleId ? ` s="${styleId}"` : "";
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `<c r="${reference}"${styleAttribute}><v>${value}</v></c>`;
+  }
+
+  if (typeof value === "boolean") {
+    return `<c r="${reference}"${styleAttribute} t="b"><v>${value ? 1 : 0}</v></c>`;
+  }
+
+  return `<c r="${reference}"${styleAttribute} t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+}
+
 function createSheetXml(rows) {
+  const maxColumnCount = getMaxColumnCount(rows);
+  const lastColumnName = columnName(maxColumnCount - 1);
+  const lastRowNumber = Math.max(1, rows.length);
+  const headerRowIndex = getHeaderRowIndex(rows);
+  const frozenRowCount = headerRowIndex >= 0 ? headerRowIndex + 1 : 1;
+  const columnWidths = getColumnWidths(rows, maxColumnCount);
+  const columnsXml = columnWidths
+    .map(
+      (width, columnIndex) =>
+        `<col min="${columnIndex + 1}" max="${columnIndex + 1}" width="${width}" customWidth="1"/>`,
+    )
+    .join("");
   const sheetRows = rows
     .map((row, rowIndex) => {
       const cells = row
         .map((value, columnIndex) => {
           const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
+          const styleId = getCellStyleId(rowIndex, columnIndex, headerRowIndex);
 
-          if (typeof value === "number") {
-            return `<c r="${reference}"><v>${value}</v></c>`;
-          }
-
-          return `<c r="${reference}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+          return createCellXml(value, reference, styleId);
         })
         .join("");
+      const rowHeight = getRowHeight(rowIndex, headerRowIndex);
 
-      return `<row r="${rowIndex + 1}">${cells}</row>`;
+      return `<row r="${rowIndex + 1}" ht="${rowHeight}" customHeight="1">${cells}</row>`;
     })
     .join("");
+  const filterXml =
+    headerRowIndex >= 0
+      ? `<autoFilter ref="A${headerRowIndex + 1}:${lastColumnName}${lastRowNumber}"/>`
+      : "";
+  const mergeXml =
+    maxColumnCount > 1 ? `<mergeCells count="1"><mergeCell ref="A1:${lastColumnName}1"/></mergeCells>` : "";
 
-  return `${XML_HEADER}<worksheet xmlns="${XMLNS_MAIN}"><sheetData>${sheetRows}</sheetData></worksheet>`;
+  return `${XML_HEADER}<worksheet xmlns="${XMLNS_MAIN}"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${lastColumnName}${lastRowNumber}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="${frozenRowCount}" topLeftCell="A${frozenRowCount + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols>${columnsXml}</cols><sheetData>${sheetRows}</sheetData>${filterXml}${mergeXml}<pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
 }
 
 function createWorkbookXml(sheetName) {
@@ -65,7 +183,7 @@ function createContentTypesXml() {
 }
 
 function createStylesXml() {
-  return `${XML_HEADER}<styleSheet xmlns="${XMLNS_MAIN}"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>`;
+  return `${XML_HEADER}<styleSheet xmlns="${XMLNS_MAIN}"><fonts count="5"><font><sz val="11"/><color rgb="FF1F2937"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="16"/><color rgb="FF0F172A"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FF334155"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FF166534"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF6F3"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F766E"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCFCE7"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFE2E8F0"/></left><right style="thin"><color rgb="FFE2E8F0"/></right><top style="thin"><color rgb="FFE2E8F0"/></top><bottom style="thin"><color rgb="FFE2E8F0"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="9"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="4" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/></styleSheet>`;
 }
 
 const crcTable = Array.from({ length: 256 }, (_, index) => {
