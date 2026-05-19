@@ -27,6 +27,7 @@ describe("TicketForm", () => {
 
     expect(screen.getByPlaceholderText(/titulo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/descripcion/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/fecha limite/i)).not.toBeInTheDocument();
   });
 
   test("valida campos requeridos", () => {
@@ -35,7 +36,7 @@ describe("TicketForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     expect(mockOnSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText(/completa titulo/i)).toBeInTheDocument();
+    expect(screen.getByText(/completa titulo y descripcion/i)).toBeInTheDocument();
   });
 
   test("envia datos validos y muestra loading", async () => {
@@ -44,7 +45,6 @@ describe("TicketForm", () => {
 
     fireEvent.change(screen.getByLabelText(/titulo/i), { target: { value: "Test Ticket" } });
     fireEvent.change(screen.getByLabelText(/descripcion/i), { target: { value: "Test description" } });
-    fireEvent.change(screen.getByLabelText(/fecha limite/i), { target: { value: "2026-05-20" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     expect(screen.getByRole("button", { name: /cargando/i })).toBeDisabled();
@@ -69,7 +69,6 @@ describe("TicketForm", () => {
 
     fireEvent.change(screen.getByLabelText(/titulo/i), { target: { value: "Alias Ticket" } });
     fireEvent.change(screen.getByLabelText(/descripcion/i), { target: { value: "Alias description" } });
-    fireEvent.change(screen.getByLabelText(/fecha limite/i), { target: { value: "2026-05-21" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     await act(async () => {

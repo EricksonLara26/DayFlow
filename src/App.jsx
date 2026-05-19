@@ -49,6 +49,7 @@ import {
   getTicketScopeForView,
   getTicketsForView,
 } from "./services/ticketService";
+import { addDaysToDateKey, dateToKey } from "./utils/dateUtils";
 import {
   getStatusLabel,
   getTechnicianCompletionStats,
@@ -431,6 +432,7 @@ export default function App() {
     const timestamp = nowIso();
     const requester = form.requester ?? currentUser;
     const requesterName = getUserFullName(requester);
+    const dueDate = addDaysToDateKey(dateToKey(new Date(timestamp)), 3);
     const nextTicket = {
       id: getNextId(tickets),
       title: form.title,
@@ -444,7 +446,7 @@ export default function App() {
       assignedToName: null,
       createdAt: timestamp,
       updatedAt: timestamp,
-      dueDate: form.dueDate,
+      dueDate,
       completedAt: null,
       comments: [],
       history: [

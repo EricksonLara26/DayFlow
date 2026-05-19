@@ -63,7 +63,7 @@ export default function TicketFilters({ filters, onChange }) {
           checked={filters.dueSoon}
           onChange={(event) => updateFilter("dueSoon", event.target.checked)}
         />
-        <span>Vence en 3 dias</span>
+        <span>Vence en 24 a 72 horas</span>
       </label>
     </section>
   );

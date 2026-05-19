@@ -2,6 +2,8 @@ import { TICKET_PRIORITIES, TICKET_STATUSES } from "../data/tickets";
 import { isWithinNextDays } from "./dateUtils";
 
 export const terminalTicketStatuses = [TICKET_STATUSES.COMPLETED, TICKET_STATUSES.DISMISSED];
+export const TICKET_DUE_SOON_DAYS = 3;
+export const TICKET_DUE_SOON_MINIMUM_DAYS = 1;
 
 export function getTicketsByStatus(tickets, status) {
   return tickets.filter((ticket) => ticket.status === status);
@@ -30,7 +32,7 @@ export function getTicketsExcludingDismissed(tickets) {
 export function getTicketsDueInThreeDays(tickets) {
   return tickets
     .filter((ticket) => !terminalTicketStatuses.includes(ticket.status))
-    .filter((ticket) => isWithinNextDays(ticket.dueDate, 3))
+    .filter((ticket) => isWithinNextDays(ticket.dueDate, TICKET_DUE_SOON_DAYS, TICKET_DUE_SOON_MINIMUM_DAYS))
     .sort((first, second) => first.dueDate.localeCompare(second.dueDate));
 }
 
@@ -203,7 +205,8 @@ export function filterTickets(tickets, filters) {
   return tickets.filter((ticket) => {
     const matchesStatus = filters.status === "ALL" || ticket.status === filters.status;
     const matchesPriority = filters.priority === "ALL" || ticket.priority === filters.priority;
-    const matchesDueSoon = !filters.dueSoon || isWithinNextDays(ticket.dueDate, 3);
+    const matchesDueSoon =
+      !filters.dueSoon || isWithinNextDays(ticket.dueDate, TICKET_DUE_SOON_DAYS, TICKET_DUE_SOON_MINIMUM_DAYS);
     const createdDate = ticket.createdAt.slice(0, 10);
     const matchesDateFrom = !filters.createdFrom || createdDate >= filters.createdFrom;
     const matchesDateTo = !filters.createdTo || createdDate <= filters.createdTo;

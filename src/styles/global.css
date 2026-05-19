@@ -390,19 +390,22 @@ h3 {
   min-height: 48px;
   place-items: center;
   margin-top: auto;
-  padding: 3px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
-  background: var(--surface);
+  background: transparent;
 }
 
 .nav-profile-button.profile-access-button.icon-only {
-  border-radius: 8px;
+  border-radius: 999px;
 }
 
 .nav-profile-button.profile-access-button.icon-only .profile-access-icon {
   width: 38px;
   height: 38px;
   flex-basis: 38px;
+  border-radius: 999px;
+  background: transparent;
 }
 
 .top-navigation .nav-profile-button,
@@ -420,7 +423,7 @@ h3 {
   min-width: 44px;
   height: 44px;
   min-height: 44px;
-  padding: 3px;
+  padding: 0;
 }
 
 .top-navigation .profile-access-button.icon-only .profile-access-icon {
@@ -431,9 +434,9 @@ h3 {
 
 .nav-profile-button.icon-only:hover,
 .nav-profile-button.icon-only.active {
-  border-color: var(--blue);
-  background: var(--surface);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  background: transparent;
+  box-shadow: none;
+  color: var(--blue);
 }
 
 .logout-link {

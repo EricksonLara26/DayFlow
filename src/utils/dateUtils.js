@@ -132,8 +132,8 @@ export function getDaysUntil(dateKey) {
   return Math.ceil((target.getTime() - today.getTime()) / 86400000);
 }
 
-export function isWithinNextDays(dateKey, days) {
+export function isWithinNextDays(dateKey, days, minimumDays = 0) {
   const daysUntil = getDaysUntil(dateKey);
 
-  return daysUntil !== null && daysUntil >= 0 && daysUntil <= days;
+  return daysUntil !== null && daysUntil >= minimumDays && daysUntil <= days;
 }

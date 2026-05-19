@@ -11,7 +11,6 @@ function getInitialForm(currentUser) {
     category: TICKET_CATEGORIES[0],
     priority: TICKET_PRIORITIES.MEDIUM,
     requesterId: String(currentUser.id),
-    dueDate: "",
   };
 }
 
@@ -34,8 +33,8 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
     const title = form.title.trim();
     const description = form.description.trim();
 
-    if (!title || !description || !form.dueDate) {
-      setError("Completa titulo, descripcion y fecha limite.");
+    if (!title || !description) {
+      setError("Completa titulo y descripcion.");
       return;
     }
 
@@ -84,7 +83,7 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
             rows="6"
             value={form.description}
             onChange={(event) => updateField("description", event.target.value)}
-            placeholder="Describe el problema, impacto y cualquier contexto util"
+            placeholder="Describe el problema, impacto, fechas mencionadas y cualquier contexto util"
           />
         </label>
 
@@ -118,7 +117,7 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
           </select>
         </label>
 
-        <label className="field">
+        <label className="field span-2">
           <span>Solicitante</span>
           <select
             disabled={isLoading || requesterOptions.length === 1}
@@ -131,16 +130,6 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
               </option>
             ))}
           </select>
-        </label>
-
-        <label className="field">
-          <span>Fecha limite</span>
-          <input
-            disabled={isLoading}
-            type="date"
-            value={form.dueDate}
-            onChange={(event) => updateField("dueDate", event.target.value)}
-          />
         </label>
       </div>
 

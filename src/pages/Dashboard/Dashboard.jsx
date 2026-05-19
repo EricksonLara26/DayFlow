@@ -84,7 +84,7 @@ export default function Dashboard({ onOpenTicket, scope = "administrator", techn
               ))}
             </div>
           ) : (
-            <EmptyState title="Sin vencimientos cercanos" message="No hay solicitudes activas que venzan en 3 días." />
+            <EmptyState title="Sin vencimientos cercanos" message="No hay solicitudes activas que venzan entre 24 horas y 3 dias." />
           )}
         </section>
       </div>
