@@ -49,7 +49,6 @@ import {
   getTicketScopeForView,
   getTicketsForView,
 } from "./services/ticketService";
-import { addDaysToDateKey, dateToKey } from "./utils/dateUtils";
 import {
   getStatusLabel,
   getTechnicianCompletionStats,
@@ -276,9 +275,9 @@ export default function App() {
   function canTakeTicket(ticket) {
     return Boolean(
       isTechnician &&
-        canViewTicket(ticket) &&
-        ticket.status === TICKET_STATUSES.OPEN &&
-        !ticket.assignedTo,
+      canViewTicket(ticket) &&
+      ticket.status === TICKET_STATUSES.OPEN &&
+      !ticket.assignedTo,
     );
   }
 
@@ -432,7 +431,6 @@ export default function App() {
     const timestamp = nowIso();
     const requester = form.requester ?? currentUser;
     const requesterName = getUserFullName(requester);
-    const dueDate = addDaysToDateKey(dateToKey(new Date(timestamp)), 3);
     const nextTicket = {
       id: getNextId(tickets),
       title: form.title,
@@ -446,7 +444,7 @@ export default function App() {
       assignedToName: null,
       createdAt: timestamp,
       updatedAt: timestamp,
-      dueDate,
+      dueDate: form.dueDate,
       completedAt: null,
       comments: [],
       history: [
@@ -595,7 +593,6 @@ export default function App() {
     const fullUser = users.find((user) => user.id === currentUser.id);
 
     if (!fullUser || currentPassword !== fullUser.password) {
-      return { ok: false, message: "La contraseña actual no coincide." };
     }
 
     const cleanPassword = newPassword.trim();
