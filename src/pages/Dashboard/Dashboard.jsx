@@ -62,7 +62,7 @@ export default function Dashboard({ onOpenTicket, scope = "administrator", techn
           <div className="section-heading">
             <div>
               <p className="eyebrow">Vista de vencimientos</p>
-              <h2>Solicitudes proximas a vencer</h2>
+              <h2>Solicitudes próximas a vencer</h2>
             </div>
           </div>
           {dueSoonTickets.length ? (

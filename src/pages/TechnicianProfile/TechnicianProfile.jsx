@@ -72,7 +72,7 @@ function ActivityPanel({ personalHistory }) {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Actividad</p>
-          <h2>Ultimos movimientos</h2>
+          <h2>Últimos movimientos</h2>
         </div>
         <span>{personalHistory.length}</span>
       </div>
@@ -142,7 +142,7 @@ export default function TechnicianProfile({
 
       <section className="profile-preferences-heading">
         <div>
-          <p className="eyebrow">Personalizacion</p>
+          <p className="eyebrow">Personalización</p>
           <h2>Preferencias de cuenta</h2>
         </div>
         <strong>{preferences.darkMode ? "Modo oscuro" : "Modo claro"}</strong>
@@ -168,13 +168,13 @@ export default function TechnicianProfile({
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Rendimiento</p>
-                <h2>Metricas personales</h2>
+                <h2>Métricas personales</h2>
               </div>
               <Activity size={20} aria-hidden="true" />
             </div>
             <div className="performance-grid">
               <div>
-                <span>Asignados historicos</span>
+                <span>Asignados históricos</span>
                 <strong>{assignedTickets.length}</strong>
               </div>
               <div>

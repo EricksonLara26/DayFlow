@@ -18,13 +18,13 @@ describe("Login", () => {
     render(<Login message="" onLogin={mockOnLogin} />);
 
     expect(screen.getByPlaceholderText(/usuario/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/contrasena/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/contraseña/i)).toBeInTheDocument();
   });
 
-  test("muestra mensaje de sesion", () => {
-    render(<Login message="Sesion cerrada correctamente." onLogin={mockOnLogin} />);
+  test("muestra mensaje de sesión", () => {
+    render(<Login message="Sesión cerrada correctamente." onLogin={mockOnLogin} />);
 
-    expect(screen.getByText(/sesion cerrada/i)).toBeInTheDocument();
+    expect(screen.getByText(/sesión cerrada/i)).toBeInTheDocument();
   });
 
   test("llama onLogin con formulario completo", async () => {
@@ -32,7 +32,7 @@ describe("Login", () => {
     render(<Login message="" onLogin={mockOnLogin} />);
 
     fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "admin" } });
-    fireEvent.change(screen.getByPlaceholderText(/contrasena/i), { target: { value: "1234" } });
+    fireEvent.change(screen.getByPlaceholderText(/contraseña/i), { target: { value: "1234" } });
     fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
 
     expect(screen.getByRole("button", { name: /cargando/i })).toBeDisabled();
@@ -58,7 +58,7 @@ describe("Login", () => {
     render(<Login message="" onLogin={mockOnLogin} />);
 
     fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "admin" } });
-    fireEvent.change(screen.getByPlaceholderText(/contrasena/i), { target: { value: "bad" } });
+    fireEvent.change(screen.getByPlaceholderText(/contraseña/i), { target: { value: "bad" } });
     fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
 
     await act(async () => {

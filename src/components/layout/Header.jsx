@@ -33,12 +33,12 @@ const viewTitles = {
     title: "Datos y preferencias",
   },
   [VIEW_IDS.RANKING]: {
-    eyebrow: "Metricas",
+    eyebrow: "Métricas",
     title: "Ranking de técnicos",
   },
   [VIEW_IDS.REPORTS]: {
     eyebrow: "Informes",
-    title: "Exportacion administrativa",
+    title: "Exportación administrativa",
   },
   [VIEW_IDS.TICKETS]: {
     eyebrow: "Solicitudes",

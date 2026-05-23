@@ -14,6 +14,7 @@ describe("TicketForm", () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-05-23T12:00:00.000Z"));
     mockOnSubmit.mockReset();
   });
 
@@ -25,9 +26,9 @@ describe("TicketForm", () => {
   test("renderiza formulario", () => {
     render(<TicketForm currentUser={currentUser} onSubmit={mockOnSubmit} requesters={[currentUser]} />);
 
-    expect(screen.getByPlaceholderText(/titulo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/descripcion/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/fecha limite/i)).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/título/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/descripción/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fecha límite/i)).toBeInTheDocument();
   });
 
   test("valida campos requeridos", () => {
@@ -36,19 +37,32 @@ describe("TicketForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     expect(mockOnSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText(/completa titulo y descripcion/i)).toBeInTheDocument();
+    expect(screen.getByText(/completa título y descripción/i)).toBeInTheDocument();
+  });
+
+  test("requiere fecha límite válida", () => {
+    render(<TicketForm currentUser={currentUser} onSubmit={mockOnSubmit} requesters={[currentUser]} />);
+
+    fireEvent.change(screen.getByLabelText(/título/i), { target: { value: "Test Ticket" } });
+    fireEvent.change(screen.getByLabelText(/descripción/i), { target: { value: "Test description" } });
+    fireEvent.change(screen.getByLabelText(/fecha límite/i), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
+
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(/fecha límite válida/i)).toBeInTheDocument();
   });
 
   test("envia datos validos y muestra loading", async () => {
     mockOnSubmit.mockReturnValue({ ok: true });
     render(<TicketForm currentUser={currentUser} onSubmit={mockOnSubmit} requesters={[currentUser]} />);
 
-    fireEvent.change(screen.getByLabelText(/titulo/i), { target: { value: "Test Ticket" } });
-    fireEvent.change(screen.getByLabelText(/descripcion/i), { target: { value: "Test description" } });
+    fireEvent.change(screen.getByLabelText(/título/i), { target: { value: "Test Ticket" } });
+    fireEvent.change(screen.getByLabelText(/descripción/i), { target: { value: "Test description" } });
+    fireEvent.change(screen.getByLabelText(/fecha límite/i), { target: { value: "2026-06-01" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     expect(screen.getByRole("button", { name: /cargando/i })).toBeDisabled();
-    expect(screen.getByLabelText(/titulo/i)).toBeDisabled();
+    expect(screen.getByLabelText(/título/i)).toBeDisabled();
 
     await act(async () => {
       jest.advanceTimersByTime(300);
@@ -57,6 +71,7 @@ describe("TicketForm", () => {
     expect(mockOnSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         description: "Test description",
+        dueDate: "2026-06-01",
         requester: currentUser,
         title: "Test Ticket",
       }),
@@ -67,8 +82,9 @@ describe("TicketForm", () => {
     mockOnSubmit.mockReturnValue({ ok: true });
     render(<TicketForm currentUser={currentUser} onCreateTicket={mockOnSubmit} users={[currentUser]} />);
 
-    fireEvent.change(screen.getByLabelText(/titulo/i), { target: { value: "Alias Ticket" } });
-    fireEvent.change(screen.getByLabelText(/descripcion/i), { target: { value: "Alias description" } });
+    fireEvent.change(screen.getByLabelText(/título/i), { target: { value: "Alias Ticket" } });
+    fireEvent.change(screen.getByLabelText(/descripción/i), { target: { value: "Alias description" } });
+    fireEvent.change(screen.getByLabelText(/fecha límite/i), { target: { value: "2026-06-01" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     await act(async () => {

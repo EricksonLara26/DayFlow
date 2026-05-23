@@ -3,6 +3,7 @@ import { PlusCircle } from "lucide-react";
 import LoadingButton from "../common/LoadingButton";
 import { TICKET_CATEGORIES, TICKET_PRIORITIES } from "../../data/tickets";
 import { getPriorityLabel } from "../../utils/ticketUtils";
+import { getTodayKey, parseDateKey } from "../../utils/dateUtils";
 
 function getInitialForm(currentUser) {
   return {
@@ -10,6 +11,7 @@ function getInitialForm(currentUser) {
     description: "",
     category: TICKET_CATEGORIES[0],
     priority: TICKET_PRIORITIES.MEDIUM,
+    dueDate: getTodayKey(),
     requesterId: String(currentUser.id),
   };
 }
@@ -32,9 +34,20 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
     event.preventDefault();
     const title = form.title.trim();
     const description = form.description.trim();
+    const dueDate = form.dueDate.trim();
 
     if (!title || !description) {
-      setError("Completa titulo y descripcion.");
+      setError("Completa título y descripción.");
+      return;
+    }
+
+    if (!parseDateKey(dueDate)) {
+      setError("Selecciona una fecha límite válida.");
+      return;
+    }
+
+    if (dueDate < getTodayKey()) {
+      setError("La fecha límite no puede ser anterior a hoy.");
       return;
     }
 
@@ -48,6 +61,7 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
         ...form,
         title,
         description,
+        dueDate,
         requester,
       });
 
@@ -64,31 +78,31 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
   }
 
   return (
-    <form className="form-panel ticket-form" onSubmit={handleSubmit}>
+    <form className="form-panel ticket-form" noValidate onSubmit={handleSubmit}>
       <div className="form-grid two-columns">
         <label className="field span-2">
-          <span>Titulo</span>
+          <span>Título</span>
           <input
             disabled={isLoading}
             value={form.title}
             onChange={(event) => updateField("title", event.target.value)}
-            placeholder="Titulo de la solicitud"
+            placeholder="Título de la solicitud"
           />
         </label>
 
         <label className="field span-2">
-          <span>Descripcion</span>
+          <span>Descripción</span>
           <textarea
             disabled={isLoading}
             rows="6"
             value={form.description}
             onChange={(event) => updateField("description", event.target.value)}
-            placeholder="Describe el problema, impacto, fechas mencionadas y cualquier contexto util"
+            placeholder="Describe el problema, impacto, fechas mencionadas y cualquier contexto útil"
           />
         </label>
 
         <label className="field">
-          <span>Categoria</span>
+          <span>Categoría</span>
           <select
             disabled={isLoading}
             value={form.category}
@@ -100,6 +114,18 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="field">
+          <span>Fecha límite</span>
+          <input
+            disabled={isLoading}
+            min={getTodayKey()}
+            type="date"
+            value={form.dueDate}
+            onChange={(event) => updateField("dueDate", event.target.value)}
+            required
+          />
         </label>
 
         <label className="field">

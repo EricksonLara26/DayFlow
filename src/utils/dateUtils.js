@@ -22,7 +22,13 @@ export function parseDateKey(dateKey) {
     return null;
   }
 
-  return new Date(year, month - 1, day);
+  const date = new Date(year, month - 1, day);
+
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+
+  return date;
 }
 
 export function compareDateKeys(firstDateKey, secondDateKey) {
@@ -100,7 +106,7 @@ export function formatDate(dateValue, options = {}) {
   const date = typeof dateValue === "string" && dateValue.length === 10 ? parseDateKey(dateValue) : new Date(dateValue);
 
   if (!date || Number.isNaN(date.getTime())) {
-    return "Fecha invalida";
+    return "Fecha inválida";
   }
 
   return new Intl.DateTimeFormat("es-DO", {

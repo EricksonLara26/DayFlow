@@ -98,7 +98,7 @@ export function getTicketResolutionTime(ticket) {
   const completedAt = new Date(ticket.completedAt);
 
   if (Number.isNaN(createdAt.getTime()) || Number.isNaN(completedAt.getTime())) {
-    return "Fecha invalida";
+    return "Fecha inválida";
   }
 
   const totalMinutes = Math.max(0, Math.round((completedAt.getTime() - createdAt.getTime()) / 60000));
@@ -185,7 +185,7 @@ export function getPriorityLabel(priority) {
     [TICKET_PRIORITIES.LOW]: "Baja",
     [TICKET_PRIORITIES.MEDIUM]: "Media",
     [TICKET_PRIORITIES.HIGH]: "Alta",
-    [TICKET_PRIORITIES.CRITICAL]: "Critica",
+    [TICKET_PRIORITIES.CRITICAL]: "Crítica",
   };
 
   return labels[priority] ?? priority;

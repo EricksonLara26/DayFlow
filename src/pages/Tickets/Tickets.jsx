@@ -29,7 +29,7 @@ export default function Tickets({
       title: "Tickets creados por ti",
     },
     technician: {
-      eyebrow: "Vista tecnica",
+      eyebrow: "Vista técnica",
       title: "Todas las solicitudes de soporte",
     },
     "technician-available": {

@@ -43,8 +43,8 @@ function buildReportRows({ reportTickets, selectedTechnician, selectedYear, user
     [],
     [
       "ID ticket",
-      "Titulo o descripcion",
-      "Categoria",
+      "Título o descripción",
+      "Categoría",
       "Departamento",
       "Usuario solicitante",
       "Técnico responsable",
@@ -52,7 +52,7 @@ function buildReportRows({ reportTickets, selectedTechnician, selectedYear, user
       "Fecha tomada",
       "Fecha finalización",
       "Estado",
-      "Tiempo resolucion",
+      "Tiempo resolución",
     ],
     ...reportTickets.map((ticket) => {
       const takenAt = getTicketTakenAt(ticket);
@@ -143,7 +143,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
             </select>
           </label>
           <label className="field compact-field">
-            <span>Ano</span>
+            <span>Año</span>
             <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
               {reportYears.map((year) => (
                 <option key={year} value={year}>
@@ -162,8 +162,8 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
               <thead>
                 <tr>
                   <th>ID ticket</th>
-                  <th>Titulo o descripcion</th>
-                  <th>Categoria</th>
+                  <th>Título o descripción</th>
+                  <th>Categoría</th>
                   <th>Departamento</th>
                   <th>Usuario solicitante</th>
                   <th>Técnico responsable</th>
@@ -171,7 +171,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
                   <th>Fecha tomada</th>
                   <th>Fecha finalización</th>
                   <th>Estado</th>
-                  <th>Tiempo resolucion</th>
+                  <th>Tiempo resolución</th>
                 </tr>
               </thead>
               <tbody>

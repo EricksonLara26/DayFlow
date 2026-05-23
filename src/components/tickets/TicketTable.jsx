@@ -26,10 +26,10 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
             <thead>
               <tr>
                 <th>ID ticket</th>
-                <th>Titulo o descripcion</th>
+                <th>Título o descripción</th>
                 <th>Usuario solicitante</th>
                 <th>Departamento</th>
-                <th>Categoria</th>
+                <th>Categoría</th>
                 <th>Estado</th>
                 <th>Técnico asignado</th>
                 <th>Fecha de creación</th>
@@ -46,7 +46,7 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
                 <th>Técnico</th>
                 <th>Estado</th>
                 <th>Prioridad</th>
-                <th>Fecha limite</th>
+                <th>Fecha límite</th>
                 <th>Acciones</th>
               </tr>
             </thead>

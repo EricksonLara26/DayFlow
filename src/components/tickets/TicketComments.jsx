@@ -59,7 +59,7 @@ export default function TicketComments({ canComment, comments, onAddComment }) {
               rows="4"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Escribe una actualizacion clara para el historial del ticket"
+              placeholder="Escribe una actualización clara para el historial del ticket"
             />
           </label>
           <LoadingButton icon={Send} loading={isLoading} type="submit">

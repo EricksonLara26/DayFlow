@@ -44,9 +44,9 @@ function ticket(data) {
 export const initialTickets = [
   ticket({
     id: 1001,
-    title: "Laptop no enciende despues de actualizacion",
+    title: "Laptop no enciende después de actualización",
     description:
-      "El equipo muestra el indicador de energia, pero la pantalla se mantiene negra al iniciar.",
+      "El equipo muestra el indicador de energía, pero la pantalla se mantiene negra al iniciar.",
     category: "Hardware",
     status: TICKET_STATUSES.OPEN,
     priority: TICKET_PRIORITIES.HIGH,
@@ -93,7 +93,7 @@ export const initialTickets = [
         2,
         "Mariela Santos",
         "TECHNICIAN",
-        "Estoy revisando logs de autenticacion y estabilidad del tunel.",
+        "Estoy revisando logs de autenticación y estabilidad del túnel.",
         "2026-05-13T12:05:00.000Z",
       ),
     ],
@@ -106,9 +106,9 @@ export const initialTickets = [
   }),
   ticket({
     id: 1003,
-    title: "Impresora de recepcion marca atasco sin papel",
+    title: "Impresora de recepción marca atasco sin papel",
     description:
-      "La impresora principal de recepcion no permite imprimir turnos ni comprobantes.",
+      "La impresora principal de recepción no permite imprimir turnos ni comprobantes.",
     category: "Impresoras",
     status: TICKET_STATUSES.ON_HOLD,
     priority: TICKET_PRIORITIES.MEDIUM,
@@ -125,7 +125,7 @@ export const initialTickets = [
         3,
         "Carlos Diaz",
         "TECHNICIAN",
-        "Se solicito kit de rodillos. El equipo queda en hold hasta recibir pieza.",
+        "Se solicitó kit de rodillos. El equipo queda en hold hasta recibir pieza.",
         "2026-05-13T15:40:00.000Z",
       ),
     ],
@@ -198,8 +198,8 @@ export const initialTickets = [
   }),
   ticket({
     id: 1007,
-    title: "Actualizar antivirus en estacion de caja",
-    description: "El equipo reporta proteccion desactualizada.",
+    title: "Actualizar antivirus en estación de caja",
+    description: "El equipo reporta protección desactualizada.",
     category: "Soporte Técnico",
     status: TICKET_STATUSES.COMPLETED,
     priority: TICKET_PRIORITIES.MEDIUM,
@@ -256,7 +256,7 @@ export const initialTickets = [
   ticket({
     id: 1010,
     title: "Crear acceso temporal para auditoría",
-    description: "Auditoria interna necesita acceso limitado a repositorio documental.",
+    description: "Auditoría interna necesita acceso limitado a repositorio documental.",
     category: "Accesos",
     status: TICKET_STATUSES.COMPLETED,
     priority: TICKET_PRIORITIES.HIGH,
@@ -280,7 +280,7 @@ export const initialTickets = [
           "Ajustar perfil de red",
           "Migrar buzones compartidos",
           "Revisar lentitud de PC",
-          "Instalar driver de scanner",
+          "Instalar driver de escáner",
         ][index],
       description: "Solicitud resuelta dentro del SLA del área de soporte.",
       category: ["Hardware", "Hardware", "Redes", "Correo", "Soporte Técnico", "Impresoras"][index],
@@ -300,7 +300,7 @@ export const initialTickets = [
   ticket({
     id: 1017,
     title: "Permitir instalación de juego en PC corporativa",
-    description: "Solicitud fuera de politicas de uso del equipo.",
+    description: "Solicitud fuera de políticas de uso del equipo.",
     category: "Software",
     status: TICKET_STATUSES.DISMISSED,
     priority: TICKET_PRIORITIES.LOW,
@@ -351,7 +351,7 @@ export const initialTickets = [
   ticket({
     id: 1020,
     title: "Solicitud duplicada de clave WiFi",
-    description: "Ya existia un ticket activo para el mismo acceso.",
+    description: "Ya existía un ticket activo para el mismo acceso.",
     category: "Redes",
     status: TICKET_STATUSES.DISMISSED,
     priority: TICKET_PRIORITIES.LOW,

@@ -31,7 +31,7 @@ import TicketDetailPage from "./pages/TicketDetail/TicketDetail";
 import Tickets from "./pages/Tickets/Tickets";
 import Users from "./pages/Users/Users";
 import RoleBasedRoute from "./routes/RoleBasedRoute";
-import { getViewFromHash, setHashForView } from "./routes/routeConfig";
+import { getTicketIdFromHash, getViewFromHash, setHashForTicket, setHashForView } from "./routes/routeConfig";
 import {
   clearAuthenticatedUser,
   getStoredAuthenticatedUser,
@@ -54,6 +54,7 @@ import {
   getTechnicianCompletionStats,
   terminalTicketStatuses,
 } from "./utils/ticketUtils";
+import { parseDateKey } from "./utils/dateUtils";
 
 function getNextId(items) {
   return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
@@ -122,7 +123,7 @@ export default function App() {
   const [tickets, setTickets] = useState(initialTickets);
   const [currentUser, setCurrentUser] = useState(getStoredAuthenticatedUser);
   const [activeView, setActiveView] = useState(() => getViewFromHash() ?? VIEW_IDS.DASHBOARD);
-  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [selectedTicketId, setSelectedTicketId] = useState(() => getTicketIdFromHash());
   const [preferences, setPreferences] = useState(readStoredPreferences);
   const [loginMessage, setLoginMessage] = useState("");
 
@@ -159,9 +160,16 @@ export default function App() {
       return;
     }
 
+    const requestedTicketId = getTicketIdFromHash();
     const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
     const nextView = canAccessView(currentUser, requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
+    setSelectedTicketId(nextView === VIEW_IDS.TICKET_DETAIL ? requestedTicketId : null);
     setActiveView(nextView);
+    if (nextView === VIEW_IDS.TICKET_DETAIL && requestedTicketId) {
+      setHashForTicket(requestedTicketId);
+      return;
+    }
+
     setHashForView(nextView);
   }, [currentUser]);
 
@@ -171,11 +179,10 @@ export default function App() {
         return;
       }
 
+      const requestedTicketId = getTicketIdFromHash();
       const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
       const nextView = canAccessView(currentUser, requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
-      if (nextView !== VIEW_IDS.TICKET_DETAIL) {
-        setSelectedTicketId(null);
-      }
+      setSelectedTicketId(nextView === VIEW_IDS.TICKET_DETAIL ? requestedTicketId : null);
       setActiveView(nextView);
 
       if (nextView === VIEW_IDS.ACCESS_DENIED) {
@@ -264,7 +271,7 @@ export default function App() {
 
     setSelectedTicketId(ticketId);
     setActiveView(VIEW_IDS.TICKET_DETAIL);
-    setHashForView(VIEW_IDS.TICKET_DETAIL);
+    setHashForTicket(ticketId);
   }
 
   function goBackFromTicket() {
@@ -431,6 +438,12 @@ export default function App() {
     const timestamp = nowIso();
     const requester = form.requester ?? currentUser;
     const requesterName = getUserFullName(requester);
+    const dueDate = form.dueDate?.trim();
+
+    if (!parseDateKey(dueDate)) {
+      return { ok: false, message: "Selecciona una fecha límite válida." };
+    }
+
     const nextTicket = {
       id: getNextId(tickets),
       title: form.title,
@@ -444,7 +457,7 @@ export default function App() {
       assignedToName: null,
       createdAt: timestamp,
       updatedAt: timestamp,
-      dueDate: form.dueDate,
+      dueDate,
       completedAt: null,
       comments: [],
       history: [
@@ -461,7 +474,7 @@ export default function App() {
     setTickets((currentTickets) => [nextTicket, ...currentTickets]);
     setSelectedTicketId(nextTicket.id);
     setActiveView(VIEW_IDS.TICKET_DETAIL);
-    setHashForView(VIEW_IDS.TICKET_DETAIL);
+    setHashForTicket(nextTicket.id);
 
     return { ok: true };
   }
@@ -593,6 +606,7 @@ export default function App() {
     const fullUser = users.find((user) => user.id === currentUser.id);
 
     if (!fullUser || currentPassword !== fullUser.password) {
+      return { ok: false, message: "La contraseña actual no coincide." };
     }
 
     const cleanPassword = newPassword.trim();

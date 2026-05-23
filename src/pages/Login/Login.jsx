@@ -21,7 +21,7 @@ export default function Login({ message, onLogin }) {
     const password = form.password.trim();
 
     if (!identifier || !password) {
-      setError("Completa usuario y contrasena.");
+      setError("Completa usuario y contraseña.");
       return;
     }
 
@@ -81,9 +81,9 @@ export default function Login({ message, onLogin }) {
             <div className="input-icon">
               <LockKeyhole size={17} aria-hidden="true" />
               <input
-                aria-label="Contrasena"
+                aria-label="Contraseña"
                 disabled={isLoading}
-                placeholder="Contrasena"
+                placeholder="Contraseña"
                 type="password"
                 value={form.password}
                 onChange={(event) => updateField("password", event.target.value)}

@@ -58,7 +58,7 @@ export default function TicketDetail({
             </div>
             <dl className="detail-grid">
               <div>
-                <dt>Categoria</dt>
+                <dt>Categoría</dt>
                 <dd>{ticket.category}</dd>
               </div>
               <div>
@@ -82,7 +82,7 @@ export default function TicketDetail({
                 <dd>{takenAt ? formatDateTime(takenAt) : "Sin tomar"}</dd>
               </div>
               <div>
-                <dt>Fecha limite</dt>
+                <dt>Fecha límite</dt>
                 <dd>{formatDate(ticket.dueDate)}</dd>
               </div>
               <div>
