@@ -17,7 +17,7 @@ function getEditForm(user) {
     firstName: user.firstName ?? "",
     lastName: user.lastName ?? "",
     email: user.email ?? "",
-    jobTitle: user.jobTitle ?? "",
+    position: user.position ?? "",
     department: user.department ?? "",
     role: user.role,
   };
@@ -156,11 +156,11 @@ export default function UserTable({
                     <input
                       aria-label={`Cargo de ${getUserFullName(user)}`}
                       className="table-inline-input"
-                      value={editForm.jobTitle}
-                      onChange={(event) => updateField("jobTitle", event.target.value)}
+                      value={editForm.position}
+                      onChange={(event) => updateField("position", event.target.value)}
                     />
                   ) : (
-                    user.jobTitle
+                    user.position
                   )}
                 </td>
                 <td>

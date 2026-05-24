@@ -97,14 +97,18 @@ describe("authService", () => {
         lastName: "User",
         role: ROLES.ADMINISTRATOR,
         department: "IT",
-        jobTitle: "Admin",
+        position: "Admin",
         active: true,
       };
       const sanitized = sanitizeAuthenticatedUser(user);
 
       expect(sanitized.username).toBe("test");
       expect(sanitized.role).toBe(ROLES.ADMINISTRATOR);
-      expect(sanitized.nombre).toBe("Test User");
+      expect(sanitized.firstName).toBe("Test");
+      expect(sanitized.lastName).toBe("User");
+      expect(sanitized.position).toBe("Admin");
+      expect(sanitized).not.toHaveProperty("nombre");
+      expect(sanitized).not.toHaveProperty("rol");
     });
 
     test("devuelve null para usuario null", () => {
@@ -121,7 +125,7 @@ describe("authService", () => {
       lastName: "User",
       role: ROLES.ADMINISTRATOR,
       department: "IT",
-      jobTitle: "Admin",
+      position: "Admin",
       active: true,
     };
 

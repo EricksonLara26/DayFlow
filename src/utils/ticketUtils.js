@@ -68,7 +68,7 @@ export function getTechnicianCompletionStats(technicians, tickets) {
 export function getCompletedTickets(tickets) {
   return tickets
     .filter((ticket) => ticket.status === TICKET_STATUSES.COMPLETED)
-    .sort((first, second) => (second.completedAt ?? "").localeCompare(first.completedAt ?? ""));
+    .sort((first, second) => (second.closedAt ?? "").localeCompare(first.closedAt ?? ""));
 }
 
 export function getTicketTakenAt(ticket) {
@@ -90,18 +90,18 @@ export function getTicketTakenAt(ticket) {
 }
 
 export function getTicketResolutionTime(ticket) {
-  if (!ticket.createdAt || !ticket.completedAt) {
+  if (!ticket.createdAt || !ticket.closedAt) {
     return "Pendiente";
   }
 
   const createdAt = new Date(ticket.createdAt);
-  const completedAt = new Date(ticket.completedAt);
+  const closedAt = new Date(ticket.closedAt);
 
-  if (Number.isNaN(createdAt.getTime()) || Number.isNaN(completedAt.getTime())) {
+  if (Number.isNaN(createdAt.getTime()) || Number.isNaN(closedAt.getTime())) {
     return "Fecha inválida";
   }
 
-  const totalMinutes = Math.max(0, Math.round((completedAt.getTime() - createdAt.getTime()) / 60000));
+  const totalMinutes = Math.max(0, Math.round((closedAt.getTime() - createdAt.getTime()) / 60000));
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
@@ -124,11 +124,11 @@ export function getTicketDepartment(ticket, users) {
 
 export function getCompletedTicketsByTechnicianAndYear(tickets, technicianId, year) {
   return getCompletedTickets(tickets).filter((ticket) => {
-    if (ticket.assignedTo !== technicianId || !ticket.completedAt) {
+    if (ticket.assignedTo !== technicianId || !ticket.closedAt) {
       return false;
     }
 
-    return new Date(ticket.completedAt).getFullYear() === Number(year);
+    return new Date(ticket.closedAt).getFullYear() === Number(year);
   });
 }
 

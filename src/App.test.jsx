@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
-import { initialUsers } from "./data/users";
+import { initialUsers } from "./mocks";
 import { sanitizeAuthenticatedUser } from "./services/authService";
 
 jest.mock("./utils/xlsxExporter", () => ({

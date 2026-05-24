@@ -5,22 +5,19 @@ function getNextId(items) {
   return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
 }
 
-function splitFullName(firstName, lastName) {
-  return `${firstName} ${lastName}`.trim();
-}
-
 export function createLocalUser(users, form) {
   const role = Object.values(ROLES).includes(form.role) ? form.role : ROLES.EMPLOYEE;
   const nextUser = normalizeUser({
     id: getNextId(users),
-    nombre: splitFullName(form.firstName, form.lastName),
-    usuario: form.username,
+    firstName: form.firstName,
+    lastName: form.lastName,
+    username: form.username,
     email: form.email,
     password: form.password,
-    rol: role,
-    departamento: form.department,
-    cargo: form.jobTitle,
-    activo: true,
+    role,
+    department: form.department,
+    position: form.position,
+    active: true,
   });
 
   return [...users, nextUser];
@@ -36,26 +33,22 @@ export function updateLocalUser(users, userId, changes) {
     const lastName = changes.lastName ?? user.lastName;
     const role = changes.role ?? user.role;
     const department = changes.department ?? user.department;
-    const jobTitle = changes.jobTitle ?? user.jobTitle;
+    const position = changes.position ?? user.position;
 
     return normalizeUser({
       ...user,
       ...changes,
       firstName,
       lastName,
-      nombre: splitFullName(firstName, lastName),
       role,
-      rol: role,
       department,
-      departamento: department,
-      jobTitle,
-      cargo: jobTitle,
+      position,
     });
   });
 }
 
 export function deactivateLocalUser(users, userId) {
-  return updateLocalUser(users, userId, { active: false, activo: false });
+  return updateLocalUser(users, userId, { active: false });
 }
 
 export function resetLocalUserPassword(users, userId, password = "1234") {

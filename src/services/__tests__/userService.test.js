@@ -27,10 +27,12 @@ describe("userService", () => {
         firstName: "New",
         lastName: "User",
         role: ROLES.TECHNICIAN,
+        position: "Support",
       });
 
       expect(result.at(-1).id).toBe(2);
       expect(result.at(-1).username).toBe("newuser");
+      expect(result.at(-1).position).toBe("Support");
     });
 
     test("aplica rol default si no viene", () => {
@@ -61,7 +63,8 @@ describe("userService", () => {
       const result = updateLocalUser(initialUsers, 1, { firstName: "Updated", lastName: "Name" });
 
       expect(result.find((user) => user.id === 1).firstName).toBe("Updated");
-      expect(result.find((user) => user.id === 1).nombre).toBe("Updated Name");
+      expect(result.find((user) => user.id === 1).lastName).toBe("Name");
+      expect(result.find((user) => user.id === 1)).not.toHaveProperty("nombre");
     });
 
     test("mantiene campos no actualizados", () => {

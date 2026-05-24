@@ -25,8 +25,8 @@ function safeFilenameText(value) {
 function getReportYears(tickets) {
   const years = new Set(
     tickets
-      .filter((ticket) => ticket.completedAt)
-      .map((ticket) => new Date(ticket.completedAt).getFullYear())
+      .filter((ticket) => ticket.closedAt)
+      .map((ticket) => new Date(ticket.closedAt).getFullYear())
       .filter((year) => !Number.isNaN(year)),
   );
 
@@ -66,7 +66,7 @@ function buildReportRows({ reportTickets, selectedTechnician, selectedYear, user
         ticket.assignedToName ?? "Sin asignar",
         formatDateTime(ticket.createdAt),
         takenAt ? formatDateTime(takenAt) : "Sin tomar",
-        formatDateTime(ticket.completedAt),
+        formatDateTime(ticket.closedAt),
         getStatusLabel(ticket.status),
         getTicketResolutionTime(ticket),
       ];
@@ -188,7 +188,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
                       <td>{ticket.assignedToName ?? "Sin asignar"}</td>
                       <td>{formatDateTime(ticket.createdAt)}</td>
                       <td>{takenAt ? formatDateTime(takenAt) : "Sin tomar"}</td>
-                      <td>{formatDateTime(ticket.completedAt)}</td>
+                      <td>{formatDateTime(ticket.closedAt)}</td>
                       <td>{getStatusLabel(ticket.status)}</td>
                       <td>{getTicketResolutionTime(ticket)}</td>
                     </tr>

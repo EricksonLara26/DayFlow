@@ -74,7 +74,7 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
                     <td>{ticket.assignedToName ?? "Sin asignar"}</td>
                     <td>{formatDateTime(ticket.createdAt)}</td>
                     <td>{takenAt ? formatDateTime(takenAt) : "Sin tomar"}</td>
-                    <td>{ticket.completedAt ? formatDateTime(ticket.completedAt) : "Pendiente"}</td>
+                    <td>{ticket.closedAt ? formatDateTime(ticket.closedAt) : "Pendiente"}</td>
                     <td>
                       <Button variant="ghost" onClick={() => onOpenTicket(ticket.id)}>
                         Ver detalle

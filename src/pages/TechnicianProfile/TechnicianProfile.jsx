@@ -24,7 +24,7 @@ function TicketHistoryList({ emptyTitle, onOpenTicket, tickets }) {
         <article className="profile-ticket-item" key={ticket.id}>
           <div>
             <strong>{ticket.title}</strong>
-            <span>#{ticket.id} - {formatDateTime(ticket.completedAt)}</span>
+            <span>#{ticket.id} - {formatDateTime(ticket.closedAt)}</span>
           </div>
           <TicketPriorityBadge priority={ticket.priority} />
           <Button variant="ghost" onClick={() => onOpenTicket(ticket.id)}>
@@ -41,7 +41,7 @@ function AccountDetails({ currentUser }) {
     { label: "Usuario", value: currentUser.username },
     { label: "Correo", value: currentUser.email },
     { label: "Rol", value: getRoleLabel(currentUser.role) },
-    { label: "Cargo", value: currentUser.jobTitle || "Cargo no definido" },
+    { label: "Cargo", value: currentUser.position || "Cargo no definido" },
     { label: "Departamento", value: currentUser.department || "Área no definida" },
   ];
 
@@ -129,7 +129,7 @@ export default function TechnicianProfile({
           <span>{currentUser.email}</span>
           <div className="profile-meta">
             <b>{getRoleLabel(currentUser.role)}</b>
-            <b>{currentUser.jobTitle || "Cargo no definido"}</b>
+            <b>{currentUser.position || "Cargo no definido"}</b>
             <b>{currentUser.department || "Área no definida"}</b>
           </div>
         </div>

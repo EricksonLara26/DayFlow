@@ -12,14 +12,14 @@ import {
   canResetUserPassword,
   getDefaultView,
 } from "./config/permissions";
-import { TICKET_STATUSES, initialTickets } from "./data/tickets";
+import { TICKET_STATUSES } from "./data/tickets";
 import {
   ROLES,
   getUserFullName,
-  initialUsers,
   isAdministratorUser,
   isTechnicianUser,
 } from "./data/users";
+import { initialTickets, initialUsers } from "./mocks";
 import AccessDenied from "./pages/AccessDenied/AccessDenied";
 import CreateTicket from "./pages/CreateTicket/CreateTicket";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -387,7 +387,7 @@ export default function App() {
           status: nextStatus,
           takenAt: currentTicket.takenAt ?? (!currentTicket.assignedTo ? timestamp : currentTicket.takenAt),
           updatedAt: timestamp,
-          completedAt: shouldClose ? timestamp : currentTicket.completedAt,
+          closedAt: shouldClose ? timestamp : currentTicket.closedAt,
           history: [...currentTicket.history, createHistoryItem(currentTicket, action, currentUser, timestamp)],
         };
       }),
@@ -458,7 +458,7 @@ export default function App() {
       createdAt: timestamp,
       updatedAt: timestamp,
       dueDate,
-      completedAt: null,
+      closedAt: null,
       comments: [],
       history: [
         {
@@ -516,10 +516,10 @@ export default function App() {
 
     const cleanFirstName = form.firstName.trim();
     const cleanLastName = form.lastName.trim();
-    const cleanJobTitle = form.jobTitle.trim();
+    const cleanPosition = form.position.trim();
     const cleanDepartment = form.department.trim();
 
-    if (!cleanFirstName || !cleanLastName || !cleanJobTitle || !cleanDepartment) {
+    if (!cleanFirstName || !cleanLastName || !cleanPosition || !cleanDepartment) {
       return { ok: false, message: "Nombre, apellido, cargo y departamento son obligatorios." };
     }
 
@@ -532,10 +532,9 @@ export default function App() {
       firstName: cleanFirstName,
       lastName: cleanLastName,
       email: cleanEmail,
-      jobTitle: cleanJobTitle,
+      position: cleanPosition,
       department: cleanDepartment,
       role: nextRole,
-      rol: nextRole,
     });
 
     setUsers(nextUsers);

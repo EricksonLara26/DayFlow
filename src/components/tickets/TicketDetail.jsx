@@ -91,7 +91,7 @@ export default function TicketDetail({
               </div>
               <div>
                 <dt>Cierre</dt>
-                <dd>{ticket.completedAt ? formatDateTime(ticket.completedAt) : "Pendiente"}</dd>
+                <dd>{ticket.closedAt ? formatDateTime(ticket.closedAt) : "Pendiente"}</dd>
               </div>
             </dl>
           </section>

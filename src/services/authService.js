@@ -16,19 +16,13 @@ export function sanitizeAuthenticatedUser(user) {
 
   return {
     id: normalizedUser.id,
-    nombre: getUserFullName(normalizedUser),
-    usuario: normalizedUser.username,
-    email: normalizedUser.email,
-    rol: normalizedUser.role,
-    departamento: normalizedUser.department,
-    cargo: normalizedUser.jobTitle,
-    activo: normalizedUser.active,
     firstName: normalizedUser.firstName,
     lastName: normalizedUser.lastName,
     username: normalizedUser.username,
+    email: normalizedUser.email,
     role: normalizedUser.role,
     department: normalizedUser.department,
-    jobTitle: normalizedUser.jobTitle,
+    position: normalizedUser.position,
     active: normalizedUser.active,
   };
 }
@@ -42,12 +36,14 @@ export function getStoredAuthenticatedUser() {
       return null;
     }
 
-    if (!Object.values(ROLES).includes(parsedUser.role)) {
+    const normalizedUser = sanitizeAuthenticatedUser(parsedUser);
+
+    if (!Object.values(ROLES).includes(normalizedUser.role)) {
       clearAuthenticatedUser();
       return null;
     }
 
-    return parsedUser;
+    return normalizedUser;
   } catch {
     return null;
   }

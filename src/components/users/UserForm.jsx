@@ -11,7 +11,7 @@ const initialForm = {
   email: "",
   password: "",
   role: ROLES.EMPLOYEE,
-  jobTitle: "",
+  position: "",
   department: "",
 };
 
@@ -35,7 +35,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
       return;
     }
 
-    if (!form.jobTitle.trim() || !form.department.trim()) {
+    if (!form.position.trim() || !form.department.trim()) {
       setError("Cargo y área/departamento son obligatorios.");
       return;
     }
@@ -72,7 +72,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
         email,
         password: form.password.trim(),
         role: form.role,
-        jobTitle: form.jobTitle.trim(),
+        position: form.position.trim(),
         department: form.department.trim(),
       });
 
@@ -150,8 +150,8 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
           <span>Cargo</span>
           <input
             disabled={isLoading}
-            value={form.jobTitle}
-            onChange={(event) => updateField("jobTitle", event.target.value)}
+            value={form.position}
+            onChange={(event) => updateField("position", event.target.value)}
           />
         </label>
         <label className="field span-2">

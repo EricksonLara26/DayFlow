@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import LoadingButton from "../common/LoadingButton";
-import { TICKET_CATEGORIES, TICKET_PRIORITIES } from "../../data/tickets";
+import { TICKET_PRIORITIES } from "../../data/tickets";
+import { TICKET_CATEGORIES } from "../../mocks";
 import { getPriorityLabel } from "../../utils/ticketUtils";
 import { getTodayKey, parseDateKey } from "../../utils/dateUtils";
 
