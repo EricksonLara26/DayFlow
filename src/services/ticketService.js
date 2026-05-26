@@ -290,6 +290,46 @@ export function changeTicketStatus(ticketId, status, comment, actor) {
   return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Estado actualizado correctamente." });
 }
 
+export function addTicketComment(ticketId, message, actor) {
+  const ticketIndex = findTicketIndex(ticketId);
+
+  if (ticketIndex === -1) {
+    return fail("Ticket no encontrado.", 404);
+  }
+
+  if (!actor) {
+    return fail("Usuario responsable no encontrado.", 404);
+  }
+
+  const timestamp = nowIso();
+
+  mockTickets = mockTickets.map((currentTicket, index) => {
+    if (index !== ticketIndex) {
+      return currentTicket;
+    }
+
+    return {
+      ...currentTicket,
+      comments: [
+        ...(currentTicket.comments ?? []),
+        createCommentItem(currentTicket, message, actor, timestamp),
+      ],
+      history: [
+        ...(currentTicket.history ?? []),
+        createHistoryItem(
+          currentTicket,
+          `Comentario agregado por ${getUserFullName(actor)}`,
+          actor,
+          timestamp,
+        ),
+      ],
+      updatedAt: timestamp,
+    };
+  });
+
+  return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Comentario agregado correctamente." });
+}
+
 export function closeTicket(ticketId, payload = {}) {
   const nextStatus = payload.status ?? TICKET_STATUSES.COMPLETED;
   return changeTicketStatus(ticketId, nextStatus, payload.comment, payload.actor);
