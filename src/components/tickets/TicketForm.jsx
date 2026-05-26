@@ -2,15 +2,17 @@ import { useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import LoadingButton from "../common/LoadingButton";
 import { TICKET_PRIORITIES } from "../../data/tickets";
-import { TICKET_CATEGORIES } from "../../mocks";
+import { getCategoryNamesSnapshot } from "../../services/categoryService";
 import { getPriorityLabel } from "../../utils/ticketUtils";
 import { getTodayKey, parseDateKey } from "../../utils/dateUtils";
 
-function getInitialForm(currentUser) {
+const initialCategoryNames = getCategoryNamesSnapshot();
+
+function getInitialForm(currentUser, categories = initialCategoryNames) {
   return {
     title: "",
     description: "",
-    category: TICKET_CATEGORIES[0],
+    category: categories[0] ?? "",
     priority: TICKET_PRIORITIES.MEDIUM,
     dueDate: getTodayKey(),
     requesterId: String(currentUser.id),
@@ -18,6 +20,7 @@ function getInitialForm(currentUser) {
 }
 
 export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requesters, users = [] }) {
+  const categories = initialCategoryNames;
   const [form, setForm] = useState(() => getInitialForm(currentUser));
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,23 +61,28 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
     setIsLoading(true);
 
     window.setTimeout(() => {
-      const result = submitTicket?.({
+      Promise.resolve(submitTicket?.({
         ...form,
         title,
         description,
         dueDate,
         requester,
-      });
+      }))
+        .then((result) => {
+          setIsLoading(false);
 
-      setIsLoading(false);
+          if (result?.ok === false) {
+            setError(result.message);
+            return;
+          }
 
-      if (result?.ok === false) {
-        setError(result.message);
-        return;
-      }
-
-      setForm(getInitialForm(currentUser));
-      setError("");
+          setForm(getInitialForm(currentUser, categories));
+          setError("");
+        })
+        .catch(() => {
+          setIsLoading(false);
+          setError("No se pudo guardar la solicitud.");
+        });
     }, 300);
   }
 
@@ -109,7 +117,7 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
             value={form.category}
             onChange={(event) => updateField("category", event.target.value)}
           >
-            {TICKET_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>

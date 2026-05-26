@@ -59,19 +59,21 @@ export default function UserTable({
   }
 
   function saveUser(user) {
-    const result = onUpdateUser(user.id, editForm);
+    Promise.resolve(onUpdateUser(user.id, editForm))
+      .then((result) => {
+        if (result?.ok === false) {
+          setError(result.message);
+          return;
+        }
 
-    if (result?.ok === false) {
-      setError(result.message);
-      return;
-    }
-
-    cancelEditing();
+        cancelEditing();
+      })
+      .catch(() => setError("No se pudo actualizar el usuario."));
   }
 
   function confirmDeactivate(user) {
     if (window.confirm("Desea desactivar este usuario?")) {
-      onDeactivateUser(user.id);
+      Promise.resolve(onDeactivateUser(user.id)).catch(() => setError("No se pudo desactivar el usuario."));
     }
   }
 

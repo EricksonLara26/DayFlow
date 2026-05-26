@@ -64,7 +64,7 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
     setIsLoading(true);
 
     window.setTimeout(() => {
-      const result = onCreateUser({
+      Promise.resolve(onCreateUser({
         ...form,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
@@ -74,17 +74,22 @@ export default function UserForm({ onCancel, onCreateUser, users }) {
         role: form.role,
         position: form.position.trim(),
         department: form.department.trim(),
-      });
+      }))
+        .then((result) => {
+          setIsLoading(false);
 
-      setIsLoading(false);
+          if (result?.ok === false) {
+            setError(result.message);
+            return;
+          }
 
-      if (result?.ok === false) {
-        setError(result.message);
-        return;
-      }
-
-      setForm(initialForm);
-      setError("");
+          setForm(initialForm);
+          setError("");
+        })
+        .catch(() => {
+          setIsLoading(false);
+          setError("No se pudo crear el usuario.");
+        });
     }, 300);
   }
 

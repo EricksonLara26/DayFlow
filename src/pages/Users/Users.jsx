@@ -39,8 +39,8 @@ export default function Users({
     });
   }, [departmentFilter, roleFilter, search, users]);
 
-  function handleCreateUser(form) {
-    const result = onCreateUser(form);
+  async function handleCreateUser(form) {
+    const result = await onCreateUser(form);
 
     if (result?.ok === false) {
       return result;
@@ -51,8 +51,8 @@ export default function Users({
     return result;
   }
 
-  function handleUpdateUser(userId, form) {
-    const result = onUpdateUser(userId, form);
+  async function handleUpdateUser(userId, form) {
+    const result = await onUpdateUser(userId, form);
 
     if (result?.ok !== false) {
       setMessage(result?.message ?? "Usuario actualizado correctamente.");
@@ -61,8 +61,8 @@ export default function Users({
     return result;
   }
 
-  function handleResetPassword(userId) {
-    const result = onResetPassword(userId);
+  async function handleResetPassword(userId) {
+    const result = await onResetPassword(userId);
 
     if (result?.ok !== false) {
       setMessage(result?.message ?? "Contraseña restablecida correctamente.");
@@ -71,8 +71,8 @@ export default function Users({
     return result;
   }
 
-  function handleDeactivateUser(userId) {
-    const result = onDeactivateUser(userId);
+  async function handleDeactivateUser(userId) {
+    const result = await onDeactivateUser(userId);
 
     if (result?.ok !== false) {
       setMessage(result?.message ?? "Usuario desactivado correctamente.");

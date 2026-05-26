@@ -17,9 +17,16 @@ import { formatDate } from "../../utils/dateUtils";
 import { calculateDashboardStats, getTicketsDueInThreeDays } from "../../utils/ticketUtils";
 import "./Dashboard.css";
 
-export default function Dashboard({ onOpenTicket, scope = "administrator", technicianRanking = [], tickets }) {
-  const stats = calculateDashboardStats(tickets);
-  const dueSoonTickets = getTicketsDueInThreeDays(tickets);
+export default function Dashboard({
+  dueTickets,
+  onOpenTicket,
+  scope = "administrator",
+  summary,
+  technicianRanking = [],
+  tickets,
+}) {
+  const stats = summary ?? calculateDashboardStats(tickets);
+  const dueSoonTickets = dueTickets ?? getTicketsDueInThreeDays(tickets);
   const isTechnicianScope = scope === "technician";
   const isEmployeeScope = scope === "employee";
   const isAdministratorScope = scope === "administrator";

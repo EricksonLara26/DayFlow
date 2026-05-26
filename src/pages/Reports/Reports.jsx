@@ -1,8 +1,14 @@
 import { Download } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
 import { isTechnicianUser } from "../../data/users";
+import {
+  exportCompletedTickets,
+  getCompletedTicketsReport,
+  getReportTechniciansSnapshot,
+  getReportYearsSnapshot,
+} from "../../services/reportService";
 import { formatDateTime } from "../../utils/dateUtils";
 import {
   getCompletedTicketsByTechnicianAndYear,
@@ -75,21 +81,34 @@ function buildReportRows({ reportTickets, selectedTechnician, selectedYear, user
 }
 
 export default function Reports({ onAuthorizeReport, tickets, users }) {
-  const technicians = users.filter(isTechnicianUser);
-  const reportYears = getReportYears(tickets);
+  const technicians = getReportTechniciansSnapshot(users);
+  const reportYears = getReportYearsSnapshot(tickets);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState(String(technicians[0]?.id ?? ""));
   const [selectedYear, setSelectedYear] = useState(String(reportYears[0] ?? new Date().getFullYear()));
   const [reportError, setReportError] = useState("");
+  const [reportTickets, setReportTickets] = useState([]);
   const selectedTechnician = technicians.find((technician) => String(technician.id) === selectedTechnicianId);
-  const reportTickets = useMemo(
-    () =>
-      selectedTechnician
-        ? getCompletedTicketsByTechnicianAndYear(tickets, selectedTechnician.id, selectedYear)
-        : [],
-    [selectedTechnician, selectedYear, tickets],
-  );
 
-  function handleDownloadReport() {
+  useEffect(() => {
+    let isMounted = true;
+
+    getCompletedTicketsReport({
+      technicianId: selectedTechnicianId,
+      tickets,
+      users,
+      year: selectedYear,
+    }).then((response) => {
+      if (isMounted) {
+        setReportTickets(response.ok ? response.data.tickets : []);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedTechnicianId, selectedYear, tickets, users]);
+
+  async function handleDownloadReport() {
     setReportError("");
     const authorization = onAuthorizeReport({ technicianId: selectedTechnicianId, year: selectedYear });
 
@@ -103,11 +122,16 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
       return;
     }
 
-    const technicianName = `${selectedTechnician.firstName}${selectedTechnician.lastName}`;
-    const filename = `informe_tecnico_${safeFilenameText(technicianName)}_${selectedYear}.xlsx`;
-    const rows = buildReportRows({ reportTickets, selectedTechnician, selectedYear, users });
+    const exportResult = await exportCompletedTickets("xlsx", {
+      technicianId: selectedTechnicianId,
+      tickets,
+      users,
+      year: selectedYear,
+    });
 
-    downloadXlsx(rows, filename, `Informe ${selectedYear}`);
+    if (!exportResult.ok) {
+      setReportError(exportResult.message);
+    }
   }
 
   return (

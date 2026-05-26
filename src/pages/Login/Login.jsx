@@ -29,15 +29,21 @@ export default function Login({ message, onLogin }) {
     setIsLoading(true);
 
     window.setTimeout(() => {
-      const result = onLogin({ identifier, password });
-      setIsLoading(false);
+      Promise.resolve(onLogin({ identifier, password }))
+        .then((result) => {
+          setIsLoading(false);
 
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
+          if (!result.ok) {
+            setError(result.message);
+            return;
+          }
 
-      setError("");
+          setError("");
+        })
+        .catch(() => {
+          setIsLoading(false);
+          setError("No se pudo iniciar sesion.");
+        });
     }, 300);
   }
 

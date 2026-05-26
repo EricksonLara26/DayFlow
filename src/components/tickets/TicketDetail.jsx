@@ -27,8 +27,7 @@ export default function TicketDetail({
   function runTicketAction(action, callback) {
     setLoadingAction(action);
     window.setTimeout(() => {
-      callback();
-      setLoadingAction("");
+      Promise.resolve(callback()).finally(() => setLoadingAction(""));
     }, 300);
   }
 

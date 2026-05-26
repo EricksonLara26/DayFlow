@@ -19,7 +19,6 @@ import {
   isAdministratorUser,
   isTechnicianUser,
 } from "./data/users";
-import { initialTickets, initialUsers } from "./mocks";
 import AccessDenied from "./pages/AccessDenied/AccessDenied";
 import CreateTicket from "./pages/CreateTicket/CreateTicket";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -33,27 +32,37 @@ import Users from "./pages/Users/Users";
 import RoleBasedRoute from "./routes/RoleBasedRoute";
 import { getTicketIdFromHash, getViewFromHash, setHashForTicket, setHashForView } from "./routes/routeConfig";
 import {
-  clearAuthenticatedUser,
+  changePassword as authChangePassword,
   getStoredAuthenticatedUser,
   login as authLogin,
+  logout as authLogout,
   storeAuthenticatedUser,
 } from "./services/authService";
 import {
-  createLocalUser,
-  deactivateLocalUser,
-  resetLocalUserPassword,
-  updateLocalUser,
+  createUser as createUserRequest,
+  deleteUser as deleteUserRequest,
+  getUsers as fetchUsers,
+  getUsersSnapshot,
+  resetPassword as resetUserPasswordRequest,
+  updateUser as updateUserRequest,
 } from "./services/userService";
 import {
+  assignTicket as assignTicketRequest,
+  changeTicketStatus as changeTicketStatusRequest,
+  createTicket as createTicketRequest,
+  getTickets as fetchTickets,
+  getTicketsSnapshot,
   getDashboardTicketsForUser,
   getTicketScopeForView,
   getTicketsForView,
+  updateTicket as updateTicketRequest,
 } from "./services/ticketService";
 import {
-  getStatusLabel,
-  getTechnicianCompletionStats,
-  terminalTicketStatuses,
-} from "./utils/ticketUtils";
+  getDueTicketsSnapshot,
+  getSummarySnapshot,
+  getTechnicianRankingSnapshot,
+} from "./services/dashboardService";
+import { terminalTicketStatuses } from "./utils/ticketUtils";
 import { parseDateKey } from "./utils/dateUtils";
 
 function getNextId(items) {
@@ -119,8 +128,8 @@ function validateEmail(email) {
 }
 
 export default function App() {
-  const [users, setUsers] = useState(initialUsers);
-  const [tickets, setTickets] = useState(initialTickets);
+  const [users, setUsers] = useState(() => getUsersSnapshot());
+  const [tickets, setTickets] = useState(() => getTicketsSnapshot());
   const [currentUser, setCurrentUser] = useState(getStoredAuthenticatedUser);
   const [activeView, setActiveView] = useState(() => getViewFromHash() ?? VIEW_IDS.DASHBOARD);
   const [selectedTicketId, setSelectedTicketId] = useState(() => getTicketIdFromHash());
@@ -132,14 +141,6 @@ export default function App() {
   const canCreateTicket = canCreateTicketForUser(currentUser);
   const dashboardScope = isAdministrator ? "administrator" : isTechnician ? "technician" : "employee";
   const ticketScope = getTicketScopeForView(currentUser, activeView);
-  const technicians = useMemo(
-    () => users.filter((user) => isTechnicianUser(user) && user.active !== false),
-    [users],
-  );
-  const technicianRanking = useMemo(
-    () => getTechnicianCompletionStats(technicians, tickets),
-    [technicians, tickets],
-  );
   const visibleTickets = useMemo(
     () => getTicketsForView(tickets, currentUser, activeView),
     [activeView, currentUser, tickets],
@@ -147,6 +148,18 @@ export default function App() {
   const dashboardTickets = useMemo(
     () => getDashboardTicketsForUser(tickets, currentUser),
     [currentUser, tickets],
+  );
+  const dashboardSummary = useMemo(
+    () => (currentUser ? getSummarySnapshot({ tickets, user: currentUser }) : null),
+    [currentUser, tickets],
+  );
+  const dashboardDueTickets = useMemo(
+    () => (currentUser ? getDueTicketsSnapshot({ tickets, user: currentUser }) : []),
+    [currentUser, tickets],
+  );
+  const technicianRanking = useMemo(
+    () => getTechnicianRankingSnapshot({ tickets, users }),
+    [tickets, users],
   );
 
   const selectedTicket = useMemo(() => {
@@ -216,6 +229,26 @@ export default function App() {
     return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
   }, []);
 
+  async function refreshUsers() {
+    const response = await fetchUsers();
+
+    if (response.ok) {
+      setUsers(response.data);
+    }
+
+    return response;
+  }
+
+  async function refreshTickets() {
+    const response = await fetchTickets();
+
+    if (response.ok) {
+      setTickets(response.data);
+    }
+
+    return response;
+  }
+
   function navigate(view) {
     const nextView = canAccessView(currentUser, view) ? view : VIEW_IDS.ACCESS_DENIED;
 
@@ -224,15 +257,17 @@ export default function App() {
     setHashForView(nextView);
   }
 
-  function handleLogin(form) {
-    const result = authLogin(form, users);
+  async function handleLogin(form) {
+    const result = await authLogin(form);
 
     if (!result.ok) {
       return result;
     }
 
-    const nextView = getDefaultView(result.user);
-    setCurrentUser(result.user);
+    const authenticatedUser = result.user ?? result.data?.user;
+    const nextView = getDefaultView(authenticatedUser);
+    await Promise.all([refreshUsers(), refreshTickets()]);
+    setCurrentUser(authenticatedUser);
     setSelectedTicketId(null);
     setActiveView(nextView);
     setHashForView(nextView);
@@ -242,7 +277,7 @@ export default function App() {
   }
 
   function handleLogout() {
-    clearAuthenticatedUser();
+    authLogout();
     setCurrentUser(null);
     setSelectedTicketId(null);
     setActiveView(VIEW_IDS.DASHBOARD);
@@ -308,178 +343,112 @@ export default function App() {
     return ticket.createdBy === currentUser.id;
   }
 
-  function takeTicket(ticketId) {
+  async function takeTicket(ticketId) {
     if (!currentUser || !isTechnician) {
-      return;
+      return { ok: false, message: "No tienes permiso para tomar tickets." };
     }
 
-    const timestamp = nowIso();
-    setTickets((currentTickets) =>
-      currentTickets.map((ticket) => {
-        if (ticket.id !== ticketId || !canTakeTicket(ticket)) {
-          return ticket;
-        }
+    const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
 
-        const assignedName = getUserFullName(currentUser);
-        const nextHistoryId = getNextId(ticket.history);
+    if (!ticket || !canTakeTicket(ticket)) {
+      return { ok: false, message: "No puedes tomar este ticket." };
+    }
 
-        return {
-          ...ticket,
-          assignedTo: currentUser.id,
-          assignedToName: assignedName,
-          status: TICKET_STATUSES.IN_PROGRESS,
-          takenAt: timestamp,
-          updatedAt: timestamp,
-          history: [
-            ...ticket.history,
-            {
-              id: nextHistoryId,
-              action: `Ticket tomado por ${assignedName}`,
-              userId: currentUser.id,
-              userName: assignedName,
-              createdAt: timestamp,
-            },
-            {
-              id: nextHistoryId + 1,
-              action: "Estado cambiado a En proceso",
-              userId: currentUser.id,
-              userName: assignedName,
-              createdAt: timestamp,
-            },
-          ],
-        };
-      }),
-    );
+    const result = await assignTicketRequest(ticketId, currentUser.id);
+
+    if (result.ok) {
+      await refreshTickets();
+    }
+
+    return result;
   }
 
-  function changeTicketStatus(ticketId, nextStatus) {
+  async function changeTicketStatus(ticketId, nextStatus) {
     if (!currentUser || !isTechnician) {
-      return;
+      return { ok: false, message: "No tienes permiso para cambiar estados." };
     }
 
     const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
 
     if (!ticket || !canManageTicket(ticket)) {
-      return;
+      return { ok: false, message: "No puedes modificar este ticket." };
     }
 
-    const timestamp = nowIso();
-    const shouldClose = nextStatus === TICKET_STATUSES.COMPLETED || nextStatus === TICKET_STATUSES.DISMISSED;
-    const assignedTo = ticket.assignedTo ?? currentUser.id;
-    const assignedToName = ticket.assignedToName ?? getUserFullName(currentUser);
-    const action =
-      nextStatus === TICKET_STATUSES.COMPLETED
-        ? "Ticket completado"
-        : nextStatus === TICKET_STATUSES.DISMISSED
-          ? "Ticket desestimado por área técnica"
-          : `Estado cambiado a ${getStatusLabel(nextStatus)}`;
+    const result = await changeTicketStatusRequest(ticketId, nextStatus, null, currentUser);
 
-    setTickets((currentTickets) =>
-      currentTickets.map((currentTicket) => {
-        if (currentTicket.id !== ticketId) {
-          return currentTicket;
-        }
+    if (result.ok) {
+      await refreshTickets();
+    }
 
-        return {
-          ...currentTicket,
-          assignedTo,
-          assignedToName,
-          status: nextStatus,
-          takenAt: currentTicket.takenAt ?? (!currentTicket.assignedTo ? timestamp : currentTicket.takenAt),
-          updatedAt: timestamp,
-          closedAt: shouldClose ? timestamp : currentTicket.closedAt,
-          history: [...currentTicket.history, createHistoryItem(currentTicket, action, currentUser, timestamp)],
-        };
-      }),
-    );
+    return result;
   }
 
-  function addComment(ticketId, message) {
+  async function addComment(ticketId, message) {
     if (!currentUser) {
-      return;
+      return { ok: false, message: "No hay una sesion activa." };
     }
 
     const ticket = tickets.find((currentTicket) => currentTicket.id === ticketId);
 
     if (!ticket || !canCommentTicket(ticket)) {
-      return;
+      return { ok: false, message: "No puedes comentar este ticket." };
     }
 
     const timestamp = nowIso();
-    setTickets((currentTickets) =>
-      currentTickets.map((currentTicket) => {
-        if (currentTicket.id !== ticketId) {
-          return currentTicket;
-        }
+    const result = await updateTicketRequest(ticketId, {
+      comments: [...ticket.comments, createCommentItem(ticket, message, currentUser, timestamp)],
+      history: [
+        ...ticket.history,
+        createHistoryItem(
+          ticket,
+          `Comentario agregado por ${getUserFullName(currentUser)}`,
+          currentUser,
+          timestamp,
+        ),
+      ],
+      updatedAt: timestamp,
+    });
 
-        return {
-          ...currentTicket,
-          comments: [...currentTicket.comments, createCommentItem(currentTicket, message, currentUser, timestamp)],
-          history: [
-            ...currentTicket.history,
-            createHistoryItem(
-              currentTicket,
-              `Comentario agregado por ${getUserFullName(currentUser)}`,
-              currentUser,
-              timestamp,
-            ),
-          ],
-          updatedAt: timestamp,
-        };
-      }),
-    );
+    if (result.ok) {
+      await refreshTickets();
+    }
+
+    return result;
   }
 
-  function createTicket(form) {
+  async function createTicket(form) {
     if (!currentUser || !canCreateTicket) {
       return { ok: false, message: "No tienes permiso para crear solicitudes." };
     }
 
-    const timestamp = nowIso();
     const requester = form.requester ?? currentUser;
-    const requesterName = getUserFullName(requester);
     const dueDate = form.dueDate?.trim();
 
     if (!parseDateKey(dueDate)) {
       return { ok: false, message: "Selecciona una fecha límite válida." };
     }
 
-    const nextTicket = {
-      id: getNextId(tickets),
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      status: TICKET_STATUSES.OPEN,
-      priority: form.priority,
-      createdBy: requester.id,
-      createdByName: requesterName,
-      assignedTo: null,
-      assignedToName: null,
-      createdAt: timestamp,
-      updatedAt: timestamp,
+    const result = await createTicketRequest({
+      ...form,
       dueDate,
-      closedAt: null,
-      comments: [],
-      history: [
-        {
-          id: 1,
-          action: `Ticket creado por ${requesterName}`,
-          userId: requester.id,
-          userName: requesterName,
-          createdAt: timestamp,
-        },
-      ],
-    };
+      requester,
+    });
 
-    setTickets((currentTickets) => [nextTicket, ...currentTickets]);
-    setSelectedTicketId(nextTicket.id);
+    if (!result.ok) {
+      return result;
+    }
+
+    const createdTicket = result.data;
+    await refreshTickets();
+    setSelectedTicketId(createdTicket.id);
     setActiveView(VIEW_IDS.TICKET_DETAIL);
-    setHashForTicket(nextTicket.id);
+    setHashForTicket(createdTicket.id);
 
     return { ok: true };
+
   }
 
-  function createUser(form) {
+  async function createUser(form) {
     if (!canCreateUser(currentUser)) {
       return { ok: false, message: "No tienes permisos para crear usuarios." };
     }
@@ -492,12 +461,19 @@ export default function App() {
       return { ok: false, message: "Ese correo ya está en uso." };
     }
 
-    setUsers((currentUsers) => createLocalUser(currentUsers, form));
+    const result = await createUserRequest(form);
 
-    return { ok: true, message: "Usuario creado correctamente." };
+    if (!result.ok) {
+      return result;
+    }
+
+    await refreshUsers();
+
+    return { ok: true, message: result.message ?? "Usuario creado correctamente." };
+
   }
 
-  function updateUser(userId, form) {
+  async function updateUser(userId, form) {
     const targetUser = users.find((user) => user.id === userId);
 
     if (!canEditUser(currentUser, targetUser)) {
@@ -528,7 +504,7 @@ export default function App() {
         ? form.role
         : targetUser.role;
 
-    const nextUsers = updateLocalUser(users, userId, {
+    const response = await updateUserRequest(userId, {
       firstName: cleanFirstName,
       lastName: cleanLastName,
       email: cleanEmail,
@@ -537,38 +513,53 @@ export default function App() {
       role: nextRole,
     });
 
-    setUsers(nextUsers);
-
-    if (currentUser.id === userId) {
-      const updatedSessionUser = nextUsers.find((user) => user.id === userId);
-      setCurrentUser(storeAuthenticatedUser(updatedSessionUser));
+    if (!response.ok) {
+      return response;
     }
 
-    return { ok: true, message: "Usuario actualizado correctamente." };
+    await refreshUsers();
+
+    if (currentUser.id === userId) {
+      setCurrentUser(storeAuthenticatedUser(response.data));
+    }
+
+    return { ok: true, message: response.message ?? "Usuario actualizado correctamente." };
   }
 
-  function deactivateUser(userId) {
+  async function deactivateUser(userId) {
     const targetUser = users.find((user) => user.id === userId);
 
     if (!canDeactivateUser(currentUser, targetUser)) {
       return { ok: false, message: "No tienes permisos para desactivar este usuario." };
     }
 
-    setUsers((currentUsers) => deactivateLocalUser(currentUsers, userId));
+    const result = await deleteUserRequest(userId);
 
-    return { ok: true, message: "Usuario desactivado correctamente." };
+    if (!result.ok) {
+      return result;
+    }
+
+    await refreshUsers();
+
+    return { ok: true, message: result.message ?? "Usuario desactivado correctamente." };
   }
 
-  function resetPassword(userId) {
+  async function resetPassword(userId) {
     const targetUser = users.find((user) => user.id === userId);
 
     if (!canResetUserPassword(currentUser, targetUser)) {
       return { ok: false, message: "No tienes permisos para restablecer esta contraseña." };
     }
 
-    setUsers((currentUsers) => resetLocalUserPassword(currentUsers, userId));
+    const result = await resetUserPasswordRequest(userId);
 
-    return { ok: true, message: "Contraseña restablecida correctamente." };
+    if (!result.ok) {
+      return result;
+    }
+
+    await refreshUsers();
+
+    return { ok: true, message: result.message ?? "Contrasena restablecida correctamente." };
   }
 
   function authorizeTechnicianReport({ technicianId }) {
@@ -597,7 +588,7 @@ export default function App() {
     });
   }
 
-  function changePassword({ confirmPassword, currentPassword, newPassword }) {
+  async function changePassword({ confirmPassword, currentPassword, newPassword }) {
     if (!currentUser) {
       return { ok: false, message: "No hay una sesión activa." };
     }
@@ -618,7 +609,13 @@ export default function App() {
       return { ok: false, message: "La confirmación no coincide." };
     }
 
-    setUsers((currentUsers) => resetLocalUserPassword(currentUsers, currentUser.id, cleanPassword));
+    const result = await authChangePassword(currentUser.id, currentPassword, cleanPassword);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    await refreshUsers();
 
     return { ok: true };
   }
@@ -631,8 +628,10 @@ export default function App() {
     if (activeView === VIEW_IDS.DASHBOARD) {
       return (
         <Dashboard
+          dueTickets={dashboardDueTickets}
           onOpenTicket={openTicket}
           scope={dashboardScope}
+          summary={dashboardSummary}
           technicianRanking={technicianRanking}
           tickets={dashboardTickets}
         />
@@ -758,3 +757,5 @@ export default function App() {
     </MainLayout>
   );
 }
+
+

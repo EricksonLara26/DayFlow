@@ -25,8 +25,8 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
     setIsLoading(true);
 
     window.setTimeout(() => {
-      const result = onChangePassword(currentForm);
-      setIsLoading(false);
+      Promise.resolve(onChangePassword(currentForm)).then((result) => {
+        setIsLoading(false);
 
       if (!result.ok) {
         setError(result.message);
@@ -41,6 +41,11 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
       });
       setError("");
       setMessage("Contraseña actualizada correctamente.");
+      }).catch(() => {
+        setIsLoading(false);
+        setError("No se pudo actualizar la contrasena.");
+        setMessage("");
+      });
     }, 300);
   }
 
