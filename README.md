@@ -160,10 +160,10 @@ usuario: tecnico
 contraseña: 1234
 ```
 
-Empleado:
+Usuario:
 
 ```text
-usuario: empleado
+usuario: usuario
 contraseña: 1234
 ```
 

@@ -40,6 +40,10 @@ const viewTitles = {
     eyebrow: "Informes",
     title: "Exportación administrativa",
   },
+  [VIEW_IDS.SETTINGS]: {
+    eyebrow: "Configuracion",
+    title: "Preferencias y seguridad",
+  },
   [VIEW_IDS.TICKETS]: {
     eyebrow: "Solicitudes",
     title: "Gestión de tickets",

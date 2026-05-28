@@ -7,10 +7,10 @@ export const ROLES = {
 export const ROLE_LABELS = {
   [ROLES.ADMINISTRATOR]: "Administrador",
   [ROLES.TECHNICIAN]: "Técnico",
-  [ROLES.EMPLOYEE]: "Empleado",
+  [ROLES.EMPLOYEE]: "Usuario",
   ADMINISTRATOR: "Administrador",
   TECHNICIAN: "Técnico",
-  EMPLOYEE: "Empleado",
+  EMPLOYEE: "Usuario",
 };
 
 export function getRoleLabel(role) {

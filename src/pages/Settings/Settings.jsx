@@ -3,7 +3,12 @@ import { useState } from "react";
 import LoadingButton from "../../components/common/LoadingButton";
 import "./Settings.css";
 
-export function SettingsContent({ onChangePassword, onUpdatePreferences, preferences }) {
+export function SettingsContent({
+  onChangePassword,
+  onUpdatePreferences,
+  preferences,
+  requirePasswordChange = false,
+}) {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -50,36 +55,41 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
   }
 
   return (
-    <div className="settings-content-grid">
-      <section className="panel settings-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Apariencia</p>
-            <h2>Modo oscuro</h2>
+    <div className={`settings-content-grid ${requirePasswordChange ? "password-required" : ""}`.trim()}>
+      {!requirePasswordChange ? (
+        <section className="panel settings-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Apariencia</p>
+              <h2>Modo oscuro</h2>
+            </div>
+            <Moon size={20} aria-hidden="true" />
           </div>
-          <Moon size={20} aria-hidden="true" />
-        </div>
-        <label className="toggle-row">
-          <span>
-            <strong>Activar modo oscuro</strong>
-            <small>Aplica colores de alto contraste en paneles, tablas, formularios y navegación.</small>
-          </span>
-          <input
-            checked={preferences.darkMode}
-            type="checkbox"
-            onChange={(event) => onUpdatePreferences({ darkMode: event.target.checked })}
-          />
-        </label>
-      </section>
+          <label className="toggle-row">
+            <span>
+              <strong>Activar modo oscuro</strong>
+              <small>Aplica colores de alto contraste en paneles, tablas, formularios y navegación.</small>
+            </span>
+            <input
+              checked={preferences.darkMode}
+              type="checkbox"
+              onChange={(event) => onUpdatePreferences({ darkMode: event.target.checked })}
+            />
+          </label>
+        </section>
+      ) : null}
 
       <section className="panel settings-panel">
         <div className="section-heading">
           <div>
             <p className="eyebrow">Seguridad</p>
-            <h2>Cambio de contraseña</h2>
+            <h2>{requirePasswordChange ? "Crea una nueva contraseña" : "Cambio de contraseña"}</h2>
           </div>
           <KeyRound size={20} aria-hidden="true" />
         </div>
+        {requirePasswordChange ? (
+          <p className="password-required-alert">Debes cambiar tu contraseña para continuar.</p>
+        ) : null}
         <form className="password-form" onSubmit={handlePasswordSubmit}>
           <label className="field">
             <span>Contraseña actual</span>
@@ -123,18 +133,24 @@ export function SettingsContent({ onChangePassword, onUpdatePreferences, prefere
   );
 }
 
-export default function Settings({ onChangePassword, onUpdatePreferences, preferences }) {
+export default function Settings({
+  onChangePassword,
+  onUpdatePreferences,
+  preferences,
+  requirePasswordChange = false,
+}) {
   return (
     <div className="page-stack settings-page">
       <section className="panel page-intro">
         <div>
-          <p className="eyebrow">Personalización del sistema</p>
-          <h2>Configuración visual y seguridad</h2>
+          <p className="eyebrow">{requirePasswordChange ? "Acceso temporal" : "Personalización del sistema"}</p>
+          <h2>{requirePasswordChange ? "Actualiza tu contraseña" : "Configuración visual y seguridad"}</h2>
         </div>
-        <strong>{preferences.darkMode ? "Modo oscuro" : "Modo claro"}</strong>
+        <strong>{requirePasswordChange ? "Requerido" : preferences.darkMode ? "Modo oscuro" : "Modo claro"}</strong>
       </section>
 
       <SettingsContent
+        requirePasswordChange={requirePasswordChange}
         onChangePassword={onChangePassword}
         onUpdatePreferences={onUpdatePreferences}
         preferences={preferences}

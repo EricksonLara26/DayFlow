@@ -30,7 +30,7 @@ describe("ticketService", () => {
       expect(getVisibleTicketsForUser(tickets, techUser)).toHaveLength(5);
     });
 
-    test("empleado ve solo sus tickets", () => {
+    test("usuario ve solo sus tickets", () => {
       const visible = getVisibleTicketsForUser(tickets, empUser);
 
       expect(visible).toHaveLength(3);
@@ -62,7 +62,7 @@ describe("ticketService", () => {
       expect(visible).toEqual([tickets[2]]);
     });
 
-    test("tickets muestra solo tickets propios para empleado", () => {
+    test("tickets muestra solo tickets propios para usuario", () => {
       const visible = getTicketsForView(tickets, empUser, VIEW_IDS.TICKETS);
 
       expect(visible.every((ticket) => ticket.createdBy === empUser.id)).toBe(true);
@@ -80,7 +80,7 @@ describe("ticketService", () => {
       expect(summary.every((ticket) => ticket.assignedTo === techUser.id || !ticket.assignedTo)).toBe(true);
     });
 
-    test("empleado ve solo sus tickets", () => {
+    test("usuario ve solo sus tickets", () => {
       const summary = getDashboardTicketsForUser(tickets, empUser);
 
       expect(summary.every((ticket) => ticket.createdBy === empUser.id)).toBe(true);
@@ -98,7 +98,7 @@ describe("ticketService", () => {
       expect(getTicketScopeForView(techUser, VIEW_IDS.HISTORY)).toBe("technician-history");
     });
 
-    test("empleado obtiene scope employee", () => {
+    test("usuario obtiene scope employee", () => {
       expect(getTicketScopeForView(empUser, VIEW_IDS.TICKETS)).toBe("employee");
     });
   });

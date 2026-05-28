@@ -143,14 +143,22 @@ export function UsersProvider({ children }) {
   );
 
   const resetPassword = useCallback(
-    async (userId) => {
+    async (userId, temporaryPassword) => {
       const targetUser = users.find((user) => user.id === userId);
 
       if (!canResetUserPassword(currentUser, targetUser)) {
         return { ok: false, message: "No tienes permisos para restablecer esta contrase\u00f1a." };
       }
 
-      const result = await resetUserPasswordRequest(userId);
+      const cleanTemporaryPassword = temporaryPassword?.trim() ?? "";
+
+      if (cleanTemporaryPassword.length < 4) {
+        return { ok: false, message: "La contrase\u00f1a temporal debe tener al menos 4 caracteres." };
+      }
+
+      const result = await resetUserPasswordRequest(userId, cleanTemporaryPassword, {
+        mustChangePassword: true,
+      });
 
       if (!result.ok) {
         return result;
@@ -158,7 +166,7 @@ export function UsersProvider({ children }) {
 
       await refreshUsers();
 
-      return { ok: true, message: result.message ?? "Contrase\u00f1a restablecida correctamente." };
+      return { ok: true, message: result.message ?? "Contrase\u00f1a temporal asignada correctamente." };
     },
     [currentUser, refreshUsers, users],
   );

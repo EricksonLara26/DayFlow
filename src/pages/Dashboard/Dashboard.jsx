@@ -36,7 +36,7 @@ export default function Dashboard({
       <section className="panel page-intro">
         <div>
           <p className="eyebrow">
-            {isTechnicianScope ? "Operación técnica" : isEmployeeScope ? "Panel de empleado" : "Monitoreo administrativo"}
+            {isTechnicianScope ? "Operación técnica" : isEmployeeScope ? "Panel de usuario" : "Monitoreo administrativo"}
           </p>
           <h2>
             {isTechnicianScope

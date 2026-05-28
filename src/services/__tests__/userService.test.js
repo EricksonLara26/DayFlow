@@ -94,5 +94,15 @@ describe("userService", () => {
 
       expect(result.find((user) => user.id === 1).password).toBe("newpass");
     });
+
+    test("marca cambio obligatorio con contrasena temporal", () => {
+      const result = resetLocalUserPassword(initialUsers, 1, "temporal", {
+        mustChangePassword: true,
+      });
+      const updatedUser = result.find((user) => user.id === 1);
+
+      expect(updatedUser.password).toBe("temporal");
+      expect(updatedUser.mustChangePassword).toBe(true);
+    });
   });
 });

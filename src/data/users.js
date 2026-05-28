@@ -20,6 +20,7 @@ export function normalizeUser(user) {
     department: user.department ?? "",
     position: user.position ?? "",
     active: user.active ?? true,
+    mustChangePassword: user.mustChangePassword ?? false,
   };
 }
 

@@ -78,6 +78,10 @@ export function AuthProvider({ children }) {
         return { ok: false, message: "La nueva contrase\u00f1a debe tener al menos 4 caracteres." };
       }
 
+      if (cleanPassword === currentPassword.trim()) {
+        return { ok: false, message: "La nueva contrase\u00f1a debe ser diferente a la temporal o actual." };
+      }
+
       if (cleanPassword !== confirmPassword.trim()) {
         return { ok: false, message: "La confirmaci\u00f3n no coincide." };
       }
@@ -88,9 +92,11 @@ export function AuthProvider({ children }) {
         return result;
       }
 
+      replaceCurrentUser(result.data ?? getUserSnapshotById(currentUser.id));
+
       return { ok: true };
     },
-    [currentUser],
+    [currentUser, replaceCurrentUser],
   );
 
   const value = useMemo(

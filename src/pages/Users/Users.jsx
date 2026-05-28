@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { KeyRound, UserPlus, X } from "lucide-react";
 import Button from "../../components/common/Button";
+import LoadingButton from "../../components/common/LoadingButton";
 import SearchInput from "../../components/common/SearchInput";
 import UserForm from "../../components/users/UserForm";
 import UserTable from "../../components/users/UserTable";
@@ -21,6 +22,13 @@ export default function Users({
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [isUserFormOpen, setIsUserFormOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [resetTargetUser, setResetTargetUser] = useState(null);
+  const [resetForm, setResetForm] = useState({
+    temporaryPassword: "",
+    confirmPassword: "",
+  });
+  const [resetError, setResetError] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const canOpenUserForm = canCreateUser(currentUser);
   const departments = useMemo(
     () => [...new Set(users.map((user) => user.department).filter(Boolean))].sort(),
@@ -61,14 +69,71 @@ export default function Users({
     return result;
   }
 
-  async function handleResetPassword(userId) {
-    const result = await onResetPassword(userId);
+  function openPasswordReset(user) {
+    setResetTargetUser(user);
+    setResetForm({
+      temporaryPassword: "",
+      confirmPassword: "",
+    });
+    setResetError("");
+    setMessage("");
+  }
 
-    if (result?.ok !== false) {
-      setMessage(result?.message ?? "Contraseña restablecida correctamente.");
+  function closePasswordReset() {
+    setResetTargetUser(null);
+    setResetForm({
+      temporaryPassword: "",
+      confirmPassword: "",
+    });
+    setResetError("");
+    setIsResettingPassword(false);
+  }
+
+  function updateResetField(field, value) {
+    setResetForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handlePasswordResetSubmit(event) {
+    event.preventDefault();
+
+    if (!resetTargetUser) {
+      return { ok: false };
     }
 
-    return result;
+    const temporaryPassword = resetForm.temporaryPassword.trim();
+    const confirmPassword = resetForm.confirmPassword.trim();
+
+    if (temporaryPassword.length < 4) {
+      setResetError("La contraseña temporal debe tener al menos 4 caracteres.");
+      return { ok: false };
+    }
+
+    if (temporaryPassword !== confirmPassword) {
+      setResetError("La confirmación no coincide.");
+      return { ok: false };
+    }
+
+    setResetError("");
+    setIsResettingPassword(true);
+
+    try {
+      const result = await onResetPassword(resetTargetUser.id, temporaryPassword);
+
+      if (result?.ok === false) {
+        setResetError(result.message);
+        return result;
+      }
+
+      closePasswordReset();
+      setMessage(result?.message ?? "Contraseña temporal asignada correctamente.");
+
+      return result;
+    } catch {
+      setResetError("No se pudo asignar la contraseña temporal.");
+      return { ok: false };
+    } finally {
+      setIsResettingPassword(false);
+    }
   }
 
   async function handleDeactivateUser(userId) {
@@ -112,6 +177,54 @@ export default function Users({
         </div>
       ) : null}
 
+      {resetTargetUser ? (
+        <div className="user-form-overlay" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+          <div className="user-form-modal password-reset-modal">
+            <form className="form-panel user-form password-reset-form" onSubmit={handlePasswordResetSubmit}>
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Seguridad</p>
+                  <h2 id="reset-password-title">Asignar contraseña temporal</h2>
+                </div>
+                <KeyRound size={20} aria-hidden="true" />
+              </div>
+              <div className="reset-target-summary">
+                <strong>{getUserFullName(resetTargetUser)}</strong>
+                <span>{resetTargetUser.username}</span>
+              </div>
+              <label className="field">
+                <span>Contraseña temporal</span>
+                <input
+                  autoFocus
+                  disabled={isResettingPassword}
+                  type="password"
+                  value={resetForm.temporaryPassword}
+                  onChange={(event) => updateResetField("temporaryPassword", event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Confirmar contraseña temporal</span>
+                <input
+                  disabled={isResettingPassword}
+                  type="password"
+                  value={resetForm.confirmPassword}
+                  onChange={(event) => updateResetField("confirmPassword", event.target.value)}
+                />
+              </label>
+              {resetError ? <p className="form-error">{resetError}</p> : null}
+              <div className="form-actions">
+                <Button disabled={isResettingPassword} icon={X} variant="ghost" onClick={closePasswordReset}>
+                  Cancelar
+                </Button>
+                <LoadingButton icon={KeyRound} loading={isResettingPassword} type="submit">
+                  Guardar temporal
+                </LoadingButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       <div className="users-layout">
         <section className="panel user-list-panel">
           <div className="section-heading">
@@ -149,7 +262,7 @@ export default function Users({
           <UserTable
             currentUser={currentUser}
             onDeactivateUser={handleDeactivateUser}
-            onResetPassword={handleResetPassword}
+            onResetPassword={openPasswordReset}
             onUpdateUser={handleUpdateUser}
             users={filteredUsers}
           />

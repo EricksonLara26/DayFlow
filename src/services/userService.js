@@ -128,16 +128,28 @@ export function deleteUser(id) {
   return ok(getUserSnapshotById(userId), { message: "Usuario desactivado correctamente." });
 }
 
-export function resetPassword(userId, password = "1234") {
+export function resetPassword(userId, password = "1234", options = {}) {
   const normalizedUserId = normalizeId(userId);
 
   if (findUserIndex(normalizedUserId) === -1) {
     return fail("Usuario no encontrado.", 404);
   }
 
-  mockUsers = resetLocalUserPassword(mockUsers, normalizedUserId, password);
+  const cleanPassword = password?.trim() ?? "";
 
-  return ok(getUserSnapshotById(normalizedUserId), { message: "Contrasena restablecida correctamente." });
+  if (cleanPassword.length < 4) {
+    return fail("La contrasena temporal debe tener al menos 4 caracteres.");
+  }
+
+  mockUsers = resetLocalUserPassword(mockUsers, normalizedUserId, cleanPassword, {
+    mustChangePassword: options.mustChangePassword ?? false,
+  });
+
+  const message = options.mustChangePassword
+    ? "Contrasena temporal asignada correctamente."
+    : "Contrasena restablecida correctamente.";
+
+  return ok(getUserSnapshotById(normalizedUserId), { message });
 }
 
 export function createLocalUser(users, form) {
@@ -153,6 +165,7 @@ export function createLocalUser(users, form) {
     department: form.department,
     position: form.position,
     active: true,
+    mustChangePassword: form.mustChangePassword ?? false,
   });
 
   return [...users, nextUser];
@@ -186,6 +199,9 @@ export function deactivateLocalUser(users, userId) {
   return updateLocalUser(users, userId, { active: false });
 }
 
-export function resetLocalUserPassword(users, userId, password = "1234") {
-  return updateLocalUser(users, userId, { password });
+export function resetLocalUserPassword(users, userId, password = "1234", options = {}) {
+  return updateLocalUser(users, userId, {
+    password,
+    mustChangePassword: options.mustChangePassword ?? false,
+  });
 }

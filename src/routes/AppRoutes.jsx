@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import TechnicianRanking from "../components/dashboard/TechnicianRanking";
 import MainLayout from "../components/layout/MainLayout";
 import { VIEW_IDS, getDefaultView } from "../config/permissions";
@@ -8,23 +17,109 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import InformationPanel from "../pages/InformationPanel/InformationPanel";
 import Login from "../pages/Login/Login";
 import Reports from "../pages/Reports/Reports";
+import Settings from "../pages/Settings/Settings";
 import TechnicianProfile from "../pages/TechnicianProfile/TechnicianProfile";
 import TicketDetailPage from "../pages/TicketDetail/TicketDetail";
 import Tickets from "../pages/Tickets/Tickets";
 import Users from "../pages/Users/Users";
-import RoleBasedRoute from "./RoleBasedRoute";
-import {
-  getTicketIdFromHash,
-  getViewFromHash,
-  setHashForTicket,
-  setHashForView,
-} from "./routeConfig";
 import { useAuth } from "../hooks/useAuth";
 import { usePreferences } from "../hooks/usePreferences";
 import { useTickets } from "../hooks/useTickets";
 import { useUsers } from "../hooks/useUsers";
+import ProtectedRoute from "./ProtectedRoute";
+import RoleBasedRoute from "./RoleBasedRoute";
+import {
+  LOGIN_PATH,
+  getPathForView,
+  getRoutePatternForView,
+  getViewFromPathname,
+} from "./routeConfig";
 
-export default function AppRoutes() {
+function getHomePath(user) {
+  if (user?.mustChangePassword) {
+    return getPathForView(VIEW_IDS.SETTINGS);
+  }
+
+  return getPathForView(getDefaultView(user));
+}
+
+function LoginRoute({ currentUser, message, onLogin, preferences }) {
+  if (currentUser) {
+    return <Navigate replace to={getHomePath(currentUser)} />;
+  }
+
+  return (
+    <div className={preferences.darkMode ? "theme-dark" : ""}>
+      <Login message={message} onLogin={onLogin} />
+    </div>
+  );
+}
+
+function TemporaryPasswordGate({ activeView, children, currentUser }) {
+  const location = useLocation();
+
+  if (currentUser?.mustChangePassword && activeView !== VIEW_IDS.SETTINGS) {
+    return <Navigate replace state={{ from: location }} to={getPathForView(VIEW_IDS.SETTINGS)} />;
+  }
+
+  return children;
+}
+
+function TicketsView({
+  canTakeTicket,
+  getScopeForView,
+  getVisibleTicketsForView,
+  onOpenTicket,
+  onTakeTicket,
+  users,
+  view,
+}) {
+  return (
+    <Tickets
+      canTakeTicket={canTakeTicket}
+      onOpenTicket={onOpenTicket}
+      onTakeTicket={onTakeTicket}
+      scope={getScopeForView(view)}
+      tickets={getVisibleTicketsForView(view)}
+      users={users}
+    />
+  );
+}
+
+function TicketDetailRoute({
+  canCommentTicket,
+  canManageTicket,
+  canTakeTicket,
+  canViewTicket,
+  getTicketById,
+  onAddComment,
+  onBack,
+  onChangeStatus,
+  onGoHome,
+  onTakeTicket,
+}) {
+  const { id } = useParams();
+  const ticket = getTicketById(id);
+
+  if (ticket && !canViewTicket(ticket)) {
+    return <AccessDenied onGoHome={onGoHome} />;
+  }
+
+  return (
+    <TicketDetailPage
+      canCommentTicket={canCommentTicket}
+      canManageTicket={canManageTicket}
+      canTakeTicket={canTakeTicket}
+      onAddComment={onAddComment}
+      onBack={onBack}
+      onChangeStatus={onChangeStatus}
+      onTakeTicket={onTakeTicket}
+      ticket={ticket}
+    />
+  );
+}
+
+function AppRoutesContent() {
   const {
     canAccessView,
     canCreateTicket,
@@ -65,87 +160,17 @@ export default function AppRoutes() {
     updateUser,
     users,
   } = useUsers();
-  const [activeView, setActiveView] = useState(() => getViewFromHash() ?? VIEW_IDS.DASHBOARD);
-  const [selectedTicketId, setSelectedTicketId] = useState(() => getTicketIdFromHash());
-  const activeViewRef = useRef(activeView);
-  const selectedTicketIdRef = useRef(selectedTicketId);
-  const visibleTickets = useMemo(
-    () => getVisibleTicketsForView(activeView),
-    [activeView, getVisibleTicketsForView],
-  );
-  const ticketScope = useMemo(() => getScopeForView(activeView), [activeView, getScopeForView]);
-  const selectedTicket = useMemo(() => {
-    const ticket = getTicketById(selectedTicketId);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeView = getViewFromPathname(location.pathname) ?? VIEW_IDS.DASHBOARD;
 
-    return ticket && canViewTicket(ticket) ? ticket : null;
-  }, [canViewTicket, getTicketById, selectedTicketId]);
-
-  function setRouteState(nextView, ticketId = null) {
-    const nextTicketId = nextView === VIEW_IDS.TICKET_DETAIL ? ticketId : null;
-
-    activeViewRef.current = nextView;
-    selectedTicketIdRef.current = nextTicketId;
-    setActiveView(nextView);
-    setSelectedTicketId(nextTicketId);
-  }
-
-  function syncRouteState(nextView, ticketId = null) {
-    const nextTicketId = nextView === VIEW_IDS.TICKET_DETAIL ? ticketId : null;
-
-    if (activeViewRef.current !== nextView) {
-      activeViewRef.current = nextView;
-      setActiveView(nextView);
-    }
-
-    if (selectedTicketIdRef.current !== nextTicketId) {
-      selectedTicketIdRef.current = nextTicketId;
-      setSelectedTicketId(nextTicketId);
-    }
-  }
-
-  useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-
-    const requestedTicketId = getTicketIdFromHash();
-    const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
-    const nextView = canAccessView(requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
-    syncRouteState(nextView, requestedTicketId);
-
-    if (nextView === VIEW_IDS.TICKET_DETAIL && requestedTicketId) {
-      setHashForTicket(requestedTicketId);
-      return;
-    }
-
-    setHashForView(nextView);
-  }, [canAccessView, currentUser]);
-
-  useEffect(() => {
-    function handleHashChange() {
-      if (!currentUser) {
-        return;
-      }
-
-      const requestedTicketId = getTicketIdFromHash();
-      const requestedView = getViewFromHash() ?? getDefaultView(currentUser);
-      const nextView = canAccessView(requestedView) ? requestedView : VIEW_IDS.ACCESS_DENIED;
-      syncRouteState(nextView, requestedTicketId);
-
-      if (nextView === VIEW_IDS.ACCESS_DENIED) {
-        setHashForView(VIEW_IDS.ACCESS_DENIED);
-      }
-    }
-
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [canAccessView, currentUser]);
-
-  function navigate(view) {
+  function navigateToView(view, options = {}) {
     const nextView = canAccessView(view) ? view : VIEW_IDS.ACCESS_DENIED;
+    navigate(getPathForView(nextView), options);
+  }
 
-    setRouteState(nextView);
-    setHashForView(nextView);
+  function goHome() {
+    navigate(getHomePath(currentUser));
   }
 
   async function handleLogin(form) {
@@ -156,33 +181,30 @@ export default function AppRoutes() {
     }
 
     const authenticatedUser = result.user ?? result.data?.user;
-    const nextView = getDefaultView(authenticatedUser);
     await Promise.all([refreshUsers(), refreshTickets()]);
-    setRouteState(nextView);
-    setHashForView(nextView);
+    navigate(getHomePath(authenticatedUser), { replace: true });
 
     return { ok: true };
   }
 
   function handleLogout() {
     logout();
-    setRouteState(VIEW_IDS.DASHBOARD);
+    navigate(LOGIN_PATH, { replace: true });
   }
 
   function openTicket(ticketId) {
     const ticket = getTicketById(ticketId);
 
-    if (!canViewTicket(ticket)) {
-      navigate(VIEW_IDS.ACCESS_DENIED);
+    if (ticket && !canViewTicket(ticket)) {
+      navigateToView(VIEW_IDS.ACCESS_DENIED);
       return;
     }
 
-    setRouteState(VIEW_IDS.TICKET_DETAIL, ticketId);
-    setHashForTicket(ticketId);
+    navigate(getPathForView(VIEW_IDS.TICKET_DETAIL, { ticketId }));
   }
 
   function goBackFromTicket() {
-    navigate(VIEW_IDS.TICKETS);
+    navigateToView(VIEW_IDS.TICKETS);
   }
 
   async function handleCreateTicket(form) {
@@ -192,147 +214,236 @@ export default function AppRoutes() {
       return result;
     }
 
-    const createdTicket = result.data;
-    setRouteState(VIEW_IDS.TICKET_DETAIL, createdTicket.id);
-    setHashForTicket(createdTicket.id);
+    navigate(getPathForView(VIEW_IDS.TICKET_DETAIL, { ticketId: result.data.id }));
 
     return { ok: true };
   }
 
-  function renderActiveView() {
-    if (activeView === VIEW_IDS.ACCESS_DENIED) {
-      return <AccessDenied onGoHome={() => navigate(getDefaultView(currentUser))} />;
-    }
-
-    if (activeView === VIEW_IDS.DASHBOARD) {
-      return (
-        <Dashboard
-          dueTickets={dashboardDueTickets}
-          onOpenTicket={openTicket}
-          scope={dashboardScope}
-          summary={dashboardSummary}
-          technicianRanking={technicianRanking}
-          tickets={dashboardTickets}
-        />
-      );
-    }
-
-    if (
-      activeView === VIEW_IDS.TICKETS ||
-      activeView === VIEW_IDS.AVAILABLE_TICKETS ||
-      activeView === VIEW_IDS.MY_TICKETS ||
-      activeView === VIEW_IDS.HISTORY
-    ) {
-      return (
-        <Tickets
-          canTakeTicket={canTakeTicket}
-          onOpenTicket={openTicket}
-          onTakeTicket={takeTicket}
-          scope={ticketScope}
-          tickets={visibleTickets}
-          users={users}
-        />
-      );
-    }
-
-    if (activeView === VIEW_IDS.TICKET_DETAIL) {
-      return (
-        <TicketDetailPage
-          canCommentTicket={canCommentTicket}
-          canManageTicket={canManageTicket}
-          canTakeTicket={canTakeTicket}
-          onAddComment={addComment}
-          onBack={goBackFromTicket}
-          onChangeStatus={changeTicketStatus}
-          onTakeTicket={takeTicket}
-          ticket={selectedTicket}
-        />
-      );
-    }
-
-    if (activeView === VIEW_IDS.CREATE_TICKET) {
-      return <CreateTicket currentUser={currentUser} onCreateTicket={handleCreateTicket} />;
-    }
-
-    if (activeView === VIEW_IDS.PROFILE) {
-      return (
-        <TechnicianProfile
-          currentUser={currentUser}
-          onChangePassword={changePassword}
-          onOpenTicket={openTicket}
-          onUpdatePreferences={updatePreferences}
-          preferences={preferences}
-          tickets={tickets}
-        />
-      );
-    }
-
-    if (activeView === VIEW_IDS.RANKING) {
-      return (
-        <div className="page-stack">
-          <TechnicianRanking technicians={technicianRanking} />
-        </div>
-      );
-    }
-
-    if (activeView === VIEW_IDS.INFORMATION) {
-      return (
-        <InformationPanel
-          canDownloadReports={canDownloadReports}
-          onAuthorizeReport={authorizeTechnicianReport}
-          onOpenTicket={openTicket}
-          tickets={tickets}
-          users={users}
-        />
-      );
-    }
-
-    if (activeView === VIEW_IDS.REPORTS) {
-      return <Reports onAuthorizeReport={authorizeTechnicianReport} tickets={tickets} users={users} />;
-    }
-
-    if (activeView === VIEW_IDS.USERS) {
-      return (
-        <Users
-          currentUser={currentUser}
-          onCreateUser={createUser}
-          onDeactivateUser={deactivateUser}
-          onResetPassword={resetPassword}
-          onUpdateUser={updateUser}
-          users={users}
-        />
-      );
-    }
-
-    return <AccessDenied onGoHome={() => navigate(getDefaultView(currentUser))} />;
-  }
-
-  if (!currentUser) {
+  function withRole(view, element) {
     return (
-      <div className={preferences.darkMode ? "theme-dark" : ""}>
-        <Login message={loginMessage} onLogin={handleLogin} />
-      </div>
+      <RoleBasedRoute currentUser={currentUser} view={view}>
+        {element}
+      </RoleBasedRoute>
     );
   }
 
   return (
-    <MainLayout
-      activeView={activeView}
-      canCreateTicket={canCreateTicket}
-      currentUser={currentUser}
-      darkMode={preferences.darkMode}
-      navigationMode={preferences.navigationMode}
-      onCreateTicket={() => navigate(VIEW_IDS.CREATE_TICKET)}
-      onLogout={handleLogout}
-      onNavigate={navigate}
-    >
-      <RoleBasedRoute
-        currentUser={currentUser}
-        fallback={<AccessDenied onGoHome={() => navigate(getDefaultView(currentUser))} />}
-        view={activeView}
-      >
-        {renderActiveView()}
-      </RoleBasedRoute>
-    </MainLayout>
+    <Routes>
+      <Route
+        path={LOGIN_PATH}
+        element={
+          <LoginRoute
+            currentUser={currentUser}
+            message={loginMessage}
+            onLogin={handleLogin}
+            preferences={preferences}
+          />
+        }
+      />
+
+      <Route element={<ProtectedRoute currentUser={currentUser} />}>
+        <Route
+          element={
+            <MainLayout
+              activeView={activeView}
+              canCreateTicket={canCreateTicket && currentUser?.mustChangePassword !== true}
+              currentUser={currentUser}
+              darkMode={preferences.darkMode}
+              navigationMode={preferences.navigationMode}
+              onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
+              onLogout={handleLogout}
+              onNavigate={navigateToView}
+            >
+              <TemporaryPasswordGate activeView={activeView} currentUser={currentUser}>
+                <Outlet />
+              </TemporaryPasswordGate>
+            </MainLayout>
+          }
+        >
+          <Route index element={<Navigate replace to={getHomePath(currentUser)} />} />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.ACCESS_DENIED)}
+            element={<AccessDenied onGoHome={goHome} />}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.DASHBOARD)}
+            element={withRole(
+              VIEW_IDS.DASHBOARD,
+              <Dashboard
+                dueTickets={dashboardDueTickets}
+                onOpenTicket={openTicket}
+                scope={dashboardScope}
+                summary={dashboardSummary}
+                technicianRanking={technicianRanking}
+                tickets={dashboardTickets}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.TICKETS)}
+            element={withRole(
+              VIEW_IDS.TICKETS,
+              <TicketsView
+                canTakeTicket={canTakeTicket}
+                getScopeForView={getScopeForView}
+                getVisibleTicketsForView={getVisibleTicketsForView}
+                onOpenTicket={openTicket}
+                onTakeTicket={takeTicket}
+                users={users}
+                view={VIEW_IDS.TICKETS}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.CREATE_TICKET)}
+            element={withRole(
+              VIEW_IDS.CREATE_TICKET,
+              <CreateTicket currentUser={currentUser} onCreateTicket={handleCreateTicket} />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.AVAILABLE_TICKETS)}
+            element={withRole(
+              VIEW_IDS.AVAILABLE_TICKETS,
+              <TicketsView
+                canTakeTicket={canTakeTicket}
+                getScopeForView={getScopeForView}
+                getVisibleTicketsForView={getVisibleTicketsForView}
+                onOpenTicket={openTicket}
+                onTakeTicket={takeTicket}
+                users={users}
+                view={VIEW_IDS.AVAILABLE_TICKETS}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.MY_TICKETS)}
+            element={withRole(
+              VIEW_IDS.MY_TICKETS,
+              <TicketsView
+                canTakeTicket={canTakeTicket}
+                getScopeForView={getScopeForView}
+                getVisibleTicketsForView={getVisibleTicketsForView}
+                onOpenTicket={openTicket}
+                onTakeTicket={takeTicket}
+                users={users}
+                view={VIEW_IDS.MY_TICKETS}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.HISTORY)}
+            element={withRole(
+              VIEW_IDS.HISTORY,
+              <TicketsView
+                canTakeTicket={canTakeTicket}
+                getScopeForView={getScopeForView}
+                getVisibleTicketsForView={getVisibleTicketsForView}
+                onOpenTicket={openTicket}
+                onTakeTicket={takeTicket}
+                users={users}
+                view={VIEW_IDS.HISTORY}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.TICKET_DETAIL)}
+            element={withRole(
+              VIEW_IDS.TICKET_DETAIL,
+              <TicketDetailRoute
+                canCommentTicket={canCommentTicket}
+                canManageTicket={canManageTicket}
+                canTakeTicket={canTakeTicket}
+                canViewTicket={canViewTicket}
+                getTicketById={getTicketById}
+                onAddComment={addComment}
+                onBack={goBackFromTicket}
+                onChangeStatus={changeTicketStatus}
+                onGoHome={goHome}
+                onTakeTicket={takeTicket}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.PROFILE)}
+            element={withRole(
+              VIEW_IDS.PROFILE,
+              <TechnicianProfile
+                currentUser={currentUser}
+                onChangePassword={changePassword}
+                onOpenTicket={openTicket}
+                onUpdatePreferences={updatePreferences}
+                preferences={preferences}
+                tickets={tickets}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.SETTINGS)}
+            element={withRole(
+              VIEW_IDS.SETTINGS,
+              <Settings
+                requirePasswordChange={currentUser?.mustChangePassword === true}
+                onChangePassword={changePassword}
+                onUpdatePreferences={updatePreferences}
+                preferences={preferences}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.RANKING)}
+            element={withRole(
+              VIEW_IDS.RANKING,
+              <div className="page-stack">
+                <TechnicianRanking technicians={technicianRanking} />
+              </div>,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.INFORMATION)}
+            element={withRole(
+              VIEW_IDS.INFORMATION,
+              <InformationPanel
+                canDownloadReports={canDownloadReports}
+                onAuthorizeReport={authorizeTechnicianReport}
+                onOpenTicket={openTicket}
+                tickets={tickets}
+                users={users}
+              />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.REPORTS)}
+            element={withRole(
+              VIEW_IDS.REPORTS,
+              <Reports onAuthorizeReport={authorizeTechnicianReport} tickets={tickets} users={users} />,
+            )}
+          />
+          <Route
+            path={getRoutePatternForView(VIEW_IDS.USERS)}
+            element={withRole(
+              VIEW_IDS.USERS,
+              <Users
+                currentUser={currentUser}
+                onCreateUser={createUser}
+                onDeactivateUser={deactivateUser}
+                onResetPassword={resetPassword}
+                onUpdateUser={updateUser}
+                users={users}
+              />,
+            )}
+          />
+          <Route path="*" element={<Navigate replace to={getHomePath(currentUser)} />} />
+        </Route>
+      </Route>
+    </Routes>
+  );
+}
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <AppRoutesContent />
+    </BrowserRouter>
   );
 }

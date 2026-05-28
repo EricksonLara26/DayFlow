@@ -30,7 +30,7 @@ describe("permissions", () => {
       expect(canAccessView(tech, VIEW_IDS.REPORTS)).toBe(false);
     });
 
-    test("empleado accede solo a vistas basicas", () => {
+    test("usuario accede solo a vistas basicas", () => {
       expect(canAccessView(emp, VIEW_IDS.DASHBOARD)).toBe(true);
       expect(canAccessView(emp, VIEW_IDS.CREATE_TICKET)).toBe(true);
       expect(canAccessView(emp, VIEW_IDS.USERS)).toBe(false);
@@ -66,7 +66,7 @@ describe("permissions", () => {
       ]);
     });
 
-    test("empleado no muestra crear solicitud duplicado en la navegacion", () => {
+    test("usuario no muestra crear solicitud duplicado en la navegacion", () => {
       const items = getNavigationItems(emp);
 
       expect(items.map((item) => item.id)).toEqual([VIEW_IDS.DASHBOARD, VIEW_IDS.TICKETS]);
@@ -74,7 +74,7 @@ describe("permissions", () => {
   });
 
   describe("canCreateTicket", () => {
-    test("solo empleado crea solicitudes", () => {
+    test("solo usuario crea solicitudes", () => {
       expect(canCreateTicket(admin)).toBe(false);
       expect(canCreateTicket(tech)).toBe(false);
       expect(canCreateTicket(emp)).toBe(true);
@@ -95,13 +95,13 @@ describe("permissions", () => {
       expect(canEditUser(admin, emp)).toBe(true);
     });
 
-    test("tecnico edita solo empleados", () => {
+    test("tecnico edita solo usuarios", () => {
       expect(canEditUser(tech, emp)).toBe(true);
       expect(canEditUser(tech, tech)).toBe(false);
       expect(canEditUser(tech, admin)).toBe(false);
     });
 
-    test("empleado no edita usuarios", () => {
+    test("usuario no edita usuarios", () => {
       expect(canEditUser(emp, emp)).toBe(false);
     });
   });
@@ -124,7 +124,7 @@ describe("permissions", () => {
       expect(canResetUserPassword(admin, admin)).toBe(false);
     });
 
-    test("tecnico restablece solo empleados activos", () => {
+    test("tecnico restablece solo usuarios activos", () => {
       expect(canResetUserPassword(tech, emp)).toBe(true);
       expect(canResetUserPassword(tech, admin)).toBe(false);
       expect(canResetUserPassword(tech, inactiveEmp)).toBe(false);

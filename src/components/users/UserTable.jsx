@@ -217,12 +217,12 @@ export default function UserTable({
                         ) : null}
                         {canResetPassword ? (
                           <Button
-                            aria-label={`Restablecer contraseña de ${getUserFullName(user)}`}
+                            aria-label={`Asignar contraseña temporal de ${getUserFullName(user)}`}
                             className="user-icon-button user-reset-button"
                             icon={KeyRound}
-                            title="Restablecer contraseña"
+                            title="Asignar contraseña temporal"
                             variant="ghost"
-                            onClick={() => onResetPassword(user.id)}
+                            onClick={() => onResetPassword(user)}
                           />
                         ) : null}
                         {canDeactivate ? (

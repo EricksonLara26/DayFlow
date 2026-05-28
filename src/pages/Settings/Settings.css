@@ -9,10 +9,24 @@
   gap: 16px;
 }
 
+.settings-content-grid.password-required {
+  grid-template-columns: minmax(320px, 560px);
+}
+
 .settings-panel {
   display: grid;
   gap: 16px;
   min-height: 100%;
+}
+
+.password-required-alert {
+  padding: 10px 12px;
+  border: 1px solid #efd39a;
+  border-radius: 8px;
+  background: #fff7df;
+  color: var(--amber);
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .segmented-options {
@@ -84,6 +98,12 @@
   color: var(--green);
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.theme-dark .password-required-alert {
+  border-color: rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.16);
+  color: #fcd34d;
 }
 
 @media (max-width: 720px) {

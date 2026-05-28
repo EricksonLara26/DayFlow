@@ -99,6 +99,7 @@ describe("authService", () => {
         department: "IT",
         position: "Admin",
         active: true,
+        mustChangePassword: true,
       };
       const sanitized = sanitizeAuthenticatedUser(user);
 
@@ -107,6 +108,7 @@ describe("authService", () => {
       expect(sanitized.firstName).toBe("Test");
       expect(sanitized.lastName).toBe("User");
       expect(sanitized.position).toBe("Admin");
+      expect(sanitized.mustChangePassword).toBe(true);
       expect(sanitized).not.toHaveProperty("nombre");
       expect(sanitized).not.toHaveProperty("rol");
     });

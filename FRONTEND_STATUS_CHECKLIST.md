@@ -19,7 +19,7 @@ Fecha de revision: 2026-05-22
 ## Flujos demo que funcionan
 
 - Login por rol: funciona con usuarios mock y permisos por rol (`ADMINISTRADOR`, `TECNICO`, `EMPLEADO`). El login acepta usuario, correo o nombre completo, valida password y rechaza usuarios inactivos.
-- Empleado crea ticket: funciona. El empleado puede abrir "Crear solicitud", enviar titulo/descripcion/categoria/prioridad, crear un ticket abierto sin tecnico asignado y quedar en la pantalla de detalle.
+- Usuario crea ticket: funciona. El usuario puede abrir "Crear solicitud", enviar titulo/descripcion/categoria/prioridad, crear un ticket abierto sin tecnico asignado y quedar en la pantalla de detalle.
 - Tecnico toma ticket: funciona. Un tecnico puede tomar tickets abiertos sin asignar; el ticket queda asignado al tecnico, cambia a `IN_PROGRESS` y registra historial.
 - Tecnico cambia estado: funciona. Desde el detalle puede cambiar entre `IN_PROGRESS`, `ON_HOLD`, `COMPLETED` y `DISMISSED` segun permisos y asignacion.
 - Tecnico cierra ticket: funciona. `COMPLETED` y `DISMISSED` se tratan como estados terminales, asignan `completedAt` y bloquean acciones tecnicas posteriores.

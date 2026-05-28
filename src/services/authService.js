@@ -33,6 +33,7 @@ export function sanitizeAuthenticatedUser(user) {
     department: normalizedUser.department,
     position: normalizedUser.position,
     active: normalizedUser.active,
+    mustChangePassword: normalizedUser.mustChangePassword,
   };
 }
 
@@ -127,5 +128,5 @@ export async function changePassword(userId, currentPassword, newPassword) {
     return fail("La nueva contrasena debe tener al menos 4 caracteres.");
   }
 
-  return resetPassword(userId, cleanPassword);
+  return resetPassword(userId, cleanPassword, { mustChangePassword: false });
 }
