@@ -8,6 +8,7 @@ import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import TicketStatusBadge from "../../components/tickets/TicketStatusBadge";
 import { isTechnicianUser } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
+import { allowedValueError, getApiErrorMessage } from "../../utils/formValidation";
 import {
   calculateDashboardStats,
   getCompletedTickets,
@@ -130,7 +131,9 @@ export default function InformationPanel({
   const reportYears = getReportYears(tickets);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState(String(technicians[0]?.id ?? ""));
   const [selectedYear, setSelectedYear] = useState(String(reportYears[0] ?? new Date().getFullYear()));
+  const [fieldErrors, setFieldErrors] = useState({});
   const [reportError, setReportError] = useState("");
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const stats = calculateDashboardStats(tickets);
   const completedTickets = getCompletedTickets(tickets);
   const reportableTickets = getTicketsExcludingDismissed(tickets);
@@ -155,12 +158,66 @@ export default function InformationPanel({
     [selectedTechnician, selectedYear, tickets],
   );
 
-  function handleDownloadReport() {
+  function updateReportField(field, value) {
+    if (field === "technician") {
+      setSelectedTechnicianId(value);
+    }
+
+    if (field === "year") {
+      setSelectedYear(value);
+    }
+
+    setFieldErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors[field];
+      return nextErrors;
+    });
     setReportError("");
+  }
+
+  function validateReportControls() {
+    const nextErrors = {};
+    const technicianError = allowedValueError(
+      selectedTechnicianId,
+      technicians.map((technician) => String(technician.id)),
+      "El técnico",
+    );
+    const yearError = allowedValueError(
+      selectedYear,
+      reportYears.map((year) => String(year)),
+      "El año",
+    );
+
+    if (technicianError) {
+      nextErrors.technician = technicianError;
+    }
+
+    if (yearError) {
+      nextErrors.year = yearError;
+    }
+
+    return nextErrors;
+  }
+
+  function handleDownloadReport() {
+    if (isDownloadingReport) {
+      return;
+    }
+
+    setReportError("");
+    const nextErrors = validateReportControls();
+
+    if (Object.keys(nextErrors).length) {
+      setFieldErrors(nextErrors);
+      setReportError("Revisa los filtros del informe antes de descargar.");
+      return;
+    }
+
+    setFieldErrors({});
     const authorization = onAuthorizeReport({ technicianId: selectedTechnicianId, year: selectedYear });
 
     if (!authorization.ok) {
-      setReportError(authorization.message);
+      setReportError(getApiErrorMessage(authorization, "No tienes permisos para descargar este informe."));
       return;
     }
 
@@ -173,7 +230,15 @@ export default function InformationPanel({
     const filename = `informe_tecnico_${safeFilenameText(technicianName)}_${selectedYear}.xlsx`;
     const rows = buildReportRows({ reportTickets, selectedTechnician, selectedYear, users });
 
-    downloadXlsx(rows, filename, `Informe ${selectedYear}`);
+    setIsDownloadingReport(true);
+
+    try {
+      downloadXlsx(rows, filename, `Informe ${selectedYear}`);
+    } catch {
+      setReportError("No se pudo generar el informe.");
+    } finally {
+      setIsDownloadingReport(false);
+    }
   }
 
   return (
@@ -282,7 +347,7 @@ export default function InformationPanel({
               <p className="eyebrow">Descargar informe</p>
               <h2>Informe anual por técnico</h2>
             </div>
-            <Button icon={Download} onClick={handleDownloadReport}>
+            <Button icon={Download} loading={isDownloadingReport} onClick={handleDownloadReport}>
               Descargar Excel
             </Button>
           </div>
@@ -290,23 +355,33 @@ export default function InformationPanel({
           <div className="report-controls">
             <label className="field compact-field">
               <span>Técnico</span>
-              <select value={selectedTechnicianId} onChange={(event) => setSelectedTechnicianId(event.target.value)}>
+              <select
+                aria-invalid={Boolean(fieldErrors.technician)}
+                value={selectedTechnicianId}
+                onChange={(event) => updateReportField("technician", event.target.value)}
+              >
                 {technicians.map((technician) => (
                   <option key={technician.id} value={technician.id}>
                     {technician.firstName} {technician.lastName}
                   </option>
                 ))}
               </select>
+              {fieldErrors.technician ? <p className="field-error">{fieldErrors.technician}</p> : null}
             </label>
             <label className="field compact-field">
               <span>Año</span>
-              <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
+              <select
+                aria-invalid={Boolean(fieldErrors.year)}
+                value={selectedYear}
+                onChange={(event) => updateReportField("year", event.target.value)}
+              >
                 {reportYears.map((year) => (
                   <option key={year} value={year}>
                     Informe {year}
                   </option>
                 ))}
               </select>
+              {fieldErrors.year ? <p className="field-error">{fieldErrors.year}</p> : null}
             </label>
           </div>
 

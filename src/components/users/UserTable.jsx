@@ -9,8 +9,20 @@ import {
   canResetUserPassword,
 } from "../../config/permissions";
 import { ROLES, getRoleLabel, getUserFullName } from "../../data/users";
+import { getDepartmentNamesSnapshot } from "../../services/departmentService";
+import {
+  FORM_MIN_LENGTHS,
+  allowedValueError,
+  cleanField,
+  emailError,
+  getApiErrorMessage,
+  getApiFieldErrors,
+  minLengthError,
+  requiredError,
+} from "../../utils/formValidation";
 
 const editableRoles = [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE];
+const departmentNames = getDepartmentNamesSnapshot();
 
 function getEditForm(user) {
   return {
@@ -23,6 +35,55 @@ function getEditForm(user) {
   };
 }
 
+function validateEditForm(form, { canChangeRole }) {
+  const values = {
+    firstName: cleanField(form.firstName),
+    lastName: cleanField(form.lastName),
+    email: cleanField(form.email).toLowerCase(),
+    position: cleanField(form.position),
+    department: cleanField(form.department),
+    role: form.role,
+  };
+  const nextErrors = {};
+
+  [
+    ["firstName", values.firstName, "El nombre", FORM_MIN_LENGTHS.name],
+    ["lastName", values.lastName, "El apellido", FORM_MIN_LENGTHS.name],
+    ["position", values.position, "El cargo", FORM_MIN_LENGTHS.position],
+  ].forEach(([field, value, label, minLength]) => {
+    const required = requiredError(value, label);
+    const min = required ? "" : minLengthError(value, label, minLength);
+    const fieldError = required || min;
+
+    if (fieldError) {
+      nextErrors[field] = fieldError;
+    }
+  });
+
+  const emailValidation = emailError(values.email);
+
+  if (emailValidation) {
+    nextErrors.email = emailValidation;
+  }
+
+  const departmentRequired = requiredError(values.department, "El departamento");
+  const departmentValidation = departmentRequired || allowedValueError(values.department, departmentNames, "El departamento");
+
+  if (departmentValidation) {
+    nextErrors.department = departmentValidation;
+  }
+
+  if (canChangeRole) {
+    const roleValidation = allowedValueError(values.role, editableRoles, "El rol");
+
+    if (roleValidation) {
+      nextErrors.role = roleValidation;
+    }
+  }
+
+  return { errors: nextErrors, values };
+}
+
 export default function UserTable({
   currentUser,
   onDeactivateUser,
@@ -32,7 +93,9 @@ export default function UserTable({
 }) {
   const [editingUserId, setEditingUserId] = useState(null);
   const [editForm, setEditForm] = useState(getEditForm({}));
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
+  const [loadingAction, setLoadingAction] = useState("");
 
   if (!users.length) {
     return <EmptyState title="Sin usuarios" message="Los usuarios registrados se mostrarán aquí." />;
@@ -40,6 +103,12 @@ export default function UserTable({
 
   function updateField(field, value) {
     setEditForm((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+    setError("");
   }
 
   function startEditing(user) {
@@ -49,32 +118,64 @@ export default function UserTable({
 
     setEditingUserId(user.id);
     setEditForm(getEditForm(user));
+    setFieldErrors({});
     setError("");
   }
 
   function cancelEditing() {
     setEditingUserId(null);
     setEditForm(getEditForm({}));
+    setFieldErrors({});
     setError("");
+    setLoadingAction("");
   }
 
   function saveUser(user) {
-    Promise.resolve(onUpdateUser(user.id, editForm))
+    const canChangeRole = canChangeUserRole(currentUser) && currentUser.id !== user.id;
+    const { errors, values } = validateEditForm(editForm, { canChangeRole });
+
+    if (loadingAction) {
+      return;
+    }
+
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setError("Revisa los campos marcados antes de guardar.");
+      return;
+    }
+
+    setFieldErrors({});
+    setError("");
+    setLoadingAction(`save-${user.id}`);
+
+    Promise.resolve(onUpdateUser(user.id, values))
       .then((result) => {
         if (result?.ok === false) {
-          setError(result.message);
+          setFieldErrors(getApiFieldErrors(result));
+          setError(getApiErrorMessage(result, "No se pudo actualizar el usuario."));
           return;
         }
 
         cancelEditing();
       })
-      .catch(() => setError("No se pudo actualizar el usuario."));
+      .catch(() => setError("No se pudo actualizar el usuario."))
+      .finally(() => setLoadingAction(""));
   }
 
   function confirmDeactivate(user) {
-    if (window.confirm("Desea desactivar este usuario?")) {
-      Promise.resolve(onDeactivateUser(user.id)).catch(() => setError("No se pudo desactivar el usuario."));
+    if (!window.confirm(`¿Deseas desactivar al usuario ${getUserFullName(user)}? Esta acción limita su acceso.`)) {
+      return;
     }
+
+    setLoadingAction(`deactivate-${user.id}`);
+    Promise.resolve(onDeactivateUser(user.id))
+      .then((result) => {
+        if (result?.ok === false) {
+          setError(getApiErrorMessage(result, "No se pudo desactivar el usuario."));
+        }
+      })
+      .catch(() => setError("No se pudo desactivar el usuario."))
+      .finally(() => setLoadingAction(""));
   }
 
   return (
@@ -95,6 +196,9 @@ export default function UserTable({
         <tbody>
           {users.map((user) => {
             const isEditing = editingUserId === user.id;
+            const isSaving = loadingAction === `save-${user.id}`;
+            const isDeactivating = loadingAction === `deactivate-${user.id}`;
+            const isProcessing = Boolean(loadingAction);
             const canEdit = canEditUser(currentUser, user);
             const canChangeRole = canChangeUserRole(currentUser) && currentUser.id !== user.id;
             const canDeactivate = canDeactivateUser(currentUser, user);
@@ -107,15 +211,21 @@ export default function UserTable({
                   {isEditing ? (
                     <div className="user-edit-grid">
                       <input
+                        aria-invalid={Boolean(fieldErrors.firstName)}
                         aria-label={`Nombre de ${getUserFullName(user)}`}
+                        disabled={isSaving}
                         value={editForm.firstName}
                         onChange={(event) => updateField("firstName", event.target.value)}
                       />
+                      {fieldErrors.firstName ? <p className="table-row-error">{fieldErrors.firstName}</p> : null}
                       <input
+                        aria-invalid={Boolean(fieldErrors.lastName)}
                         aria-label={`Apellido de ${getUserFullName(user)}`}
+                        disabled={isSaving}
                         value={editForm.lastName}
                         onChange={(event) => updateField("lastName", event.target.value)}
                       />
+                      {fieldErrors.lastName ? <p className="table-row-error">{fieldErrors.lastName}</p> : null}
                     </div>
                   ) : (
                     <strong>{getUserFullName(user)}</strong>
@@ -124,55 +234,82 @@ export default function UserTable({
                 <td>{user.username}</td>
                 <td>
                   {isEditing ? (
-                    <input
-                      aria-label={`Correo de ${getUserFullName(user)}`}
-                      className="table-inline-input"
-                      type="email"
-                      value={editForm.email}
-                      onChange={(event) => updateField("email", event.target.value)}
-                    />
+                    <>
+                      <input
+                        aria-invalid={Boolean(fieldErrors.email)}
+                        aria-label={`Correo de ${getUserFullName(user)}`}
+                        className="table-inline-input"
+                        disabled={isSaving}
+                        type="email"
+                        value={editForm.email}
+                        onChange={(event) => updateField("email", event.target.value)}
+                      />
+                      {fieldErrors.email ? <p className="table-row-error">{fieldErrors.email}</p> : null}
+                    </>
                   ) : (
                     user.email
                   )}
                 </td>
                 <td>
                   {isEditing && canChangeRole ? (
-                    <select
-                      aria-label={`Rol de ${getUserFullName(user)}`}
-                      className="table-inline-input"
-                      value={editForm.role}
-                      onChange={(event) => updateField("role", event.target.value)}
-                    >
-                      {editableRoles.map((role) => (
-                        <option key={role} value={role}>
-                          {getRoleLabel(role)}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        aria-invalid={Boolean(fieldErrors.role)}
+                        aria-label={`Rol de ${getUserFullName(user)}`}
+                        className="table-inline-input"
+                        disabled={isSaving}
+                        value={editForm.role}
+                        onChange={(event) => updateField("role", event.target.value)}
+                      >
+                        {editableRoles.map((role) => (
+                          <option key={role} value={role}>
+                            {getRoleLabel(role)}
+                          </option>
+                        ))}
+                      </select>
+                      {fieldErrors.role ? <p className="table-row-error">{fieldErrors.role}</p> : null}
+                    </>
                   ) : (
                     getRoleLabel(user.role)
                   )}
                 </td>
                 <td>
                   {isEditing ? (
-                    <input
-                      aria-label={`Cargo de ${getUserFullName(user)}`}
-                      className="table-inline-input"
-                      value={editForm.position}
-                      onChange={(event) => updateField("position", event.target.value)}
-                    />
+                    <>
+                      <input
+                        aria-invalid={Boolean(fieldErrors.position)}
+                        aria-label={`Cargo de ${getUserFullName(user)}`}
+                        className="table-inline-input"
+                        disabled={isSaving}
+                        value={editForm.position}
+                        onChange={(event) => updateField("position", event.target.value)}
+                      />
+                      {fieldErrors.position ? <p className="table-row-error">{fieldErrors.position}</p> : null}
+                    </>
                   ) : (
                     user.position
                   )}
                 </td>
                 <td>
                   {isEditing ? (
-                    <input
-                      aria-label={`Departamento de ${getUserFullName(user)}`}
-                      className="table-inline-input"
-                      value={editForm.department}
-                      onChange={(event) => updateField("department", event.target.value)}
-                    />
+                    <>
+                      <select
+                        aria-invalid={Boolean(fieldErrors.department)}
+                        aria-label={`Departamento de ${getUserFullName(user)}`}
+                        className="table-inline-input"
+                        disabled={isSaving}
+                        value={editForm.department}
+                        onChange={(event) => updateField("department", event.target.value)}
+                      >
+                        <option value="">Selecciona un departamento</option>
+                        {departmentNames.map((department) => (
+                          <option key={department} value={department}>
+                            {department}
+                          </option>
+                        ))}
+                      </select>
+                      {fieldErrors.department ? <p className="table-row-error">{fieldErrors.department}</p> : null}
+                    </>
                   ) : (
                     user.department
                   )}
@@ -190,6 +327,8 @@ export default function UserTable({
                           aria-label={`Guardar usuario ${getUserFullName(user)}`}
                           className="user-icon-button user-save-button"
                           icon={Check}
+                          loading={isSaving}
+                          loadingText=""
                           title="Guardar usuario"
                           variant="ghost"
                           onClick={() => saveUser(user)}
@@ -197,6 +336,7 @@ export default function UserTable({
                         <Button
                           aria-label={`Cancelar edición de ${getUserFullName(user)}`}
                           className="user-icon-button user-cancel-button"
+                          disabled={isSaving}
                           icon={X}
                           title="Cancelar"
                           variant="ghost"
@@ -209,6 +349,7 @@ export default function UserTable({
                           <Button
                             aria-label={`Editar usuario ${getUserFullName(user)}`}
                             className="user-icon-button user-edit-button"
+                            disabled={isProcessing}
                             icon={Pencil}
                             title="Editar usuario"
                             variant="ghost"
@@ -219,6 +360,7 @@ export default function UserTable({
                           <Button
                             aria-label={`Asignar contraseña temporal de ${getUserFullName(user)}`}
                             className="user-icon-button user-reset-button"
+                            disabled={isProcessing}
                             icon={KeyRound}
                             title="Asignar contraseña temporal"
                             variant="ghost"
@@ -229,7 +371,10 @@ export default function UserTable({
                           <Button
                             aria-label={`Desactivar usuario ${getUserFullName(user)}`}
                             className="user-icon-button user-delete-button"
+                            disabled={isProcessing}
                             icon={UserX}
+                            loading={isDeactivating}
+                            loadingText=""
                             title="Desactivar usuario"
                             variant="ghost"
                             onClick={() => confirmDeactivate(user)}

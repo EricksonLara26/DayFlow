@@ -5,3 +5,23 @@
 .administrator-ticket-table {
   min-width: 1320px;
 }
+
+.employee-ticket-table {
+  min-width: 1240px;
+}
+
+.tickets-intro-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .tickets-intro-actions {
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-direction: column;
+  }
+}

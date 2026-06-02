@@ -11,7 +11,7 @@ export default function CreateTicket({ currentUser, onCreateTicket }) {
           <p className="eyebrow">Formulario</p>
           <h2>Nueva solicitud de soporte</h2>
         </div>
-        <span className="muted-note">El ticket nacerá abierto y sin técnico asignado.</span>
+        <span className="muted-note">El ticket nacerá abierto y verás su detalle como confirmación de envío.</span>
       </section>
       <TicketForm currentUser={currentUser} onSubmit={onCreateTicket} requesters={requesters} />
     </div>

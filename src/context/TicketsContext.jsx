@@ -16,7 +16,7 @@ import {
   getTicketsForView,
   getTicketsSnapshot,
 } from "../services/ticketService";
-import { parseDateKey } from "../utils/dateUtils";
+import { getTodayKey, parseDateKey } from "../utils/dateUtils";
 import { terminalTicketStatuses } from "../utils/ticketUtils";
 import { useAuth } from "../hooks/useAuth";
 import { useUsers } from "../hooks/useUsers";
@@ -27,15 +27,30 @@ export function TicketsProvider({ children }) {
   const { canCreateTicket, currentUser, isAdministrator, isTechnician } = useAuth();
   const { users } = useUsers();
   const [tickets, setTickets] = useState(() => getTicketsSnapshot());
+  const [ticketsError, setTicketsError] = useState("");
+  const [ticketsLoading, setTicketsLoading] = useState(false);
 
   const refreshTickets = useCallback(async () => {
-    const response = await fetchTickets();
+    setTicketsLoading(true);
+    setTicketsError("");
 
-    if (response.ok) {
-      setTickets(response.data);
+    try {
+      const response = await fetchTickets();
+
+      if (response.ok) {
+        setTickets(response.data);
+      } else {
+        setTicketsError(response.message ?? "No se pudieron cargar las solicitudes.");
+      }
+
+      return response;
+    } catch {
+      const response = { ok: false, message: "No se pudieron cargar las solicitudes." };
+      setTicketsError(response.message);
+      return response;
+    } finally {
+      setTicketsLoading(false);
     }
-
-    return response;
   }, []);
 
   const dashboardTickets = useMemo(
@@ -201,10 +216,14 @@ export function TicketsProvider({ children }) {
       }
 
       const requester = form.requester ?? currentUser;
-      const dueDate = form.dueDate?.trim();
+      const dueDate = form.dueDate?.trim() ?? "";
 
-      if (!parseDateKey(dueDate)) {
+      if (dueDate && !parseDateKey(dueDate)) {
         return { ok: false, message: "Selecciona una fecha l\u00edmite v\u00e1lida." };
+      }
+
+      if (dueDate && dueDate < getTodayKey()) {
+        return { ok: false, message: "La fecha límite no puede ser anterior a hoy." };
       }
 
       const result = await createTicketRequest({
@@ -243,6 +262,8 @@ export function TicketsProvider({ children }) {
       takeTicket,
       technicianRanking,
       tickets,
+      ticketsError,
+      ticketsLoading,
     }),
     [
       addComment,
@@ -262,6 +283,8 @@ export function TicketsProvider({ children }) {
       takeTicket,
       technicianRanking,
       tickets,
+      ticketsError,
+      ticketsLoading,
     ],
   );
 

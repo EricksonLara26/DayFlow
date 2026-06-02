@@ -7,6 +7,15 @@ import UserForm from "../../components/users/UserForm";
 import UserTable from "../../components/users/UserTable";
 import { canCreateUser } from "../../config/permissions";
 import { ROLES, getRoleLabel, getUserFullName } from "../../data/users";
+import {
+  FORM_MIN_LENGTHS,
+  cleanField,
+  confirmationError,
+  getApiErrorMessage,
+  getApiFieldErrors,
+  minLengthError,
+  requiredError,
+} from "../../utils/formValidation";
 import "./Users.css";
 
 export default function Users({
@@ -27,6 +36,7 @@ export default function Users({
     temporaryPassword: "",
     confirmPassword: "",
   });
+  const [resetFieldErrors, setResetFieldErrors] = useState({});
   const [resetError, setResetError] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const canOpenUserForm = canCreateUser(currentUser);
@@ -76,6 +86,7 @@ export default function Users({
       confirmPassword: "",
     });
     setResetError("");
+    setResetFieldErrors({});
     setMessage("");
   }
 
@@ -86,41 +97,89 @@ export default function Users({
       confirmPassword: "",
     });
     setResetError("");
+    setResetFieldErrors({});
     setIsResettingPassword(false);
   }
 
   function updateResetField(field, value) {
     setResetForm((current) => ({ ...current, [field]: value }));
+    setResetFieldErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+    setResetError("");
+  }
+
+  function validatePasswordReset() {
+    const temporaryPassword = cleanField(resetForm.temporaryPassword);
+    const confirmPassword = cleanField(resetForm.confirmPassword);
+    const nextErrors = {};
+    const temporaryRequired = requiredError(temporaryPassword, "La contraseña temporal", { feminine: true });
+    const confirmRequired = requiredError(confirmPassword, "La confirmación", { feminine: true });
+
+    if (temporaryRequired) {
+      nextErrors.temporaryPassword = temporaryRequired;
+    } else {
+      const min = minLengthError(temporaryPassword, "La contraseña temporal", FORM_MIN_LENGTHS.password);
+
+      if (min) {
+        nextErrors.temporaryPassword = min;
+      }
+    }
+
+    if (confirmRequired) {
+      nextErrors.confirmPassword = confirmRequired;
+    } else if (!nextErrors.temporaryPassword) {
+      const confirmation = confirmationError(temporaryPassword, confirmPassword);
+
+      if (confirmation) {
+        nextErrors.confirmPassword = confirmation;
+      }
+    }
+
+    return {
+      errors: nextErrors,
+      values: {
+        confirmPassword,
+        temporaryPassword,
+      },
+    };
   }
 
   async function handlePasswordResetSubmit(event) {
     event.preventDefault();
 
+    if (isResettingPassword) {
+      return { ok: false };
+    }
+
     if (!resetTargetUser) {
       return { ok: false };
     }
 
-    const temporaryPassword = resetForm.temporaryPassword.trim();
-    const confirmPassword = resetForm.confirmPassword.trim();
+    const { errors, values } = validatePasswordReset();
 
-    if (temporaryPassword.length < 4) {
-      setResetError("La contraseña temporal debe tener al menos 4 caracteres.");
+    if (Object.keys(errors).length) {
+      setResetFieldErrors(errors);
+      setResetError("Revisa los campos marcados antes de guardar.");
       return { ok: false };
     }
 
-    if (temporaryPassword !== confirmPassword) {
-      setResetError("La confirmación no coincide.");
+    if (!window.confirm(`¿Asignar una contraseña temporal a ${getUserFullName(resetTargetUser)}?`)) {
       return { ok: false };
     }
 
     setResetError("");
+    setResetFieldErrors({});
     setIsResettingPassword(true);
 
     try {
-      const result = await onResetPassword(resetTargetUser.id, temporaryPassword);
+      const result = await onResetPassword(resetTargetUser.id, values.temporaryPassword);
 
       if (result?.ok === false) {
-        setResetError(result.message);
+        setResetFieldErrors(getApiFieldErrors(result));
+        setResetError(getApiErrorMessage(result, "No se pudo asignar la contraseña temporal."));
         return result;
       }
 
@@ -180,7 +239,7 @@ export default function Users({
       {resetTargetUser ? (
         <div className="user-form-overlay" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
           <div className="user-form-modal password-reset-modal">
-            <form className="form-panel user-form password-reset-form" onSubmit={handlePasswordResetSubmit}>
+            <form className="form-panel user-form password-reset-form" noValidate onSubmit={handlePasswordResetSubmit}>
               <div className="section-heading">
                 <div>
                   <p className="eyebrow">Seguridad</p>
@@ -195,21 +254,29 @@ export default function Users({
               <label className="field">
                 <span>Contraseña temporal</span>
                 <input
+                  aria-invalid={Boolean(resetFieldErrors.temporaryPassword)}
                   autoFocus
                   disabled={isResettingPassword}
                   type="password"
                   value={resetForm.temporaryPassword}
                   onChange={(event) => updateResetField("temporaryPassword", event.target.value)}
                 />
+                {resetFieldErrors.temporaryPassword ? (
+                  <p className="field-error">{resetFieldErrors.temporaryPassword}</p>
+                ) : null}
               </label>
               <label className="field">
                 <span>Confirmar contraseña temporal</span>
                 <input
+                  aria-invalid={Boolean(resetFieldErrors.confirmPassword)}
                   disabled={isResettingPassword}
                   type="password"
                   value={resetForm.confirmPassword}
                   onChange={(event) => updateResetField("confirmPassword", event.target.value)}
                 />
+                {resetFieldErrors.confirmPassword ? (
+                  <p className="field-error">{resetFieldErrors.confirmPassword}</p>
+                ) : null}
               </label>
               {resetError ? <p className="form-error">{resetError}</p> : null}
               <div className="form-actions">

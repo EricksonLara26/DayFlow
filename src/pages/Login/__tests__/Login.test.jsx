@@ -50,7 +50,9 @@ describe("Login", () => {
     fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
 
     expect(mockOnLogin).not.toHaveBeenCalled();
-    expect(screen.getByText(/completa usuario/i)).toBeInTheDocument();
+    expect(screen.getByText(/usuario.*obligatorio/i)).toBeInTheDocument();
+    expect(screen.getByText(/contrase.*obligatoria/i)).toBeInTheDocument();
+    expect(screen.getByText(/revisa los campos/i)).toBeInTheDocument();
   });
 
   test("muestra error devuelto por onLogin", async () => {
@@ -58,7 +60,7 @@ describe("Login", () => {
     render(<Login message="" onLogin={mockOnLogin} />);
 
     fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "admin" } });
-    fireEvent.change(screen.getByPlaceholderText(/contraseña/i), { target: { value: "bad" } });
+    fireEvent.change(screen.getByPlaceholderText(/contraseña/i), { target: { value: "badpass" } });
     fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
 
     await act(async () => {

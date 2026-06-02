@@ -18,6 +18,7 @@ import {
   getTicketTakenAt,
 } from "../../utils/ticketUtils";
 import { downloadXlsx } from "../../utils/xlsxExporter";
+import { allowedValueError, getApiErrorMessage } from "../../utils/formValidation";
 import "../InformationPanel/InformationPanel.css";
 
 function safeFilenameText(value) {
@@ -85,9 +86,52 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
   const reportYears = getReportYearsSnapshot(tickets);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState(String(technicians[0]?.id ?? ""));
   const [selectedYear, setSelectedYear] = useState(String(reportYears[0] ?? new Date().getFullYear()));
+  const [fieldErrors, setFieldErrors] = useState({});
   const [reportError, setReportError] = useState("");
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [reportTickets, setReportTickets] = useState([]);
   const selectedTechnician = technicians.find((technician) => String(technician.id) === selectedTechnicianId);
+
+  function updateReportField(field, value) {
+    if (field === "technician") {
+      setSelectedTechnicianId(value);
+    }
+
+    if (field === "year") {
+      setSelectedYear(value);
+    }
+
+    setFieldErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+    setReportError("");
+  }
+
+  function validateReportControls() {
+    const nextErrors = {};
+    const technicianError = allowedValueError(
+      selectedTechnicianId,
+      technicians.map((technician) => String(technician.id)),
+      "El técnico",
+    );
+    const yearError = allowedValueError(
+      selectedYear,
+      reportYears.map((year) => String(year)),
+      "El año",
+    );
+
+    if (technicianError) {
+      nextErrors.technician = technicianError;
+    }
+
+    if (yearError) {
+      nextErrors.year = yearError;
+    }
+
+    return nextErrors;
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -109,11 +153,24 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
   }, [selectedTechnicianId, selectedYear, tickets, users]);
 
   async function handleDownloadReport() {
+    if (isDownloadingReport) {
+      return;
+    }
+
     setReportError("");
+    const nextErrors = validateReportControls();
+
+    if (Object.keys(nextErrors).length) {
+      setFieldErrors(nextErrors);
+      setReportError("Revisa los filtros del informe antes de descargar.");
+      return;
+    }
+
+    setFieldErrors({});
     const authorization = onAuthorizeReport({ technicianId: selectedTechnicianId, year: selectedYear });
 
     if (!authorization.ok) {
-      setReportError(authorization.message);
+      setReportError(getApiErrorMessage(authorization, "No tienes permisos para descargar este informe."));
       return;
     }
 
@@ -122,15 +179,23 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
       return;
     }
 
-    const exportResult = await exportCompletedTickets("xlsx", {
-      technicianId: selectedTechnicianId,
-      tickets,
-      users,
-      year: selectedYear,
-    });
+    setIsDownloadingReport(true);
 
-    if (!exportResult.ok) {
-      setReportError(exportResult.message);
+    try {
+      const exportResult = await exportCompletedTickets("xlsx", {
+        technicianId: selectedTechnicianId,
+        tickets,
+        users,
+        year: selectedYear,
+      });
+
+      if (!exportResult.ok) {
+        setReportError(getApiErrorMessage(exportResult, "No se pudo generar el informe."));
+      }
+    } catch {
+      setReportError("No se pudo generar el informe.");
+    } finally {
+      setIsDownloadingReport(false);
     }
   }
 
@@ -150,7 +215,7 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
             <p className="eyebrow">Descargar informe</p>
             <h2>Informe anual por técnico</h2>
           </div>
-          <Button icon={Download} onClick={handleDownloadReport}>
+          <Button icon={Download} loading={isDownloadingReport} onClick={handleDownloadReport}>
             Descargar Excel
           </Button>
         </div>
@@ -158,23 +223,33 @@ export default function Reports({ onAuthorizeReport, tickets, users }) {
         <div className="report-controls">
           <label className="field compact-field">
             <span>Técnico</span>
-            <select value={selectedTechnicianId} onChange={(event) => setSelectedTechnicianId(event.target.value)}>
+            <select
+              aria-invalid={Boolean(fieldErrors.technician)}
+              value={selectedTechnicianId}
+              onChange={(event) => updateReportField("technician", event.target.value)}
+            >
               {technicians.map((technician) => (
                 <option key={technician.id} value={technician.id}>
                   {technician.firstName} {technician.lastName}
                 </option>
               ))}
             </select>
+            {fieldErrors.technician ? <p className="field-error">{fieldErrors.technician}</p> : null}
           </label>
           <label className="field compact-field">
             <span>Año</span>
-            <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
+            <select
+              aria-invalid={Boolean(fieldErrors.year)}
+              value={selectedYear}
+              onChange={(event) => updateReportField("year", event.target.value)}
+            >
               {reportYears.map((year) => (
                 <option key={year} value={year}>
                   Informe {year}
                 </option>
               ))}
             </select>
+            {fieldErrors.year ? <p className="field-error">{fieldErrors.year}</p> : null}
           </label>
         </div>
 

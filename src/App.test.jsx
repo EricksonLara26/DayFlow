@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
 import { initialUsers } from "./mocks";
 import { sanitizeAuthenticatedUser } from "./services/authService";
+import { TICKET_PRIORITIES } from "./data/tickets";
 
 jest.mock("./utils/xlsxExporter", () => ({
   downloadXlsx: jest.fn(),
@@ -24,10 +25,22 @@ async function flushAsync() {
   });
 }
 
+function fillEmployeeTicketForm() {
+  fireEvent.change(screen.getByLabelText(/t.*tulo/i), { target: { value: "Ticket con fecha" } });
+  fireEvent.change(screen.getByPlaceholderText(/describe el problema/i), {
+    target: { value: "Validar fecha limite opcional con datos completos" },
+  });
+  fireEvent.change(screen.getByLabelText(/categor/i), { target: { value: "Hardware" } });
+  fireEvent.change(screen.getByLabelText(/prioridad/i), { target: { value: TICKET_PRIORITIES.HIGH } });
+  fireEvent.click(screen.getByLabelText(/agregar fecha/i));
+  fireEvent.change(screen.getByLabelText(/^fecha/i), { target: { value: "2026-06-01" } });
+}
+
 describe("App critical flows", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-05-23T12:00:00.000Z"));
+    jest.spyOn(window, "confirm").mockReturnValue(true);
     window.localStorage.clear();
     window.history.pushState({}, "", "/");
   });
@@ -35,6 +48,7 @@ describe("App critical flows", () => {
   afterEach(() => {
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
+    jest.restoreAllMocks();
     window.localStorage.clear();
     window.history.pushState({}, "", "/");
   });
@@ -52,8 +66,8 @@ describe("App critical flows", () => {
     expect(window.location.pathname).toBe("/dashboard");
   });
 
-  test("crear ticket incluye dueDate y abre detalle con ID real", async () => {
-    render(<App />);
+  test("crear ticket incluye datos completos y se mantiene al refrescar detalle", async () => {
+    const { unmount } = render(<App />);
 
     fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "usuario" } });
     fireEvent.change(screen.getByPlaceholderText(/contrase/i), { target: { value: "1234" } });
@@ -64,19 +78,81 @@ describe("App critical flows", () => {
     fireEvent.click(screen.getByRole("button", { name: /crear solicitud/i }));
     expect(window.location.pathname).toBe("/tickets/new");
 
-    fireEvent.change(screen.getByLabelText(/t.*tulo/i), { target: { value: "Ticket con fecha" } });
-    fireEvent.change(screen.getByPlaceholderText(/describe el problema/i), {
-      target: { value: "Validar fecha limite obligatoria" },
-    });
-    fireEvent.change(screen.getByLabelText(/fecha/i), { target: { value: "2026-06-01" } });
-    fireEvent.click(screen.getByRole("button", { name: /guardar solicitud/i }));
+    fillEmployeeTicketForm();
+    fireEvent.click(screen.getByRole("button", { name: /enviar solicitud/i }));
 
     await flushLoading();
 
     expect(window.location.pathname).toMatch(/^\/tickets\/\d+$/);
+    const detailPath = window.location.pathname;
+
     expect(screen.getByText("Ticket con fecha")).toBeInTheDocument();
+    expect(screen.getByText(/ticket creado correctamente/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hardware/i)).toBeInTheDocument();
+    expect(screen.getByText(/Administracion/i)).toBeInTheDocument();
     expect(screen.getAllByText(/fecha/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/sin fecha/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/acciones t/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /tomar ticket/i })).not.toBeInTheDocument();
+
+    unmount();
+    render(<App />);
+
+    expect(window.location.pathname).toBe(detailPath);
+    expect(screen.getByText("Ticket con fecha")).toBeInTheDocument();
+    expect(screen.getByText(/Hardware/i)).toBeInTheDocument();
+  });
+
+  test("empleado no ve funciones administrativas ni tecnicas", async () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "usuario" } });
+    fireEvent.change(screen.getByPlaceholderText(/contrase/i), { target: { value: "1234" } });
+    fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
+
+    await flushLoading();
+
+    expect(screen.getByRole("button", { name: /crear solicitud/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /gesti.*usuarios/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /panel de informaci/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/exportaci/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /tomar ticket/i })).not.toBeInTheDocument();
+  });
+
+  test("empleado ve error en filtros con rango de fechas invalido", async () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "usuario" } });
+    fireEvent.change(screen.getByPlaceholderText(/contrase/i), { target: { value: "1234" } });
+    fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
+
+    await flushLoading();
+
+    fireEvent.click(screen.getByRole("button", { name: /^mis solicitudes$/i }));
+    fireEvent.change(screen.getByLabelText(/^desde$/i), { target: { value: "2026-06-02" } });
+    fireEvent.change(screen.getByLabelText(/^hasta$/i), { target: { value: "2026-06-01" } });
+
+    expect(screen.getByText(/fecha desde no puede/i)).toBeInTheDocument();
+    expect(screen.getByText(/fecha hasta no puede/i)).toBeInTheDocument();
+  });
+
+  test("crear usuario incompleto muestra validaciones por campo", async () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "administrador" } });
+    fireEvent.change(screen.getByPlaceholderText(/contrase/i), { target: { value: "1234" } });
+    fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
+
+    await flushLoading();
+
+    fireEvent.click(screen.getByRole("button", { name: /gesti.*usuarios/i }));
+    fireEvent.click(screen.getByRole("button", { name: /agregar usuario/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^crear usuario$/i }));
+
+    expect(screen.getByText(/el nombre es obligatorio/i)).toBeInTheDocument();
+    expect(screen.getByText(/el correo es obligatorio/i)).toBeInTheDocument();
+    expect(screen.getByText(/la contrase.*obligatoria/i)).toBeInTheDocument();
+    expect(screen.getByText(/el departamento es obligatorio/i)).toBeInTheDocument();
   });
 
   test("cambio de contrasena bloquea contrasena actual incorrecta", async () => {

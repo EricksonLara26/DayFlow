@@ -1,4 +1,6 @@
 import {
+  createTicket,
+  getTicketSnapshotById,
   getDashboardTicketsForUser,
   getTicketScopeForView,
   getTicketsForView,
@@ -100,6 +102,60 @@ describe("ticketService", () => {
 
     test("usuario obtiene scope employee", () => {
       expect(getTicketScopeForView(empUser, VIEW_IDS.TICKETS)).toBe("employee");
+    });
+  });
+
+  describe("createTicket", () => {
+    beforeEach(() => {
+      window.localStorage.clear();
+    });
+
+    afterEach(() => {
+      window.localStorage.clear();
+    });
+
+    test("crea solicitud con departamento, fecha opcional y persistencia local", async () => {
+      const requester = {
+        id: 3,
+        firstName: "Empleado",
+        lastName: "Demo",
+        role: ROLES.EMPLOYEE,
+        department: "Operaciones",
+      };
+
+      const result = await createTicket({
+        title: "Solicitud frontend",
+        description: "Detalle de solicitud antes de backend",
+        category: "Hardware",
+        priority: "HIGH",
+        department: "Operaciones",
+        dueDate: "",
+        requester,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          category: "Hardware",
+          department: "Operaciones",
+          dueDate: "",
+          priority: "HIGH",
+          title: "Solicitud frontend",
+        }),
+      );
+
+      expect(getTicketSnapshotById(result.data.id)).toEqual(
+        expect.objectContaining({
+          department: "Operaciones",
+          title: "Solicitud frontend",
+        }),
+      );
+      expect(JSON.parse(window.localStorage.getItem("dayflow-tickets"))[0]).toEqual(
+        expect.objectContaining({
+          id: result.data.id,
+          title: "Solicitud frontend",
+        }),
+      );
     });
   });
 });

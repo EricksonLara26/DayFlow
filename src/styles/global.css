@@ -607,6 +607,32 @@ h3 {
   font-weight: 900;
 }
 
+.field-error,
+.field-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.field-error {
+  color: var(--red);
+  font-weight: 900;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.inline-text-button {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 900;
+}
+
 .field input,
 .field select,
 .field textarea,
@@ -635,6 +661,10 @@ h3 {
 .field input:focus,
 .field select:focus,
 .field textarea:focus,
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"],
+.input-icon.field-invalid,
 .search-input:focus-within,
 .input-icon:focus-within {
   border-color: #9bbcf5;
@@ -674,6 +704,10 @@ h3 {
   width: 17px;
   height: 17px;
   accent-color: var(--blue);
+}
+
+.due-date-checkbox {
+  align-content: center;
 }
 
 .form-grid {
@@ -1191,6 +1225,12 @@ h3 {
   line-height: 1.5;
 }
 
+.empty-state-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
 .detail-hero {
   display: flex;
   align-items: flex-start;
@@ -1257,6 +1297,20 @@ h3 {
   overflow-wrap: anywhere;
   color: var(--text);
   font-weight: 800;
+}
+
+.detail-grid-single {
+  grid-template-columns: 1fr;
+}
+
+.detail-flash {
+  margin: 0;
+}
+
+.evidence-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .action-stack,

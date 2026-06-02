@@ -118,6 +118,10 @@ export function getTicketResolutionTime(ticket) {
 }
 
 export function getTicketDepartment(ticket, users) {
+  if (ticket.department?.trim()) {
+    return ticket.department.trim();
+  }
+
   const requester = users.find((user) => user.id === ticket.createdBy);
   return requester?.department?.trim() || "Sin departamento";
 }
@@ -210,7 +214,18 @@ export function filterTickets(tickets, filters) {
     const createdDate = ticket.createdAt.slice(0, 10);
     const matchesDateFrom = !filters.createdFrom || createdDate >= filters.createdFrom;
     const matchesDateTo = !filters.createdTo || createdDate <= filters.createdTo;
-    const searchableText = `${ticket.title} ${ticket.createdByName} ${ticket.assignedToName ?? ""}`.toLowerCase();
+    const searchableText = [
+      ticket.id,
+      ticket.title,
+      ticket.description,
+      ticket.category,
+      ticket.department,
+      ticket.createdByName,
+      ticket.assignedToName,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
     const matchesQuery = !query || searchableText.includes(query);
 
     return (

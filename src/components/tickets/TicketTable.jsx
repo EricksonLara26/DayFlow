@@ -6,22 +6,45 @@ import TicketCard from "./TicketCard";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
 
-export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTicket, onTakeTicket, tickets, users = [] }) {
+function getTableClassName(mode) {
+  if (mode === "administrator") {
+    return "data-table administrator-ticket-table";
+  }
+
+  if (mode === "employee") {
+    return "data-table employee-ticket-table";
+  }
+
+  return "data-table";
+}
+
+export default function TicketTable({
+  canTakeTicket = () => false,
+  emptyState,
+  mode = "standard",
+  onOpenTicket,
+  onTakeTicket,
+  tickets,
+  users = [],
+}) {
   if (!tickets.length) {
     return (
       <EmptyState
-        title="No hay solicitudes con esos filtros"
-        message="Ajusta la búsqueda o crea una nueva solicitud de soporte."
-      />
+        title={emptyState?.title ?? "No hay solicitudes con esos filtros"}
+        message={emptyState?.message ?? "Ajusta la búsqueda o crea una nueva solicitud de soporte."}
+      >
+        {emptyState?.action}
+      </EmptyState>
     );
   }
 
   const isAdministratorMode = mode === "administrator";
+  const isEmployeeMode = mode === "employee";
 
   return (
     <>
       <div className="table-wrap ticket-table-wrap">
-        <table className={`data-table ${isAdministratorMode ? "administrator-ticket-table" : ""}`.trim()}>
+        <table className={getTableClassName(mode)}>
           {isAdministratorMode ? (
             <thead>
               <tr>
@@ -35,6 +58,21 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
                 <th>Fecha de creación</th>
                 <th>Fecha tomada</th>
                 <th>Fecha finalización</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+          ) : isEmployeeMode ? (
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Categoría</th>
+                <th>Técnico asignado</th>
+                <th>Creación</th>
+                <th>Fecha límite</th>
+                <th>Última actualización</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -75,6 +113,36 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
                     <td>{formatDateTime(ticket.createdAt)}</td>
                     <td>{takenAt ? formatDateTime(takenAt) : "Sin tomar"}</td>
                     <td>{ticket.closedAt ? formatDateTime(ticket.closedAt) : "Pendiente"}</td>
+                    <td>
+                      <Button variant="ghost" onClick={() => onOpenTicket(ticket.id)}>
+                        Ver detalle
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              }
+
+              if (isEmployeeMode) {
+                return (
+                  <tr key={ticket.id}>
+                    <td>#{ticket.id}</td>
+                    <td>
+                      <button className="table-title-button" type="button" onClick={() => onOpenTicket(ticket.id)}>
+                        <strong>{ticket.title}</strong>
+                        <span>{ticket.description}</span>
+                      </button>
+                    </td>
+                    <td>
+                      <TicketStatusBadge status={ticket.status} />
+                    </td>
+                    <td>
+                      <TicketPriorityBadge priority={ticket.priority} />
+                    </td>
+                    <td>{ticket.category}</td>
+                    <td>{ticket.assignedToName ?? "Sin asignar"}</td>
+                    <td>{formatDateTime(ticket.createdAt)}</td>
+                    <td>{formatDate(ticket.dueDate)}</td>
+                    <td>{formatDateTime(ticket.updatedAt)}</td>
                     <td>
                       <Button variant="ghost" onClick={() => onOpenTicket(ticket.id)}>
                         Ver detalle
@@ -125,6 +193,7 @@ export default function TicketTable({ canTakeTicket, mode = "standard", onOpenTi
           <TicketCard
             canTakeTicket={canTakeTicket}
             key={ticket.id}
+            mode={mode}
             onOpen={onOpenTicket}
             onTakeTicket={onTakeTicket}
             ticket={ticket}

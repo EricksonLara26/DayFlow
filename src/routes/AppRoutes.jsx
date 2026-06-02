@@ -67,8 +67,11 @@ function TemporaryPasswordGate({ activeView, children, currentUser }) {
 
 function TicketsView({
   canTakeTicket,
+  error,
   getScopeForView,
   getVisibleTicketsForView,
+  isLoading,
+  onCreateTicket,
   onOpenTicket,
   onTakeTicket,
   users,
@@ -77,6 +80,9 @@ function TicketsView({
   return (
     <Tickets
       canTakeTicket={canTakeTicket}
+      error={error}
+      isLoading={isLoading}
+      onCreateTicket={onCreateTicket}
       onOpenTicket={onOpenTicket}
       onTakeTicket={onTakeTicket}
       scope={getScopeForView(view)}
@@ -97,8 +103,10 @@ function TicketDetailRoute({
   onChangeStatus,
   onGoHome,
   onTakeTicket,
+  users,
 }) {
   const { id } = useParams();
+  const location = useLocation();
   const ticket = getTicketById(id);
 
   if (ticket && !canViewTicket(ticket)) {
@@ -114,7 +122,9 @@ function TicketDetailRoute({
       onBack={onBack}
       onChangeStatus={onChangeStatus}
       onTakeTicket={onTakeTicket}
+      flashMessage={location.state?.ticketMessage}
       ticket={ticket}
+      users={users}
     />
   );
 }
@@ -150,6 +160,8 @@ function AppRoutesContent() {
     takeTicket,
     technicianRanking,
     tickets,
+    ticketsError,
+    ticketsLoading,
   } = useTickets();
   const {
     authorizeTechnicianReport,
@@ -214,7 +226,9 @@ function AppRoutesContent() {
       return result;
     }
 
-    navigate(getPathForView(VIEW_IDS.TICKET_DETAIL, { ticketId: result.data.id }));
+    navigate(getPathForView(VIEW_IDS.TICKET_DETAIL, { ticketId: result.data.id }), {
+      state: { ticketMessage: result.message ?? "Solicitud enviada correctamente." },
+    });
 
     return { ok: true };
   }
@@ -285,8 +299,11 @@ function AppRoutesContent() {
               VIEW_IDS.TICKETS,
               <TicketsView
                 canTakeTicket={canTakeTicket}
+                error={ticketsError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
+                isLoading={ticketsLoading}
+                onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
                 onTakeTicket={takeTicket}
                 users={users}
@@ -307,8 +324,11 @@ function AppRoutesContent() {
               VIEW_IDS.AVAILABLE_TICKETS,
               <TicketsView
                 canTakeTicket={canTakeTicket}
+                error={ticketsError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
+                isLoading={ticketsLoading}
+                onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
                 onTakeTicket={takeTicket}
                 users={users}
@@ -322,8 +342,11 @@ function AppRoutesContent() {
               VIEW_IDS.MY_TICKETS,
               <TicketsView
                 canTakeTicket={canTakeTicket}
+                error={ticketsError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
+                isLoading={ticketsLoading}
+                onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
                 onTakeTicket={takeTicket}
                 users={users}
@@ -337,8 +360,11 @@ function AppRoutesContent() {
               VIEW_IDS.HISTORY,
               <TicketsView
                 canTakeTicket={canTakeTicket}
+                error={ticketsError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
+                isLoading={ticketsLoading}
+                onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
                 onTakeTicket={takeTicket}
                 users={users}
@@ -361,6 +387,7 @@ function AppRoutesContent() {
                 onChangeStatus={changeTicketStatus}
                 onGoHome={goHome}
                 onTakeTicket={takeTicket}
+                users={users}
               />,
             )}
           />
