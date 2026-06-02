@@ -11,6 +11,10 @@ export function getTodayKey() {
   return dateToKey(new Date());
 }
 
+export function getCurrentYear() {
+  return new Date().getFullYear();
+}
+
 export function parseDateKey(dateKey) {
   if (!dateKey) {
     return null;
@@ -122,6 +126,26 @@ export function formatDateTime(dateValue) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function getYearsFromDateValues(dateValues, fallbackYear = getCurrentYear()) {
+  const years = new Set(
+    dateValues
+      .filter(Boolean)
+      .map((dateValue) => new Date(dateValue).getFullYear())
+      .filter((year) => !Number.isNaN(year)),
+  );
+
+  years.add(fallbackYear);
+
+  return [...years].sort((first, second) => second - first);
+}
+
+export function getYearsFromDateField(items, dateField, fallbackYear = getCurrentYear()) {
+  return getYearsFromDateValues(
+    items.map((item) => item?.[dateField]),
+    fallbackYear,
+  );
 }
 
 export function getDaysUntil(dateKey) {
