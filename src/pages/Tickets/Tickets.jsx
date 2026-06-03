@@ -63,21 +63,19 @@ export default function Tickets({
   const createButton =
     isEmployeeScope && onCreateTicket ? (
       <Button icon={PlusCircle} onClick={onCreateTicket}>
-        Nueva solicitud
+        Crear solicitud
       </Button>
     ) : null;
   const emptyState = tickets.length
     ? {
         title: "No hay resultados con esos filtros",
         message: "Ajusta la búsqueda o cambia los filtros para ver otras solicitudes.",
-        action: createButton,
       }
     : {
         title: isEmployeeScope ? "Todavía no tienes solicitudes" : "No hay solicitudes disponibles",
         message: isEmployeeScope
           ? "Cuando crees una solicitud aparecerá aquí con su estado, prioridad y técnico asignado."
           : "Cuando existan tickets para esta vista aparecerán en esta lista.",
-        action: createButton,
       };
 
   if (isLoading) {

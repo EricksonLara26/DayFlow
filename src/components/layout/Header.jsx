@@ -64,6 +64,7 @@ const viewTitles = {
 
 export default function Header({ activeView, canCreateTicket, currentUser, onCreateTicket }) {
   const title = viewTitles[activeView] ?? viewTitles.dashboard;
+  const showCreateTicketButton = canCreateTicket && ![VIEW_IDS.CREATE_TICKET, VIEW_IDS.TICKETS].includes(activeView);
 
   return (
     <header className="top-header">
@@ -76,7 +77,7 @@ export default function Header({ activeView, canCreateTicket, currentUser, onCre
           <CalendarClock size={16} aria-hidden="true" />
           {getRoleLabel(currentUser.role)}
         </span>
-        {canCreateTicket && activeView !== VIEW_IDS.CREATE_TICKET ? (
+        {showCreateTicketButton ? (
           <Button icon={PlusCircle} onClick={onCreateTicket}>
             Crear solicitud
           </Button>

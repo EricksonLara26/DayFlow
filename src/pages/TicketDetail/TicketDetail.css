@@ -2,3 +2,8 @@
   display: grid;
   gap: 16px;
 }
+
+.ticket-detail-page .ticket-detail-back {
+  width: auto;
+  justify-self: start;
+}

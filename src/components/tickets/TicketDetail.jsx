@@ -43,7 +43,7 @@ export default function TicketDetail({
 
   return (
     <div className="ticket-detail-page">
-      <Button icon={ArrowLeft} variant="ghost" onClick={onBack}>
+      <Button className="ticket-detail-back" icon={ArrowLeft} variant="ghost" onClick={onBack}>
         Volver
       </Button>
 
