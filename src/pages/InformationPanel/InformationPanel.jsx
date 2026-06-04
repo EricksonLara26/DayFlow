@@ -6,20 +6,30 @@ import TechnicianRanking from "../../components/dashboard/TechnicianRanking";
 import TechnicianReportPanel from "../../components/reports/TechnicianReportPanel";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import TicketStatusBadge from "../../components/tickets/TicketStatusBadge";
-import { isTechnicianUser } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
-import {
-  calculateDashboardStats,
-  getCompletedTickets,
-  getTicketDemandByDepartment,
-  getTechnicianCompletionStats,
-  getTicketsExcludingDismissed,
-  getTicketVolumeByCategory,
-} from "../../utils/ticketUtils";
+import { getCompletedTickets } from "../../utils/ticketUtils";
 import "./InformationPanel.css";
 
+const emptySummary = {
+  totalTickets: 0,
+  openTickets: 0,
+  inProgressTickets: 0,
+  onHoldTickets: 0,
+  completedTickets: 0,
+  dismissedTickets: 0,
+  overdueTickets: 0,
+};
+
+function getInsightLabel(item) {
+  return item.categoryName ?? item.departmentName ?? item.label;
+}
+
+function getInsightValue(item) {
+  return item.total ?? item.value ?? 0;
+}
+
 function BarInsight({ emptyTitle, eyebrow, items, title }) {
-  const maxValue = Math.max(1, ...items.map((item) => item.value));
+  const maxValue = Math.max(1, ...items.map(getInsightValue));
 
   return (
     <section className="panel chart-panel">
@@ -32,14 +42,16 @@ function BarInsight({ emptyTitle, eyebrow, items, title }) {
       {items.length ? (
         <div className="bar-chart">
           {items.map((item) => {
-            const width = `${Math.max(10, (item.value / maxValue) * 100)}%`;
+            const label = getInsightLabel(item);
+            const value = getInsightValue(item);
+            const width = `${Math.max(10, (value / maxValue) * 100)}%`;
 
             return (
-              <div className="bar-row" key={item.label}>
-                <span>{item.label}</span>
+              <div className="bar-row" key={label}>
+                <span>{label}</span>
                 <div className="bar-track">
                   <div className="bar-fill" style={{ width }}>
-                    <strong>{item.value}</strong>
+                    <strong>{value}</strong>
                   </div>
                 </div>
               </div>
@@ -54,28 +66,19 @@ function BarInsight({ emptyTitle, eyebrow, items, title }) {
 }
 
 export default function InformationPanel({
+  activityHistory = [],
   canDownloadReports,
+  categoryVolume = [],
+  departmentDemand = [],
   onAuthorizeReport,
   onOpenTicket,
+  summary,
+  technicianRanking = [],
   tickets,
   users,
 }) {
-  const technicians = users.filter(isTechnicianUser);
-  const stats = calculateDashboardStats(tickets);
+  const stats = summary ?? emptySummary;
   const completedTickets = getCompletedTickets(tickets);
-  const reportableTickets = getTicketsExcludingDismissed(tickets);
-  const technicianRanking = getTechnicianCompletionStats(technicians, tickets);
-  const categoryVolume = getTicketVolumeByCategory(reportableTickets);
-  const departmentDemand = getTicketDemandByDepartment(reportableTickets, users);
-  const fullHistory = tickets
-    .flatMap((ticket) =>
-      ticket.history.map((item) => ({
-        ...item,
-        ticketId: ticket.id,
-        ticketTitle: ticket.title,
-      })),
-    )
-    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
 
   return (
     <div className="page-stack information-page">
@@ -84,16 +87,16 @@ export default function InformationPanel({
           <p className="eyebrow">Información operativa</p>
           <h2>Panel de información</h2>
         </div>
-        <strong>{stats.total} tickets</strong>
+        <strong>{stats.totalTickets} tickets</strong>
       </section>
 
       <section className="stats-grid">
-        <StatCard icon={ClipboardList} label="Total" tone="blue" value={stats.total} />
-        <StatCard icon={Clock3} label="Abiertos" tone="cyan" value={stats.open} />
-        <StatCard icon={TicketCheck} label="En proceso" tone="violet" value={stats.inProgress} />
-        <StatCard icon={PauseCircle} label="En hold" tone="red" value={stats.onHold} />
-        <StatCard icon={CheckCircle2} label="Completados" tone="green" value={stats.completed} />
-        <StatCard icon={XCircle} label="Desestimados" tone="dark" value={stats.dismissed} />
+        <StatCard icon={ClipboardList} label="Total" tone="blue" value={stats.totalTickets} />
+        <StatCard icon={Clock3} label="Abiertos" tone="cyan" value={stats.openTickets} />
+        <StatCard icon={TicketCheck} label="En proceso" tone="violet" value={stats.inProgressTickets} />
+        <StatCard icon={PauseCircle} label="En hold" tone="red" value={stats.onHoldTickets} />
+        <StatCard icon={CheckCircle2} label="Completados" tone="green" value={stats.completedTickets} />
+        <StatCard icon={XCircle} label="Desestimados" tone="dark" value={stats.dismissedTickets} />
       </section>
 
       <div className="information-grid">
@@ -154,11 +157,11 @@ export default function InformationPanel({
             <p className="eyebrow">Historial completo</p>
             <h2>Actividad general del sistema</h2>
           </div>
-          <span>{fullHistory.length}</span>
+          <span>{activityHistory.length}</span>
         </div>
-        {fullHistory.length ? (
+        {activityHistory.length ? (
           <div className="system-history-list">
-            {fullHistory.map((item) => (
+            {activityHistory.map((item) => (
               <article className="system-history-item" key={`${item.ticketId}-${item.id}-${item.createdAt}`}>
                 <div>
                   <strong>{item.action}</strong>

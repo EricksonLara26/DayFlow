@@ -3,11 +3,11 @@ import { getStatusLabel } from "../../utils/ticketUtils";
 import TicketStatusBadge from "../tickets/TicketStatusBadge";
 
 const statusStatMap = [
-  ["open", TICKET_STATUSES.OPEN],
-  ["inProgress", TICKET_STATUSES.IN_PROGRESS],
-  ["onHold", TICKET_STATUSES.ON_HOLD],
-  ["completed", TICKET_STATUSES.COMPLETED],
-  ["dismissed", TICKET_STATUSES.DISMISSED],
+  ["openTickets", TICKET_STATUSES.OPEN],
+  ["inProgressTickets", TICKET_STATUSES.IN_PROGRESS],
+  ["onHoldTickets", TICKET_STATUSES.ON_HOLD],
+  ["completedTickets", TICKET_STATUSES.COMPLETED],
+  ["dismissedTickets", TICKET_STATUSES.DISMISSED],
 ];
 
 export default function TicketStatusSummary({ stats }) {

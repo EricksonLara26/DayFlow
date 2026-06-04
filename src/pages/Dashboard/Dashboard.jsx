@@ -11,25 +11,54 @@ import TechnicianRanking from "../../components/dashboard/TechnicianRanking";
 import TicketStatusSummary from "../../components/dashboard/TicketStatusSummary";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import TicketStatusBadge from "../../components/tickets/TicketStatusBadge";
 import { formatDate } from "../../utils/dateUtils";
-import { calculateDashboardStats, getTicketsDueInThreeDays } from "../../utils/ticketUtils";
 import "./Dashboard.css";
+
+const emptySummary = {
+  totalTickets: 0,
+  openTickets: 0,
+  inProgressTickets: 0,
+  onHoldTickets: 0,
+  completedTickets: 0,
+  dismissedTickets: 0,
+  overdueTickets: 0,
+};
 
 export default function Dashboard({
   dueTickets,
+  error = "",
+  isLoading = false,
   onOpenTicket,
   scope = "administrator",
   summary,
   technicianRanking = [],
-  tickets,
 }) {
-  const stats = summary ?? calculateDashboardStats(tickets);
-  const dueSoonTickets = dueTickets ?? getTicketsDueInThreeDays(tickets);
+  const stats = summary ?? emptySummary;
+  const dueSoonTickets = dueTickets ?? [];
   const isTechnicianScope = scope === "technician";
   const isEmployeeScope = scope === "employee";
   const isAdministratorScope = scope === "administrator";
+
+  if (isLoading) {
+    return (
+      <div className="page-stack dashboard-page">
+        <EmptyState title="Cargando dashboard" message="Estamos preparando los indicadores operativos.">
+          <LoadingSpinner size="md" />
+        </EmptyState>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-stack dashboard-page">
+        <EmptyState title="No se pudo cargar el dashboard" message={error} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-stack dashboard-page">
@@ -46,7 +75,7 @@ export default function Dashboard({
                 : "Dashboard general del sistema"}
           </h2>
         </div>
-        <strong>{stats.total}</strong>
+        <strong>{stats.totalTickets}</strong>
       </section>
 
       <section className="stats-grid">
@@ -54,13 +83,13 @@ export default function Dashboard({
           icon={ClipboardList}
           label={isTechnicianScope ? "Solicitudes gestionables" : isEmployeeScope ? "Mis solicitudes" : "Total de solicitudes"}
           tone="blue"
-          value={stats.total}
+          value={stats.totalTickets}
         />
-        <StatCard icon={Clock3} label="Abiertos" tone="cyan" value={stats.open} />
-        <StatCard icon={TicketCheck} label="En proceso" tone="violet" value={stats.inProgress} />
-        <StatCard icon={PauseCircle} label="En hold" tone="red" value={stats.onHold} />
-        <StatCard icon={CheckCircle2} label="Completados" tone="green" value={stats.completed} />
-        <StatCard icon={XCircle} label="Desestimados" tone="dark" value={stats.dismissed} />
+        <StatCard icon={Clock3} label="Abiertos" tone="cyan" value={stats.openTickets} />
+        <StatCard icon={TicketCheck} label="En proceso" tone="violet" value={stats.inProgressTickets} />
+        <StatCard icon={PauseCircle} label="En hold" tone="red" value={stats.onHoldTickets} />
+        <StatCard icon={CheckCircle2} label="Completados" tone="green" value={stats.completedTickets} />
+        <StatCard icon={XCircle} label="Desestimados" tone="dark" value={stats.dismissedTickets} />
       </section>
 
       <div className="dashboard-grid">
@@ -75,15 +104,15 @@ export default function Dashboard({
           {dueSoonTickets.length ? (
             <div className="due-ticket-list">
               {dueSoonTickets.map((ticket) => (
-                <article className="due-ticket" key={ticket.id}>
+                <article className="due-ticket" key={ticket.ticketId}>
                   <div>
                     <strong>{ticket.title}</strong>
-                    <span>{ticket.createdByName} - vence {formatDate(ticket.dueDate)}</span>
+                    <span>#{ticket.ticketId} - vence {formatDate(ticket.dueDate)}</span>
                   </div>
                   <div className="inline-actions">
                     <TicketStatusBadge status={ticket.status} />
                     <TicketPriorityBadge priority={ticket.priority} />
-                    <Button variant="ghost" onClick={() => onOpenTicket(ticket.id)}>
+                    <Button variant="ghost" onClick={() => onOpenTicket(ticket.ticketId)}>
                       Ver
                     </Button>
                   </div>

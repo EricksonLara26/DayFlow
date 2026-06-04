@@ -1,9 +1,6 @@
-import { sortTechniciansByCompletedTickets } from "../../utils/ticketUtils";
 import EmptyState from "../common/EmptyState";
 
-export default function TechnicianRanking({ technicians }) {
-  const rankedTechnicians = sortTechniciansByCompletedTickets(technicians);
-
+export default function TechnicianRanking({ technicians = [] }) {
   return (
     <section className="panel ranking-panel">
       <div className="section-heading">
@@ -12,16 +9,18 @@ export default function TechnicianRanking({ technicians }) {
           <h2>Cierres por técnico</h2>
         </div>
       </div>
-      {rankedTechnicians.length ? (
+      {technicians.length ? (
         <div className="ranking-list">
-          {rankedTechnicians.map((technician, index) => {
+          {technicians.map((technician, index) => {
             const completed = technician.completedTickets ?? 0;
+            const technicianName =
+              technician.technicianName ?? `${technician.firstName ?? ""} ${technician.lastName ?? ""}`.trim();
 
             return (
-              <article className="ranking-item" key={technician.id}>
+              <article className="ranking-item" key={technician.technicianId ?? technician.id}>
                 <span className="ranking-position">{index + 1}</span>
                 <div>
-                  <strong>{technician.firstName} {technician.lastName}</strong>
+                  <strong>{technicianName}</strong>
                   <span>Solicitudes completadas</span>
                 </div>
                 <b>{completed}</b>

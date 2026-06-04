@@ -1,9 +1,13 @@
 import { createContext, useCallback, useMemo, useState } from "react";
 import { TICKET_STATUSES } from "../data/tickets";
 import {
+  getActivityHistorySnapshot,
+  getDemandByDepartmentSnapshot,
   getDueTicketsSnapshot,
+  getHistoricalSnapshot,
   getSummarySnapshot,
   getTechnicianRankingSnapshot,
+  getTicketsByCategorySnapshot,
 } from "../services/dashboardService";
 import {
   addTicketComment as addTicketCommentRequest,
@@ -71,6 +75,26 @@ export function TicketsProvider({ children }) {
   const technicianRanking = useMemo(
     () => getTechnicianRankingSnapshot({ tickets, users }),
     [tickets, users],
+  );
+
+  const dashboardTicketsByCategory = useMemo(
+    () => getTicketsByCategorySnapshot({ tickets }),
+    [tickets],
+  );
+
+  const dashboardDemandByDepartment = useMemo(
+    () => getDemandByDepartmentSnapshot({ tickets, users }),
+    [tickets, users],
+  );
+
+  const dashboardHistorical = useMemo(
+    () => getHistoricalSnapshot({ tickets }),
+    [tickets],
+  );
+
+  const dashboardActivityHistory = useMemo(
+    () => getActivityHistorySnapshot({ tickets }),
+    [tickets],
   );
 
   const getTicketById = useCallback(
@@ -252,9 +276,13 @@ export function TicketsProvider({ children }) {
       canViewTicket,
       changeTicketStatus,
       createTicket,
+      dashboardActivityHistory,
+      dashboardDemandByDepartment,
+      dashboardHistorical,
       dashboardDueTickets,
       dashboardSummary,
       dashboardTickets,
+      dashboardTicketsByCategory,
       getScopeForView,
       getTicketById,
       getVisibleTicketsForView,
@@ -273,9 +301,13 @@ export function TicketsProvider({ children }) {
       canViewTicket,
       changeTicketStatus,
       createTicket,
+      dashboardActivityHistory,
+      dashboardDemandByDepartment,
+      dashboardHistorical,
       dashboardDueTickets,
       dashboardSummary,
       dashboardTickets,
+      dashboardTicketsByCategory,
       getScopeForView,
       getTicketById,
       getVisibleTicketsForView,

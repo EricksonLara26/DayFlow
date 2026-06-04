@@ -150,9 +150,12 @@ function AppRoutesContent() {
     canViewTicket,
     changeTicketStatus,
     createTicket,
+    dashboardActivityHistory,
+    dashboardDemandByDepartment,
     dashboardDueTickets,
+    dashboardHistorical,
     dashboardSummary,
-    dashboardTickets,
+    dashboardTicketsByCategory,
     getScopeForView,
     getTicketById,
     getVisibleTicketsForView,
@@ -285,11 +288,12 @@ function AppRoutesContent() {
               VIEW_IDS.DASHBOARD,
               <Dashboard
                 dueTickets={dashboardDueTickets}
+                error={ticketsError}
+                isLoading={ticketsLoading}
                 onOpenTicket={openTicket}
                 scope={dashboardScope}
                 summary={dashboardSummary}
                 technicianRanking={technicianRanking}
-                tickets={dashboardTickets}
               />,
             )}
           />
@@ -431,10 +435,16 @@ function AppRoutesContent() {
             element={withRole(
               VIEW_IDS.INFORMATION,
               <InformationPanel
+                activityHistory={dashboardActivityHistory}
                 canDownloadReports={canDownloadReports}
+                categoryVolume={dashboardTicketsByCategory}
+                departmentDemand={dashboardDemandByDepartment}
+                historical={dashboardHistorical}
                 onAuthorizeReport={authorizeTechnicianReport}
                 onOpenTicket={openTicket}
+                summary={dashboardSummary}
                 tickets={tickets}
+                technicianRanking={technicianRanking}
                 users={users}
               />,
             )}
