@@ -27,15 +27,30 @@ function validateEmail(email) {
 export function UsersProvider({ children }) {
   const { currentUser, replaceCurrentUser } = useAuth();
   const [users, setUsers] = useState(() => getUsersSnapshot());
+  const [usersError, setUsersError] = useState("");
+  const [usersLoading, setUsersLoading] = useState(false);
 
   const refreshUsers = useCallback(async () => {
-    const response = await fetchUsers();
+    setUsersLoading(true);
+    setUsersError("");
 
-    if (response.ok) {
-      setUsers(response.data);
+    try {
+      const response = await fetchUsers();
+
+      if (response.ok) {
+        setUsers(response.data);
+      } else {
+        setUsersError(response.message ?? "No se pudieron cargar los usuarios.");
+      }
+
+      return response;
+    } catch {
+      const response = { ok: false, message: "No se pudieron cargar los usuarios." };
+      setUsersError(response.message);
+      return response;
+    } finally {
+      setUsersLoading(false);
     }
-
-    return response;
   }, []);
 
   const createUser = useCallback(
@@ -197,6 +212,8 @@ export function UsersProvider({ children }) {
       resetPassword,
       updateUser,
       users,
+      usersError,
+      usersLoading,
     }),
     [
       authorizeTechnicianReport,
@@ -206,6 +223,8 @@ export function UsersProvider({ children }) {
       resetPassword,
       updateUser,
       users,
+      usersError,
+      usersLoading,
     ],
   );
 

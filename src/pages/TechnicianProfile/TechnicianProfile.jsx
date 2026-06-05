@@ -1,6 +1,9 @@
 import { Activity, CheckCircle2, ShieldCheck, UserCircle, XCircle } from "lucide-react";
 import StatCard from "../../components/dashboard/StatCard";
+import AccessDeniedState from "../../components/common/AccessDeniedState";
 import EmptyState from "../../components/common/EmptyState";
+import ErrorState from "../../components/common/ErrorState";
+import LoadingState from "../../components/common/LoadingState";
 import Button from "../../components/common/Button";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import { getRoleLabel, isTechnicianUser } from "../../data/users";
@@ -98,12 +101,42 @@ function ActivityPanel({ personalHistory }) {
 
 export default function TechnicianProfile({
   currentUser,
+  error = "",
+  isLoading = false,
   onChangePassword,
   onOpenTicket,
+  onRetry,
   onUpdatePreferences,
   preferences,
   tickets,
 }) {
+  if (!currentUser) {
+    return (
+      <div className="page-stack profile-page">
+        <AccessDeniedState
+          message="Necesitas una sesion activa para consultar el perfil."
+          title="No se pudo validar tu sesion."
+        />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="page-stack profile-page">
+        <LoadingState title="Cargando perfil" message="Estamos preparando tu actividad y metricas." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-stack profile-page">
+        <ErrorState title="No se pudo cargar el perfil" message={error} onRetry={onRetry} />
+      </div>
+    );
+  }
+
   const isTechnician = isTechnicianUser(currentUser);
   const assignedTickets = getTicketsByTechnician(tickets, currentUser.id);
   const completedTickets = getCompletedTicketsByTechnician(tickets, currentUser.id);

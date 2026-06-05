@@ -1,6 +1,7 @@
 import { LockKeyhole, UserRound } from "lucide-react";
 import { useState } from "react";
 import LoadingButton from "../../components/common/LoadingButton";
+import SuccessMessage from "../../components/common/SuccessMessage";
 import {
   FORM_MIN_LENGTHS,
   cleanField,
@@ -160,7 +161,7 @@ export default function Login({ message, onLogin }) {
             {fieldErrors.password ? <p className="field-error">{fieldErrors.password}</p> : null}
           </label>
 
-          {message ? <p className="form-success">{message}</p> : null}
+          <SuccessMessage>{message}</SuccessMessage>
           {error ? <p className="form-error">{error}</p> : null}
 
           <LoadingButton className="wide" loading={isLoading} type="submit">

@@ -1,7 +1,9 @@
 import { Download } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import AccessDeniedState from "../common/AccessDeniedState";
 import Button from "../common/Button";
 import EmptyState from "../common/EmptyState";
+import SuccessMessage from "../common/SuccessMessage";
 import {
   COMPLETED_TICKETS_REPORT_COLUMNS,
   exportCompletedTickets,
@@ -14,6 +16,7 @@ import { getCurrentYear } from "../../utils/dateUtils";
 import { allowedValueError, getApiErrorMessage } from "../../utils/formValidation";
 
 export default function TechnicianReportPanel({
+  canDownloadReports = true,
   onAuthorizeReport,
   onReportCountChange,
   tickets,
@@ -25,6 +28,7 @@ export default function TechnicianReportPanel({
   const [selectedYear, setSelectedYear] = useState(String(reportYears[0] ?? getCurrentYear()));
   const [fieldErrors, setFieldErrors] = useState({});
   const [reportError, setReportError] = useState("");
+  const [reportSuccess, setReportSuccess] = useState("");
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const report = useMemo(
     () =>
@@ -58,6 +62,7 @@ export default function TechnicianReportPanel({
       return nextErrors;
     });
     setReportError("");
+    setReportSuccess("");
   }
 
   function validateReportControls() {
@@ -90,6 +95,7 @@ export default function TechnicianReportPanel({
     }
 
     setReportError("");
+    setReportSuccess("");
     const nextErrors = validateReportControls();
 
     if (Object.keys(nextErrors).length) {
@@ -123,12 +129,24 @@ export default function TechnicianReportPanel({
 
       if (!exportResult.ok) {
         setReportError(getApiErrorMessage(exportResult, "No se pudo generar el informe."));
+        return;
       }
+
+      setReportSuccess("Informe generado correctamente.");
     } catch {
       setReportError("No se pudo generar el informe.");
     } finally {
       setIsDownloadingReport(false);
     }
+  }
+
+  if (!canDownloadReports) {
+    return (
+      <AccessDeniedState
+        message="Solo las cuentas autorizadas pueden descargar informes."
+        title="No tienes permiso para descargar informes."
+      />
+    );
   }
 
   return (
@@ -177,6 +195,7 @@ export default function TechnicianReportPanel({
       </div>
 
       {reportError ? <p className="form-error">{reportError}</p> : null}
+      <SuccessMessage>{reportSuccess}</SuccessMessage>
 
       {reportTickets.length ? (
         <div className="table-wrap report-table-wrap">

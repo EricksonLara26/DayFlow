@@ -2,6 +2,7 @@ import { Send } from "lucide-react";
 import { useState } from "react";
 import LoadingButton from "../common/LoadingButton";
 import EmptyState from "../common/EmptyState";
+import SuccessMessage from "../common/SuccessMessage";
 import { getRoleLabel } from "../../data/users";
 import { formatDateTime } from "../../utils/dateUtils";
 import {
@@ -103,7 +104,7 @@ export default function TicketComments({ canComment, comments, onAddComment }) {
             {fieldError ? <p className="field-error">{fieldError}</p> : null}
           </label>
           {submitError ? <p className="form-error">{submitError}</p> : null}
-          {submitSuccess ? <p className="form-success">{submitSuccess}</p> : null}
+          <SuccessMessage>{submitSuccess}</SuccessMessage>
           <LoadingButton icon={Send} loading={isLoading} type="submit">
             Comentar
           </LoadingButton>

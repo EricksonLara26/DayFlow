@@ -123,10 +123,12 @@
 .profile-settings-grid {
   display: grid;
   gap: 16px;
+  justify-items: start;
 }
 
 .profile-settings-grid .settings-content-grid {
-  grid-template-columns: minmax(300px, 0.78fr) minmax(420px, 1.22fr);
+  grid-template-columns: minmax(260px, 340px) minmax(420px, 620px);
+  max-width: 980px;
 }
 
 .performance-panel {
@@ -147,6 +149,10 @@
   .profile-focus-grid,
   .profile-settings-grid .settings-content-grid {
     grid-template-columns: 1fr;
+  }
+
+  .profile-settings-grid .settings-content-grid {
+    max-width: 760px;
   }
 
   .profile-page .profile-hero {

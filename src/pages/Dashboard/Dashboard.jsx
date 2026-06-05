@@ -11,7 +11,8 @@ import TechnicianRanking from "../../components/dashboard/TechnicianRanking";
 import TicketStatusSummary from "../../components/dashboard/TicketStatusSummary";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ErrorState from "../../components/common/ErrorState";
+import LoadingState from "../../components/common/LoadingState";
 import TicketPriorityBadge from "../../components/tickets/TicketPriorityBadge";
 import TicketStatusBadge from "../../components/tickets/TicketStatusBadge";
 import { formatDate } from "../../utils/dateUtils";
@@ -32,6 +33,7 @@ export default function Dashboard({
   error = "",
   isLoading = false,
   onOpenTicket,
+  onRetry,
   scope = "administrator",
   summary,
   technicianRanking = [],
@@ -45,9 +47,7 @@ export default function Dashboard({
   if (isLoading) {
     return (
       <div className="page-stack dashboard-page">
-        <EmptyState title="Cargando dashboard" message="Estamos preparando los indicadores operativos.">
-          <LoadingSpinner size="md" />
-        </EmptyState>
+        <LoadingState title="Cargando dashboard" message="Estamos preparando los indicadores operativos." />
       </div>
     );
   }
@@ -55,7 +55,7 @@ export default function Dashboard({
   if (error) {
     return (
       <div className="page-stack dashboard-page">
-        <EmptyState title="No se pudo cargar el dashboard" message={error} />
+        <ErrorState title="No se pudo cargar el dashboard" message={error} onRetry={onRetry} />
       </div>
     );
   }

@@ -2,6 +2,7 @@ import { ArrowLeft, CheckCircle2, CirclePause, ClipboardCheck, Paperclip, PlayCi
 import { useState } from "react";
 import Button from "../common/Button";
 import LoadingButton from "../common/LoadingButton";
+import SuccessMessage from "../common/SuccessMessage";
 import { TICKET_STATUSES } from "../../data/tickets";
 import { formatDate, formatDateTime } from "../../utils/dateUtils";
 import {
@@ -28,6 +29,8 @@ export default function TicketDetail({
   users = [],
 }) {
   const [loadingAction, setLoadingAction] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
   const isTerminal = terminalTicketStatuses.includes(ticket.status);
   const takenAt = getTicketTakenAt(ticket);
   const department = getTicketDepartment(ticket, users);
@@ -35,9 +38,21 @@ export default function TicketDetail({
   const canShowTechnicalActions = canTake || (canManage && !isTerminal);
 
   function runTicketAction(action, callback) {
+    setActionError("");
+    setActionMessage("");
     setLoadingAction(action);
     window.setTimeout(() => {
-      Promise.resolve(callback()).finally(() => setLoadingAction(""));
+      Promise.resolve(callback())
+        .then((result) => {
+          if (result?.ok === false) {
+            setActionError(result.message ?? "No se pudo completar la accion.");
+            return;
+          }
+
+          setActionMessage(result?.message ?? "Accion completada correctamente.");
+        })
+        .catch(() => setActionError("No se pudo completar la accion."))
+        .finally(() => setLoadingAction(""));
     }, 300);
   }
 
@@ -47,7 +62,9 @@ export default function TicketDetail({
         Volver
       </Button>
 
-      {flashMessage ? <p className="form-success detail-flash">{flashMessage}</p> : null}
+      <SuccessMessage className="detail-flash">{flashMessage}</SuccessMessage>
+      <SuccessMessage className="detail-flash">{actionMessage}</SuccessMessage>
+      {actionError ? <p className="form-error detail-flash">{actionError}</p> : null}
 
       <section className="detail-hero">
         <div>

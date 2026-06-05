@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import Button from "../../components/common/Button";
-import EmptyState from "../../components/common/EmptyState";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ErrorState from "../../components/common/ErrorState";
+import LoadingState from "../../components/common/LoadingState";
+import SuccessMessage from "../../components/common/SuccessMessage";
 import TicketFilters from "../../components/tickets/TicketFilters";
 import TicketTable from "../../components/tickets/TicketTable";
 import { filterTickets } from "../../utils/ticketUtils";
@@ -24,11 +25,14 @@ export default function Tickets({
   scope = "employee",
   onCreateTicket,
   onOpenTicket,
+  onRetry,
   onTakeTicket,
   tickets,
   users,
 }) {
   const [filters, setFilters] = useState(defaultFilters);
+  const [actionError, setActionError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
   const filteredTickets = useMemo(() => filterTickets(tickets, filters), [filters, tickets]);
   const isEmployeeScope = scope === "employee";
   const copy = {
@@ -37,7 +41,7 @@ export default function Tickets({
       title: "Tickets creados por ti",
     },
     technician: {
-      eyebrow: "Vista técnica",
+      eyebrow: "Vista tecnica",
       title: "Todas las solicitudes de soporte",
     },
     "technician-available": {
@@ -49,11 +53,11 @@ export default function Tickets({
       title: "Tickets activos asignados a ti",
     },
     "technician-history": {
-      eyebrow: "Historial técnico",
+      eyebrow: "Historial tecnico",
       title: "Solicitudes cerradas por ti",
     },
     administrator: {
-      eyebrow: "Gestión administrativa",
+      eyebrow: "Gestion administrativa",
       title: "Todas las solicitudes del sistema",
     },
   }[scope] ?? {
@@ -69,21 +73,44 @@ export default function Tickets({
   const emptyState = tickets.length
     ? {
         title: "No hay resultados con esos filtros",
-        message: "Ajusta la búsqueda o cambia los filtros para ver otras solicitudes.",
+        message: "Ajusta la busqueda o cambia los filtros para ver otras solicitudes.",
       }
     : {
-        title: isEmployeeScope ? "Todavía no tienes solicitudes" : "No hay solicitudes disponibles",
+        title: isEmployeeScope ? "Todavia no tienes solicitudes" : "No hay solicitudes disponibles",
         message: isEmployeeScope
-          ? "Cuando crees una solicitud aparecerá aquí con su estado, prioridad y técnico asignado."
-          : "Cuando existan tickets para esta vista aparecerán en esta lista.",
+          ? "Cuando crees una solicitud aparecera aqui con su estado, prioridad y tecnico asignado."
+          : "Cuando existan tickets para esta vista apareceran en esta lista.",
+        action: createButton,
       };
+
+  async function handleTakeTicket(ticketId) {
+    if (!onTakeTicket) {
+      return { ok: false };
+    }
+
+    setActionError("");
+    setActionMessage("");
+
+    try {
+      const result = await onTakeTicket(ticketId);
+
+      if (result?.ok === false) {
+        setActionError(result.message ?? "No se pudo tomar el ticket.");
+        return result;
+      }
+
+      setActionMessage(result?.message ?? "Ticket tomado correctamente.");
+      return result;
+    } catch {
+      setActionError("No se pudo tomar el ticket.");
+      return { ok: false };
+    }
+  }
 
   if (isLoading) {
     return (
       <div className="page-stack tickets-page">
-        <EmptyState title="Cargando solicitudes" message="Estamos preparando la información de tus tickets.">
-          <LoadingSpinner size="md" />
-        </EmptyState>
+        <LoadingState title="Cargando solicitudes" message="Estamos preparando la informacion de tus tickets." />
       </div>
     );
   }
@@ -91,9 +118,7 @@ export default function Tickets({
   if (error) {
     return (
       <div className="page-stack tickets-page">
-        <EmptyState title="No se pudieron cargar las solicitudes" message={error}>
-          {createButton}
-        </EmptyState>
+        <ErrorState title="No se pudieron cargar las solicitudes" message={error} onRetry={onRetry} />
       </div>
     );
   }
@@ -112,12 +137,14 @@ export default function Tickets({
       </section>
 
       <TicketFilters filters={filters} onChange={setFilters} />
+      <SuccessMessage>{actionMessage}</SuccessMessage>
+      {actionError ? <p className="form-error">{actionError}</p> : null}
       <TicketTable
         canTakeTicket={canTakeTicket}
         emptyState={emptyState}
         mode={isEmployeeScope ? "employee" : scope === "administrator" ? "administrator" : "standard"}
         onOpenTicket={onOpenTicket}
-        onTakeTicket={onTakeTicket}
+        onTakeTicket={handleTakeTicket}
         tickets={filteredTickets}
         users={users}
       />

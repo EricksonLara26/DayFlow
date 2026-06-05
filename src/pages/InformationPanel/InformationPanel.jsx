@@ -1,6 +1,8 @@
 import { CheckCircle2, ClipboardList, Clock3, Eye, PauseCircle, TicketCheck, XCircle } from "lucide-react";
 import Button from "../../components/common/Button";
 import EmptyState from "../../components/common/EmptyState";
+import ErrorState from "../../components/common/ErrorState";
+import LoadingState from "../../components/common/LoadingState";
 import StatCard from "../../components/dashboard/StatCard";
 import TechnicianRanking from "../../components/dashboard/TechnicianRanking";
 import TechnicianReportPanel from "../../components/reports/TechnicianReportPanel";
@@ -70,8 +72,11 @@ export default function InformationPanel({
   canDownloadReports,
   categoryVolume = [],
   departmentDemand = [],
+  error = "",
+  isLoading = false,
   onAuthorizeReport,
   onOpenTicket,
+  onRetry,
   summary,
   technicianRanking = [],
   tickets,
@@ -79,6 +84,22 @@ export default function InformationPanel({
 }) {
   const stats = summary ?? emptySummary;
   const completedTickets = getCompletedTickets(tickets);
+
+  if (isLoading) {
+    return (
+      <div className="page-stack information-page">
+        <LoadingState title="Cargando informacion" message="Estamos preparando los indicadores operativos." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-stack information-page">
+        <ErrorState title="No se pudo cargar el panel" message={error} onRetry={onRetry} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-stack information-page">
@@ -181,6 +202,7 @@ export default function InformationPanel({
 
       {canDownloadReports ? (
         <TechnicianReportPanel
+          canDownloadReports={canDownloadReports}
           onAuthorizeReport={onAuthorizeReport}
           tickets={tickets}
           users={users}

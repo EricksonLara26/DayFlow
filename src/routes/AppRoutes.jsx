@@ -73,6 +73,7 @@ function TicketsView({
   isLoading,
   onCreateTicket,
   onOpenTicket,
+  onRetry,
   onTakeTicket,
   users,
   view,
@@ -84,6 +85,7 @@ function TicketsView({
       isLoading={isLoading}
       onCreateTicket={onCreateTicket}
       onOpenTicket={onOpenTicket}
+      onRetry={onRetry}
       onTakeTicket={onTakeTicket}
       scope={getScopeForView(view)}
       tickets={getVisibleTicketsForView(view)}
@@ -98,11 +100,14 @@ function TicketDetailRoute({
   canTakeTicket,
   canViewTicket,
   getTicketById,
+  isLoading,
   onAddComment,
   onBack,
   onChangeStatus,
   onGoHome,
+  onRetry,
   onTakeTicket,
+  error,
   users,
 }) {
   const { id } = useParams();
@@ -121,8 +126,11 @@ function TicketDetailRoute({
       onAddComment={onAddComment}
       onBack={onBack}
       onChangeStatus={onChangeStatus}
+      onRetry={onRetry}
       onTakeTicket={onTakeTicket}
       flashMessage={location.state?.ticketMessage}
+      error={error}
+      isLoading={isLoading}
       ticket={ticket}
       users={users}
     />
@@ -174,14 +182,22 @@ function AppRoutesContent() {
     resetPassword,
     updateUser,
     users,
+    usersError,
+    usersLoading,
   } = useUsers();
   const location = useLocation();
   const navigate = useNavigate();
   const activeView = getViewFromPathname(location.pathname) ?? VIEW_IDS.DASHBOARD;
+  const operationalDataError = ticketsError || usersError;
+  const operationalDataLoading = ticketsLoading || usersLoading;
 
   function navigateToView(view, options = {}) {
     const nextView = canAccessView(view) ? view : VIEW_IDS.ACCESS_DENIED;
     navigate(getPathForView(nextView), options);
+  }
+
+  function retryOperationalData() {
+    return Promise.all([refreshUsers(), refreshTickets()]);
   }
 
   function goHome() {
@@ -288,9 +304,10 @@ function AppRoutesContent() {
               VIEW_IDS.DASHBOARD,
               <Dashboard
                 dueTickets={dashboardDueTickets}
-                error={ticketsError}
-                isLoading={ticketsLoading}
+                error={operationalDataError}
+                isLoading={operationalDataLoading}
                 onOpenTicket={openTicket}
+                onRetry={retryOperationalData}
                 scope={dashboardScope}
                 summary={dashboardSummary}
                 technicianRanking={technicianRanking}
@@ -303,12 +320,13 @@ function AppRoutesContent() {
               VIEW_IDS.TICKETS,
               <TicketsView
                 canTakeTicket={canTakeTicket}
-                error={ticketsError}
+                error={operationalDataError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
-                isLoading={ticketsLoading}
+                isLoading={operationalDataLoading}
                 onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
+                onRetry={retryOperationalData}
                 onTakeTicket={takeTicket}
                 users={users}
                 view={VIEW_IDS.TICKETS}
@@ -328,12 +346,13 @@ function AppRoutesContent() {
               VIEW_IDS.AVAILABLE_TICKETS,
               <TicketsView
                 canTakeTicket={canTakeTicket}
-                error={ticketsError}
+                error={operationalDataError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
-                isLoading={ticketsLoading}
+                isLoading={operationalDataLoading}
                 onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
+                onRetry={retryOperationalData}
                 onTakeTicket={takeTicket}
                 users={users}
                 view={VIEW_IDS.AVAILABLE_TICKETS}
@@ -346,12 +365,13 @@ function AppRoutesContent() {
               VIEW_IDS.MY_TICKETS,
               <TicketsView
                 canTakeTicket={canTakeTicket}
-                error={ticketsError}
+                error={operationalDataError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
-                isLoading={ticketsLoading}
+                isLoading={operationalDataLoading}
                 onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
+                onRetry={retryOperationalData}
                 onTakeTicket={takeTicket}
                 users={users}
                 view={VIEW_IDS.MY_TICKETS}
@@ -364,12 +384,13 @@ function AppRoutesContent() {
               VIEW_IDS.HISTORY,
               <TicketsView
                 canTakeTicket={canTakeTicket}
-                error={ticketsError}
+                error={operationalDataError}
                 getScopeForView={getScopeForView}
                 getVisibleTicketsForView={getVisibleTicketsForView}
-                isLoading={ticketsLoading}
+                isLoading={operationalDataLoading}
                 onCreateTicket={() => navigateToView(VIEW_IDS.CREATE_TICKET)}
                 onOpenTicket={openTicket}
+                onRetry={retryOperationalData}
                 onTakeTicket={takeTicket}
                 users={users}
                 view={VIEW_IDS.HISTORY}
@@ -385,11 +406,14 @@ function AppRoutesContent() {
                 canManageTicket={canManageTicket}
                 canTakeTicket={canTakeTicket}
                 canViewTicket={canViewTicket}
+                error={operationalDataError}
                 getTicketById={getTicketById}
+                isLoading={operationalDataLoading}
                 onAddComment={addComment}
                 onBack={goBackFromTicket}
                 onChangeStatus={changeTicketStatus}
                 onGoHome={goHome}
+                onRetry={retryOperationalData}
                 onTakeTicket={takeTicket}
                 users={users}
               />,
@@ -401,8 +425,11 @@ function AppRoutesContent() {
               VIEW_IDS.PROFILE,
               <TechnicianProfile
                 currentUser={currentUser}
+                error={ticketsError}
+                isLoading={ticketsLoading}
                 onChangePassword={changePassword}
                 onOpenTicket={openTicket}
+                onRetry={refreshTickets}
                 onUpdatePreferences={updatePreferences}
                 preferences={preferences}
                 tickets={tickets}
@@ -439,9 +466,12 @@ function AppRoutesContent() {
                 canDownloadReports={canDownloadReports}
                 categoryVolume={dashboardTicketsByCategory}
                 departmentDemand={dashboardDemandByDepartment}
+                error={operationalDataError}
                 historical={dashboardHistorical}
+                isLoading={operationalDataLoading}
                 onAuthorizeReport={authorizeTechnicianReport}
                 onOpenTicket={openTicket}
+                onRetry={retryOperationalData}
                 summary={dashboardSummary}
                 tickets={tickets}
                 technicianRanking={technicianRanking}
@@ -453,7 +483,15 @@ function AppRoutesContent() {
             path={getRoutePatternForView(VIEW_IDS.REPORTS)}
             element={withRole(
               VIEW_IDS.REPORTS,
-              <Reports onAuthorizeReport={authorizeTechnicianReport} tickets={tickets} users={users} />,
+              <Reports
+                canDownloadReports={canDownloadReports}
+                error={operationalDataError}
+                isLoading={operationalDataLoading}
+                onAuthorizeReport={authorizeTechnicianReport}
+                onRetry={retryOperationalData}
+                tickets={tickets}
+                users={users}
+              />,
             )}
           />
           <Route
@@ -462,8 +500,11 @@ function AppRoutesContent() {
               VIEW_IDS.USERS,
               <Users
                 currentUser={currentUser}
+                error={usersError}
+                isLoading={usersLoading}
                 onCreateUser={createUser}
                 onDeactivateUser={deactivateUser}
+                onRetry={refreshUsers}
                 onResetPassword={resetPassword}
                 onUpdateUser={updateUser}
                 users={users}

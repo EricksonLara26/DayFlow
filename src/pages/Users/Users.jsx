@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import { KeyRound, UserPlus, X } from "lucide-react";
 import Button from "../../components/common/Button";
+import ErrorState from "../../components/common/ErrorState";
+import LoadingState from "../../components/common/LoadingState";
 import LoadingButton from "../../components/common/LoadingButton";
 import SearchInput from "../../components/common/SearchInput";
+import SuccessMessage from "../../components/common/SuccessMessage";
 import UserForm from "../../components/users/UserForm";
 import UserTable from "../../components/users/UserTable";
 import { canCreateUser } from "../../config/permissions";
@@ -20,8 +23,11 @@ import "./Users.css";
 
 export default function Users({
   currentUser,
+  error = "",
+  isLoading = false,
   onCreateUser,
   onDeactivateUser,
+  onRetry,
   onResetPassword,
   onUpdateUser,
   users,
@@ -205,6 +211,22 @@ export default function Users({
     return result;
   }
 
+  if (isLoading) {
+    return (
+      <div className="page-stack users-page">
+        <LoadingState title="Cargando usuarios" message="Estamos preparando el directorio del sistema." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-stack users-page">
+        <ErrorState title="No se pudieron cargar los usuarios" message={error} onRetry={onRetry} />
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack users-page">
       <section className="panel page-intro">
@@ -222,7 +244,7 @@ export default function Users({
         </div>
       </section>
 
-      {message ? <p className="form-success">{message}</p> : null}
+      <SuccessMessage>{message}</SuccessMessage>
 
       {isUserFormOpen && canOpenUserForm ? (
         <div className="user-form-overlay" role="dialog" aria-modal="true" aria-labelledby="new-user-title">
