@@ -1,6 +1,9 @@
 import {
   createLocalUser,
   deactivateLocalUser,
+  getUserById,
+  getUsers,
+  getUsersSnapshot,
   resetLocalUserPassword,
   updateLocalUser,
 } from "../userService";
@@ -103,6 +106,50 @@ describe("userService", () => {
 
       expect(updatedUser.password).toBe("temporal");
       expect(updatedUser.mustChangePassword).toBe(true);
+    });
+  });
+
+  describe("consultas publicas", () => {
+    test("filtra usuarios por rol, departamento y estado", () => {
+      const technicians = getUsersSnapshot({
+        role: ROLES.TECHNICIAN,
+        department: "Tecnologia",
+        active: true,
+      });
+
+      expect(technicians.length).toBeGreaterThan(0);
+      expect(
+        technicians.every(
+          (user) =>
+            user.role === ROLES.TECHNICIAN &&
+            user.department === "Tecnologia" &&
+            user.active === true,
+        ),
+      ).toBe(true);
+    });
+
+    test("getUsers devuelve el contrato asincrono del servicio", async () => {
+      const result = await getUsers({ query: "administrador" });
+
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          username: "administrador",
+          role: ROLES.ADMINISTRATOR,
+        }),
+      ]);
+    });
+
+    test("getUserById informa cuando el usuario no existe", async () => {
+      const result = await getUserById(999999);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ok: false,
+          status: 404,
+          message: expect.stringMatching(/no encontrado/i),
+        }),
+      );
     });
   });
 });

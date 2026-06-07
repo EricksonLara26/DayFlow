@@ -1,5 +1,6 @@
 import {
   createTicket,
+  getTicketsSnapshot,
   getTicketSnapshotById,
   getDashboardTicketsForUser,
   getTicketScopeForView,
@@ -107,11 +108,14 @@ describe("ticketService", () => {
 
   describe("createTicket", () => {
     beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-06-04T12:00:00.000Z"));
       window.localStorage.clear();
     });
 
     afterEach(() => {
       window.localStorage.clear();
+      jest.useRealTimers();
     });
 
     test("crea solicitud con departamento, fecha opcional y persistencia local", async () => {
@@ -156,6 +160,99 @@ describe("ticketService", () => {
           title: "Solicitud frontend",
         }),
       );
+    });
+
+    test("crea solicitud con dueDate valido", async () => {
+      const requester = {
+        id: 3,
+        firstName: "Empleado",
+        lastName: "Demo",
+        role: ROLES.EMPLOYEE,
+        department: "Operaciones",
+      };
+
+      const result = await createTicket({
+        title: "Solicitud con vencimiento",
+        description: "Detalle suficiente para validar la fecha limite",
+        category: "Hardware",
+        priority: "HIGH",
+        department: "Operaciones",
+        dueDate: "2026-06-10",
+        requester,
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ok: true,
+          status: 201,
+          data: expect.objectContaining({
+            dueDate: "2026-06-10",
+            title: "Solicitud con vencimiento",
+          }),
+        }),
+      );
+    });
+
+    test("rechaza solicitud con formulario incompleto", async () => {
+      const result = await createTicket({
+        title: "",
+        description: "",
+        category: "Hardware",
+        priority: "HIGH",
+        department: "Operaciones",
+        requester: {
+          id: 3,
+          firstName: "Empleado",
+          lastName: "Demo",
+          role: ROLES.EMPLOYEE,
+          department: "Operaciones",
+        },
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ok: false,
+          message: expect.stringMatching(/obligatorios/i),
+        }),
+      );
+    });
+  });
+
+  describe("getTicketsSnapshot filters", () => {
+    beforeEach(() => {
+      window.localStorage.clear();
+    });
+
+    test("filtra por estado y prioridad", () => {
+      const filtered = getTicketsSnapshot({
+        status: TICKET_STATUSES.OPEN,
+        priority: "HIGH",
+      });
+
+      expect(filtered.length).toBeGreaterThan(0);
+      expect(
+        filtered.every(
+          (ticket) =>
+            ticket.status === TICKET_STATUSES.OPEN &&
+            ticket.priority === "HIGH",
+        ),
+      ).toBe(true);
+    });
+
+    test("busca por categoria y usuario", () => {
+      const byCategory = getTicketsSnapshot({ query: "Hardware" });
+      const byUser = getTicketsSnapshot({ query: "Laura Mendez" });
+
+      expect(byCategory.length).toBeGreaterThan(0);
+      expect(byCategory.every((ticket) => ticket.category === "Hardware")).toBe(true);
+      expect(byUser.length).toBeGreaterThan(0);
+      expect(
+        byUser.every(
+          (ticket) =>
+            ticket.createdByName === "Laura Mendez" ||
+            ticket.assignedToName === "Laura Mendez",
+        ),
+      ).toBe(true);
     });
   });
 });

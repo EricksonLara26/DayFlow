@@ -1,4 +1,5 @@
 import {
+  changePassword,
   clearAuthenticatedUser,
   getStoredAuthenticatedUser,
   login,
@@ -157,6 +158,36 @@ describe("authService", () => {
 
       expect(getStoredAuthenticatedUser()).toBeNull();
       expect(localStorage.getItem("dayflow-auth-user")).toBeNull();
+    });
+  });
+
+  describe("changePassword", () => {
+    test("rechaza la contrasena actual incorrecta", async () => {
+      const result = await changePassword(13, "incorrecta", "NuevaClave9");
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ok: false,
+          message: expect.stringMatching(/actual no coincide/i),
+        }),
+      );
+    });
+
+    test("actualiza la contrasena cuando la actual es correcta", async () => {
+      const result = await changePassword(13, "1234", "NuevaClave9");
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ok: true,
+          data: expect.objectContaining({
+            id: 13,
+            mustChangePassword: false,
+          }),
+        }),
+      );
+      expect(login({ identifier: "scastillo", password: "NuevaClave9" }).ok).toBe(true);
+
+      await changePassword(13, "NuevaClave9", "1234");
     });
   });
 });

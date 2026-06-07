@@ -261,4 +261,55 @@ describe("App critical flows", () => {
     expect(screen.getByText(/no tienes permisos/i)).toBeInTheDocument();
     expect(screen.queryByText(/vpn corporativa/i)).not.toBeInTheDocument();
   });
+
+  test("usuario no autenticado es redirigido al login desde una ruta protegida", async () => {
+    window.history.pushState({}, "", "/tickets/1001");
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: /iniciar/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+    expect(screen.queryByText(/ticket #1001/i)).not.toBeInTheDocument();
+  });
+
+  test("tecnico entra a solicitudes disponibles pero no a gestion de usuarios", async () => {
+    setStoredUser("tecnico");
+    window.history.pushState({}, "", "/tickets/available");
+
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: /tickets abiertos sin asignar/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /gesti.*usuarios/i })).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe("/tickets/available");
+  });
+
+  test("cambio de contrasena correcto permite iniciar sesion con la nueva clave", async () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "administrador" } });
+    fireEvent.change(screen.getByPlaceholderText(/contrase/i), { target: { value: "1234" } });
+    fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
+
+    await flushLoading();
+
+    fireEvent.click(screen.getByRole("button", { name: /abrir mi perfil/i }));
+    fireEvent.change(screen.getByLabelText(/actual/i), { target: { value: "1234" } });
+    fireEvent.change(screen.getByLabelText(/nueva/i), { target: { value: "NuevaClave9" } });
+    fireEvent.change(screen.getByLabelText(/confirmar/i), { target: { value: "NuevaClave9" } });
+    fireEvent.click(screen.getByRole("button", { name: /actualizar/i }));
+
+    await flushLoading();
+
+    expect(screen.getByText(/actualizada correctamente/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar sesi/i }));
+    fireEvent.change(screen.getByPlaceholderText(/usuario/i), { target: { value: "administrador" } });
+    fireEvent.change(screen.getByPlaceholderText(/contrase/i), { target: { value: "NuevaClave9" } });
+    fireEvent.click(screen.getByRole("button", { name: /iniciar/i }));
+
+    await flushLoading();
+
+    expect(screen.getByRole("heading", { name: /estado operativo/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/dashboard");
+  });
 });
