@@ -3,6 +3,28 @@ node_modules/
 .pnpm-store/
 dist/
 
+# Variables de entorno y archivos locales.
+.env
+.env.*
+!.env.example
+*.local
+
+# Python y Django.
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+.pytest_cache/
+.coverage
+htmlcov/
+backend/media/
+
+# Editores y sistema operativo.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
 # Artefactos temporales generados durante exportaciones y revisiones.
 tmp/
 output/
