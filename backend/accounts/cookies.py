@@ -21,6 +21,10 @@ def delete_refresh_cookie(response):
         path=settings.JWT_REFRESH_COOKIE_PATH,
         samesite=settings.JWT_REFRESH_COOKIE_SAMESITE,
     )
+    expired_cookie = response.cookies[settings.JWT_REFRESH_COOKIE_NAME]
+    expired_cookie["httponly"] = True
+    if settings.JWT_REFRESH_COOKIE_SECURE:
+        expired_cookie["secure"] = True
 
 
 def get_refresh_cookie(request):

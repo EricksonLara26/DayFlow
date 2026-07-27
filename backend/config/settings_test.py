@@ -7,6 +7,19 @@ from django.db.backends.signals import connection_created
 from .settings import *  # noqa: F403
 
 
+DEBUG = True
+ENABLE_API_DOCS = True
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+JWT_REFRESH_COOKIE_SECURE = False
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "dayflow-tests",
+    }
+}
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

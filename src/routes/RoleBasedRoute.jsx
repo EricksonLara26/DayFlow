@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 import { VIEW_IDS, canAccessView } from "../config/permissions";
 import { getPathForView } from "./routeConfig";

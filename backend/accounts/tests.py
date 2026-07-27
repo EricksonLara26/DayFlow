@@ -282,6 +282,21 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["user"]["username"], "auth-user")
 
+    def test_cookie_auth_endpoints_reject_untrusted_browser_origin(self):
+        response = self.client.post(
+            reverse("accounts:login"),
+            {
+                "identifier": self.user.username,
+                "password": self.password,
+            },
+            format="json",
+            HTTP_ORIGIN="https://attacker.example",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data["fields"], {})
+        self.assertNotIn("dayflow_refresh", response.cookies)
+
     def test_invalid_unknown_and_inactive_credentials_are_indistinguishable(self):
         attempts = (
             ("unknown@example.com", self.password),

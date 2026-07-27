@@ -83,7 +83,7 @@ function toBackendUser(user, departments) {
 
 function getStoredUserId() {
   try {
-    const value = window.localStorage.getItem(
+    const value = window.sessionStorage.getItem(
       "dayflow-auth-user",
     );
     return value ? JSON.parse(value).id : null;

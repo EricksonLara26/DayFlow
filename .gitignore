@@ -19,6 +19,7 @@ __pycache__/
 htmlcov/
 coverage.xml
 backend/media/
+backend/staticfiles/
 
 # Entornos locales de clientes API; conservar solo los ejemplos sin secretos.
 backend/docs/postman/*.local.postman_environment.json

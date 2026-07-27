@@ -8,7 +8,7 @@ import {
   useLocation,
   useNavigate,
   useParams,
-} from "react-router-dom";
+} from "react-router";
 import TechnicianRanking from "../components/dashboard/TechnicianRanking";
 import MainLayout from "../components/layout/MainLayout";
 import { VIEW_IDS, getDefaultView } from "../config/permissions";

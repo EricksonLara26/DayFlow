@@ -8,7 +8,7 @@ import {
 
 describe("authService storage", () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
   test("sanitiza usuario y normaliza el rol canónico", () => {
@@ -58,7 +58,7 @@ describe("authService storage", () => {
     });
 
     const raw = JSON.parse(
-      window.localStorage.getItem("dayflow-auth-user"),
+      window.sessionStorage.getItem("dayflow-auth-user"),
     );
     expect(raw).not.toHaveProperty("password");
     expect(getStoredAuthenticatedUser().username).toBe("tecnico");
@@ -68,14 +68,14 @@ describe("authService storage", () => {
   });
 
   test("elimina una sesión almacenada con rol inválido", () => {
-    window.localStorage.setItem(
+    window.sessionStorage.setItem(
       "dayflow-auth-user",
       JSON.stringify({ username: "test", role: "INVALID" }),
     );
 
     expect(getStoredAuthenticatedUser()).toBeNull();
     expect(
-      window.localStorage.getItem("dayflow-auth-user"),
+      window.sessionStorage.getItem("dayflow-auth-user"),
     ).toBeNull();
   });
 });

@@ -39,6 +39,7 @@ from .permissions import (
     PasswordChangeCompleted,
 )
 from .role_mapping import to_canonical_role_code
+from .security import validate_browser_origin
 from .serializers import (
     AuthenticationResponseSerializer,
     ChangePasswordSerializer,
@@ -118,6 +119,7 @@ class LoginView(APIView):
         auth=(),
     )
     def post(self, request):
+        validate_browser_origin(request)
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return _issue_authentication_response(
@@ -147,6 +149,7 @@ class RefreshView(APIView):
         auth=(),
     )
     def post(self, request):
+        validate_browser_origin(request)
         encoded_token = get_refresh_cookie(request)
         if not encoded_token:
             raise InvalidSession()
@@ -199,6 +202,7 @@ class LogoutView(APIView):
         auth=(),
     )
     def post(self, request):
+        validate_browser_origin(request)
         encoded_token = get_refresh_cookie(request)
         if encoded_token:
             try:
@@ -245,6 +249,7 @@ class ChangePasswordView(APIView):
     )
     @transaction.atomic
     def post(self, request):
+        validate_browser_origin(request)
         serializer = ChangePasswordSerializer(
             data=request.data,
             context={"request": request},

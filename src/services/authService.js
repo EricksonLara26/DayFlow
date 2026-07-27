@@ -21,6 +21,14 @@ function ok(data, extra = {}) {
   };
 }
 
+function getSessionStorage() {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage : null;
+  } catch {
+    return null;
+  }
+}
+
 export function sanitizeAuthenticatedUser(user) {
   if (!user) {
     return null;
@@ -46,7 +54,7 @@ export function sanitizeAuthenticatedUser(user) {
 
 export function getStoredAuthenticatedUser() {
   try {
-    const rawUser = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    const rawUser = getSessionStorage()?.getItem(AUTH_STORAGE_KEY);
     const parsedUser = rawUser ? JSON.parse(rawUser) : null;
 
     if (!parsedUser) {
@@ -70,12 +78,12 @@ export function storeAuthenticatedUser(user) {
 
   try {
     if (sessionUser) {
-      window.localStorage.setItem(
+      getSessionStorage()?.setItem(
         AUTH_STORAGE_KEY,
         JSON.stringify(sessionUser),
       );
     } else {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      getSessionStorage()?.removeItem(AUTH_STORAGE_KEY);
     }
   } catch {
     // La sesión continúa en memoria si el navegador bloquea localStorage.
@@ -86,7 +94,7 @@ export function storeAuthenticatedUser(user) {
 
 export function clearAuthenticatedUser() {
   try {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    getSessionStorage()?.removeItem(AUTH_STORAGE_KEY);
   } catch {
     // No hay acción adicional si localStorage no está disponible.
   }

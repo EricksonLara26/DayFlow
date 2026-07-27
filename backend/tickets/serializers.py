@@ -55,7 +55,20 @@ def _file_signature_is_valid(uploaded_file, suffix):
         expected_directory = "word/" if suffix == ".docx" else "xl/"
         try:
             with ZipFile(uploaded_file) as archive:
-                names = archive.namelist()
+                members = archive.infolist()
+                if not members or len(members) > 2_000:
+                    return False
+                if any(member.flag_bits & 0x1 for member in members):
+                    return False
+                if any(
+                    member.filename.startswith(("/", "\\"))
+                    or ".." in Path(member.filename).parts
+                    for member in members
+                ):
+                    return False
+                if sum(member.file_size for member in members) > 100 * 1024 * 1024:
+                    return False
+                names = [member.filename for member in members]
                 return (
                     "[Content_Types].xml" in names
                     and any(name.startswith(expected_directory) for name in names)

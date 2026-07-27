@@ -247,12 +247,11 @@ describe("apiClient", () => {
     expect(options.headers.has("Content-Type")).toBe(false);
   });
 
-  test("almacena expiración en sessionStorage y detecta renovación", () => {
+  test("mantiene el token solo en memoria y detecta renovación", () => {
     setAccessToken("access-local", "2026-07-27T12:00:00Z");
 
-    expect(window.sessionStorage.getItem("dayflow-access-token")).toBe(
-      "access-local",
-    );
+    expect(getAccessToken()).toBe("access-local");
+    expect(window.sessionStorage.getItem("dayflow-access-token")).toBeNull();
     expect(
       shouldRefreshAccessToken(
         new Date("2026-07-27T11:59:40Z").getTime(),
@@ -260,6 +259,7 @@ describe("apiClient", () => {
     ).toBe(true);
 
     clearAccessToken();
+    expect(getAccessToken()).toBeNull();
     expect(window.sessionStorage.getItem("dayflow-access-token")).toBeNull();
   });
 });

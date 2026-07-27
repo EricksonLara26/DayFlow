@@ -14,7 +14,7 @@ function setStoredUser(username) {
   const departmentId = mockDepartments.find(
     (department) => department.name === user.department,
   )?.id;
-  window.localStorage.setItem(
+  window.sessionStorage.setItem(
     "dayflow-auth-user",
     JSON.stringify(
       sanitizeAuthenticatedUser({ ...user, departmentId }),
