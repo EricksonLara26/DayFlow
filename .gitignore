@@ -3,6 +3,10 @@ node_modules/
 .pnpm-store/
 dist/
 
+# Artefactos temporales generados durante exportaciones y revisiones.
+tmp/
+output/
+
 # Logs generados por Vite/pnpm durante pruebas locales.
 *.log
 *.err.log
