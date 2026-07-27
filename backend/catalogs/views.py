@@ -5,15 +5,26 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+    extend_schema_view,
+)
 
 from accounts.permissions import (
     IsAdministrator,
     PasswordChangeCompleted,
     is_administrator,
 )
+from config.openapi import error_responses
 
 from .models import Category, Department
-from .serializers import CategorySerializer, DepartmentSerializer
+from .serializers import (
+    CategoryActionResponseSerializer,
+    CategorySerializer,
+    DepartmentActionResponseSerializer,
+    DepartmentSerializer,
+)
 
 
 class NamedCatalogViewSet(
@@ -92,11 +103,99 @@ class NamedCatalogViewSet(
         )
 
 
+def catalog_openapi(*, serializer_class, action_serializer, label):
+    """Apply the same explicit contract to both catalog resources."""
+    return extend_schema_view(
+        list=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Listar {label}",
+            parameters=[
+                OpenApiParameter(
+                    "active",
+                    str,
+                    enum=("true", "false", "all"),
+                    description=(
+                        "Solo administradores pueden consultar inactivos."
+                    ),
+                ),
+                OpenApiParameter("search", str),
+            ],
+            responses={
+                200: serializer_class(many=True),
+                **error_responses(400, 401, 403),
+            },
+        ),
+        create=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Crear {label}",
+            request=serializer_class,
+            responses={
+                201: serializer_class,
+                **error_responses(400, 401, 403),
+            },
+        ),
+        retrieve=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Consultar {label}",
+            responses={
+                200: serializer_class,
+                **error_responses(401, 403, 404),
+            },
+        ),
+        update=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Actualizar {label}",
+            request=serializer_class,
+            responses={
+                200: serializer_class,
+                **error_responses(400, 401, 403, 404),
+            },
+        ),
+        partial_update=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Actualizar parcialmente {label}",
+            request=serializer_class,
+            responses={
+                200: serializer_class,
+                **error_responses(400, 401, 403, 404),
+            },
+        ),
+        activate=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Activar {label}",
+            request=None,
+            responses={
+                200: action_serializer,
+                **error_responses(401, 403, 404),
+            },
+        ),
+        deactivate=extend_schema(
+            tags=("Catalogs",),
+            summary=f"Desactivar {label}",
+            request=None,
+            responses={
+                200: action_serializer,
+                **error_responses(401, 403, 404),
+            },
+        ),
+    )
+
+
+@catalog_openapi(
+    serializer_class=DepartmentSerializer,
+    action_serializer=DepartmentActionResponseSerializer,
+    label="departamentos",
+)
 class DepartmentViewSet(NamedCatalogViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
 
 
+@catalog_openapi(
+    serializer_class=CategorySerializer,
+    action_serializer=CategoryActionResponseSerializer,
+    label="categorías",
+)
 class CategoryViewSet(NamedCatalogViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

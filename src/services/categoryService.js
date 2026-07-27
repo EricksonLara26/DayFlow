@@ -1,35 +1,48 @@
-import { mockCategories } from "../mocks";
+import { createCatalogService } from "./catalogServiceFactory";
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
+const categories = createCatalogService({
+  resource: "categories",
+  singularLabel: "Categoría",
+});
 
-function ok(data, extra = {}) {
-  return Promise.resolve({ ok: true, data, ...extra });
-}
-
-function fail(message, status = 400) {
-  return Promise.resolve({ ok: false, status, message, error: { message, status } });
-}
-
-export function getCategoriesSnapshot() {
-  return clone(mockCategories);
+export function getCategoriesSnapshot(filters = {}) {
+  return categories.getSnapshot(filters);
 }
 
 export function getCategoryNamesSnapshot() {
-  return getCategoriesSnapshot().map((category) => category.name);
+  return categories.getNamesSnapshot();
 }
 
-export function getCategories() {
-  return ok(getCategoriesSnapshot());
+export function getCategories(filters = {}) {
+  return categories.list(filters);
+}
+
+export function getActiveCategories(filters = {}) {
+  return categories.list({ ...filters, active: true });
 }
 
 export function getCategoryById(id) {
-  const category = mockCategories.find((currentCategory) => currentCategory.id === Number(id));
+  return categories.retrieve(id);
+}
 
-  if (!category) {
-    return fail("Categoria no encontrada.", 404);
-  }
+export function createCategory(payload) {
+  return categories.create(payload);
+}
 
-  return ok(clone(category));
+export function updateCategory(id, payload) {
+  return categories.update(id, payload);
+}
+
+export function deactivateCategory(id) {
+  return categories.deactivate(id);
+}
+
+export const deleteCategory = deactivateCategory;
+
+export function activateCategory(id) {
+  return categories.activate(id);
+}
+
+export function clearCategoriesCache() {
+  categories.clearCache();
 }

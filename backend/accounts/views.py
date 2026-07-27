@@ -15,7 +15,14 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    extend_schema,
+    extend_schema_view,
+)
 
+from config.openapi import MessageSerializer, error_responses
 from .authentication import DayFlowJWTAuthentication
 from .cookies import (
     delete_refresh_cookie,
@@ -33,9 +40,12 @@ from .permissions import (
 )
 from .role_mapping import to_canonical_role_code
 from .serializers import (
+    AuthenticationResponseSerializer,
     ChangePasswordSerializer,
+    CurrentUserResponseSerializer,
     LoginSerializer,
     TemporaryPasswordSerializer,
+    UserActionResponseSerializer,
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
@@ -83,6 +93,30 @@ class LoginView(APIView):
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "auth_login"
 
+    @extend_schema(
+        tags=("Auth",),
+        summary="Iniciar sesión",
+        description=(
+            "Acepta username o email. Devuelve un access JWT y guarda el "
+            "refresh JWT en una cookie HttpOnly."
+        ),
+        request=LoginSerializer,
+        responses={
+            200: AuthenticationResponseSerializer,
+            **error_responses(400, 401),
+        },
+        examples=[
+            OpenApiExample(
+                "Login",
+                value={
+                    "identifier": "usuario@example.test",
+                    "password": "<TU_CONTRASEÑA>",
+                },
+                request_only=True,
+            ),
+        ],
+        auth=(),
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -98,6 +132,20 @@ class RefreshView(APIView):
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "auth_refresh"
 
+    @extend_schema(
+        tags=("Auth",),
+        summary="Renovar access token",
+        description=(
+            "Rota el refresh token recibido exclusivamente desde la cookie "
+            "HttpOnly `dayflow_refresh`. El cuerpo debe estar vacío."
+        ),
+        request=None,
+        responses={
+            200: AuthenticationResponseSerializer,
+            **error_responses(401),
+        },
+        auth=(),
+    )
     def post(self, request):
         encoded_token = get_refresh_cookie(request)
         if not encoded_token:
@@ -119,6 +167,14 @@ class RefreshView(APIView):
 class CurrentUserView(APIView):
     permission_classes = (IsAuthenticated,)
 
+    @extend_schema(
+        tags=("Auth",),
+        summary="Consultar usuario actual",
+        responses={
+            200: CurrentUserResponseSerializer,
+            **error_responses(401),
+        },
+    )
     def get(self, request):
         user = User.objects.select_related("role", "department").get(
             pk=request.user.pk
@@ -132,6 +188,16 @@ class LogoutView(APIView):
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "auth_logout"
 
+    @extend_schema(
+        tags=("Auth",),
+        summary="Cerrar sesión",
+        description=(
+            "Revoca el refresh token si existe y elimina su cookie HttpOnly."
+        ),
+        request=None,
+        responses={200: MessageSerializer},
+        auth=(),
+    )
     def post(self, request):
         encoded_token = get_refresh_cookie(request)
         if encoded_token:
@@ -153,6 +219,30 @@ class ChangePasswordView(APIView):
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "auth_password_change"
 
+    @extend_schema(
+        tags=("Auth",),
+        summary="Cambiar contraseña",
+        description=(
+            "También satisface el cambio obligatorio. Revoca sesiones "
+            "anteriores y entrega un access token nuevo."
+        ),
+        request=ChangePasswordSerializer,
+        responses={
+            200: AuthenticationResponseSerializer,
+            **error_responses(400, 401),
+        },
+        examples=[
+            OpenApiExample(
+                "Cambio de contraseña",
+                value={
+                    "current_password": "<CONTRASEÑA_ACTUAL>",
+                    "new_password": "<NUEVA_CONTRASEÑA_SEGURA>",
+                    "confirm_password": "<NUEVA_CONTRASEÑA_SEGURA>",
+                },
+                request_only=True,
+            ),
+        ],
+    )
     @transaction.atomic
     def post(self, request):
         serializer = ChangePasswordSerializer(
@@ -184,6 +274,97 @@ class ChangePasswordView(APIView):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=("Users",),
+        summary="Listar usuarios",
+        parameters=[
+            OpenApiParameter("search", str, description="Búsqueda textual."),
+            OpenApiParameter(
+                "role",
+                str,
+                enum=(*RoleCode.values, "ALL"),
+            ),
+            OpenApiParameter("department", int),
+            OpenApiParameter(
+                "is_active",
+                str,
+                enum=("true", "false", "ALL"),
+            ),
+            OpenApiParameter(
+                "ordering",
+                str,
+                enum=(
+                    "username",
+                    "-username",
+                    "first_name",
+                    "-first_name",
+                    "last_name",
+                    "-last_name",
+                    "created_at",
+                    "-created_at",
+                ),
+            ),
+        ],
+        responses={
+            200: UserSerializer(many=True),
+            **error_responses(400, 401, 403),
+        },
+    ),
+    create=extend_schema(
+        tags=("Users",),
+        summary="Crear usuario",
+        request=UserCreateSerializer,
+        responses={
+            201: UserSerializer,
+            **error_responses(400, 401, 403),
+        },
+    ),
+    retrieve=extend_schema(
+        tags=("Users",),
+        summary="Consultar usuario",
+        responses={
+            200: UserSerializer,
+            **error_responses(401, 403, 404),
+        },
+    ),
+    update=extend_schema(
+        tags=("Users",),
+        summary="Actualizar usuario",
+        request=UserUpdateSerializer,
+        responses={
+            200: UserSerializer,
+            **error_responses(400, 401, 403, 404),
+        },
+    ),
+    partial_update=extend_schema(
+        tags=("Users",),
+        summary="Actualizar parcialmente un usuario",
+        request=UserUpdateSerializer,
+        responses={
+            200: UserSerializer,
+            **error_responses(400, 401, 403, 404),
+        },
+    ),
+    deactivate=extend_schema(
+        tags=("Users",),
+        summary="Desactivar usuario",
+        request=None,
+        responses={
+            200: UserActionResponseSerializer,
+            **error_responses(401, 403, 404),
+        },
+    ),
+    reset_password=extend_schema(
+        tags=("Users",),
+        summary="Asignar contraseña temporal",
+        request=TemporaryPasswordSerializer,
+        responses={
+            200: UserActionResponseSerializer,
+            **error_responses(400, 401, 403, 404),
+        },
+    ),
+)
 class UserViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,

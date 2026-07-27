@@ -3,6 +3,21 @@ import TicketForm from "../TicketForm";
 import { ROLES } from "../../../data/users";
 import { TICKET_PRIORITIES } from "../../../data/tickets";
 
+jest.mock("../../../hooks/useCatalogOptions", () => ({
+  useCategoryOptions: () => ({
+    error: "",
+    loading: false,
+    names: ["Hardware", "Software"],
+    refresh: jest.fn(),
+  }),
+  useDepartmentOptions: () => ({
+    error: "",
+    loading: false,
+    names: ["Tecnologia", "Administracion"],
+    refresh: jest.fn(),
+  }),
+}));
+
 describe("TicketForm", () => {
   const mockOnSubmit = jest.fn();
   const currentUser = {

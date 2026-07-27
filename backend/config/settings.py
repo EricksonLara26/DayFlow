@@ -16,6 +16,7 @@ env = environ.Env(
     JWT_ACCESS_TOKEN_MINUTES=(int, 30),
     JWT_REFRESH_TOKEN_DAYS=(int, 1),
     JWT_REFRESH_COOKIE_SECURE=(bool, False),
+    TICKET_ATTACHMENT_MAX_MB=(int, 10),
 )
 
 if ENV_FILE.exists():
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party
     "rest_framework",
+    "drf_spectacular",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     # DayFlow
@@ -133,6 +135,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": (
         "config.pagination.DayFlowPageNumberPagination"
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_RATES": {
         "auth_login": "5/minute",
@@ -142,6 +145,33 @@ REST_FRAMEWORK = {
     },
     "EXCEPTION_HANDLER": "config.api_exceptions.dayflow_exception_handler",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "DayFlow API",
+    "DESCRIPTION": (
+        "API REST versionada para autenticación, usuarios, catálogos, "
+        "tickets, auditoría y analítica de DayFlow."
+    ),
+    "VERSION": "1.0.0",
+    "OAS_VERSION": "3.0.3",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": True,
+    "TAGS": [
+        {"name": "Auth", "description": "Sesión JWT y contraseña."},
+        {"name": "Users", "description": "Administración de usuarios."},
+        {
+            "name": "Catalogs",
+            "description": "Departamentos y categorías.",
+        },
+        {"name": "Tickets", "description": "Flujo operativo de tickets."},
+        {
+            "name": "Analytics",
+            "description": "Métricas derivadas sin tablas de totales.",
+        },
+    ],
 }
 
 SIMPLE_JWT = {
@@ -201,5 +231,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+TICKET_ATTACHMENT_MAX_BYTES = (
+    env.int("TICKET_ATTACHMENT_MAX_MB") * 1024 * 1024
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

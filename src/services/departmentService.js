@@ -1,35 +1,48 @@
-import { mockDepartments } from "../mocks";
+import { createCatalogService } from "./catalogServiceFactory";
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
+const departments = createCatalogService({
+  resource: "departments",
+  singularLabel: "Departamento",
+});
 
-function ok(data, extra = {}) {
-  return Promise.resolve({ ok: true, data, ...extra });
-}
-
-function fail(message, status = 400) {
-  return Promise.resolve({ ok: false, status, message, error: { message, status } });
-}
-
-export function getDepartmentsSnapshot() {
-  return clone(mockDepartments);
+export function getDepartmentsSnapshot(filters = {}) {
+  return departments.getSnapshot(filters);
 }
 
 export function getDepartmentNamesSnapshot() {
-  return getDepartmentsSnapshot().map((department) => department.name);
+  return departments.getNamesSnapshot();
 }
 
-export function getDepartments() {
-  return ok(getDepartmentsSnapshot());
+export function getDepartments(filters = {}) {
+  return departments.list(filters);
+}
+
+export function getActiveDepartments(filters = {}) {
+  return departments.list({ ...filters, active: true });
 }
 
 export function getDepartmentById(id) {
-  const department = mockDepartments.find((currentDepartment) => currentDepartment.id === Number(id));
+  return departments.retrieve(id);
+}
 
-  if (!department) {
-    return fail("Departamento no encontrado.", 404);
-  }
+export function createDepartment(payload) {
+  return departments.create(payload);
+}
 
-  return ok(clone(department));
+export function updateDepartment(id, payload) {
+  return departments.update(id, payload);
+}
+
+export function deactivateDepartment(id) {
+  return departments.deactivate(id);
+}
+
+export const deleteDepartment = deactivateDepartment;
+
+export function activateDepartment(id) {
+  return departments.activate(id);
+}
+
+export function clearDepartmentsCache() {
+  departments.clearCache();
 }

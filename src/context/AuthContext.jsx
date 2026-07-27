@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   canAccessView as canAccessViewForUser,
   canCreateTicket as canCreateTicketForUser,
@@ -7,18 +7,41 @@ import {
 import { isAdministratorUser, isTechnicianUser } from "../data/users";
 import {
   changePassword as authChangePassword,
+  clearAuthenticatedUser,
   getStoredAuthenticatedUser,
   login as authLogin,
   logout as authLogout,
+  restoreSession as authRestoreSession,
   storeAuthenticatedUser,
 } from "../services/authService";
-import { getUserSnapshotById } from "../services/userService";
+import { AUTH_EXPIRED_EVENT } from "../services/apiClient";
 
 export const AuthContext = createContext(null);
+
+function hasSameSessionData(currentUser, restoredUser) {
+  const sessionFields = [
+    "id",
+    "firstName",
+    "lastName",
+    "username",
+    "email",
+    "role",
+    "department",
+    "departmentId",
+    "position",
+    "active",
+    "mustChangePassword",
+  ];
+
+  return sessionFields.every(
+    (field) => currentUser?.[field] === restoredUser?.[field],
+  );
+}
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(getStoredAuthenticatedUser);
   const [loginMessage, setLoginMessage] = useState("");
+  const sessionVersionRef = useRef(0);
 
   const isTechnician = isTechnicianUser(currentUser);
   const isAdministrator = isAdministratorUser(currentUser);
@@ -26,7 +49,53 @@ export function AuthProvider({ children }) {
   const canDownloadReports = canDownloadReportsForUser(currentUser);
   const dashboardScope = isAdministrator ? "administrator" : isTechnician ? "technician" : "employee";
 
+  useEffect(() => {
+    let mounted = true;
+    const restoreVersion = sessionVersionRef.current;
+
+    authRestoreSession().then((result) => {
+      if (
+        !mounted ||
+        restoreVersion !== sessionVersionRef.current
+      ) {
+        return;
+      }
+
+      if (result.ok) {
+        const restoredUser =
+          result.user ?? result.data?.user ?? result.data;
+        if (
+          restoredUser &&
+          !hasSameSessionData(currentUser, restoredUser)
+        ) {
+          setCurrentUser(restoredUser);
+        }
+      } else if (result.status === 401) {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      sessionVersionRef.current += 1;
+      clearAuthenticatedUser();
+      setCurrentUser(null);
+      setLoginMessage("Tu sesión expiró. Inicia sesión nuevamente.");
+    };
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpiredSession);
+    return () => {
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpiredSession);
+    };
+  }, []);
+
   const login = useCallback(async (form) => {
+    sessionVersionRef.current += 1;
     const result = await authLogin(form);
 
     if (!result.ok) {
@@ -41,6 +110,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    sessionVersionRef.current += 1;
     const result = authLogout();
     setCurrentUser(null);
     setLoginMessage("Sesi\u00f3n cerrada correctamente.");
@@ -66,10 +136,8 @@ export function AuthProvider({ children }) {
         return { ok: false, message: "No hay una sesi\u00f3n activa." };
       }
 
-      const fullUser = getUserSnapshotById(currentUser.id);
-
-      if (!fullUser || currentPassword !== fullUser.password) {
-        return { ok: false, message: "La contrase\u00f1a actual no coincide." };
+      if (!currentPassword.trim()) {
+        return { ok: false, message: "La contrase\u00f1a actual es obligatoria." };
       }
 
       const cleanPassword = newPassword.trim();
@@ -86,15 +154,20 @@ export function AuthProvider({ children }) {
         return { ok: false, message: "La confirmaci\u00f3n no coincide." };
       }
 
-      const result = await authChangePassword(currentUser.id, currentPassword, cleanPassword);
+      const result = await authChangePassword(
+        currentUser.id,
+        currentPassword,
+        cleanPassword,
+        confirmPassword.trim(),
+      );
 
       if (!result.ok) {
         return result;
       }
 
-      replaceCurrentUser(result.data ?? getUserSnapshotById(currentUser.id));
+      replaceCurrentUser(result.data ?? currentUser);
 
-      return { ok: true };
+      return result;
     },
     [currentUser, replaceCurrentUser],
   );

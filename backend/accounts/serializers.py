@@ -307,3 +307,22 @@ class ChangePasswordSerializer(serializers.Serializer):
             ) from exc
 
         return attrs
+
+
+class AuthenticationResponseSerializer(serializers.Serializer):
+    """Document the access-token response; refresh stays in HttpOnly cookie."""
+
+    message = serializers.CharField()
+    token_type = serializers.CharField()
+    access = serializers.CharField()
+    access_expires_at = serializers.DateTimeField()
+    user = UserSerializer()
+
+
+class CurrentUserResponseSerializer(serializers.Serializer):
+    user = UserSerializer()
+
+
+class UserActionResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    user = UserSerializer()

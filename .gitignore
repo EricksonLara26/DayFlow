@@ -17,7 +17,12 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
 backend/media/
+
+# Entornos locales de clientes API; conservar solo los ejemplos sin secretos.
+backend/docs/postman/*.local.postman_environment.json
+backend/docs/postman/*.private.json
 
 # Editores y sistema operativo.
 .idea/

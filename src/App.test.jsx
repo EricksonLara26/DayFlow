@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
-import { initialUsers } from "./mocks";
+import { initialUsers, mockDepartments } from "./mocks";
 import { sanitizeAuthenticatedUser } from "./services/authService";
 import { TICKET_PRIORITIES } from "./data/tickets";
+import { installMockAuthApi } from "./test/mockAuthApi";
 
 jest.mock("./utils/xlsxExporter", () => ({
   downloadXlsx: jest.fn(),
@@ -10,7 +11,15 @@ jest.mock("./utils/xlsxExporter", () => ({
 
 function setStoredUser(username) {
   const user = initialUsers.find((currentUser) => currentUser.username === username);
-  window.localStorage.setItem("dayflow-auth-user", JSON.stringify(sanitizeAuthenticatedUser(user)));
+  const departmentId = mockDepartments.find(
+    (department) => department.name === user.department,
+  )?.id;
+  window.localStorage.setItem(
+    "dayflow-auth-user",
+    JSON.stringify(
+      sanitizeAuthenticatedUser({ ...user, departmentId }),
+    ),
+  );
 }
 
 async function flushLoading() {
@@ -37,11 +46,15 @@ function fillEmployeeTicketForm() {
 }
 
 describe("App critical flows", () => {
+  let mockAuthApi;
+
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-05-23T12:00:00.000Z"));
     jest.spyOn(window, "confirm").mockReturnValue(true);
     window.localStorage.clear();
+    window.sessionStorage.clear();
+    mockAuthApi = installMockAuthApi();
     window.history.pushState({}, "", "/");
   });
 
@@ -50,6 +63,8 @@ describe("App critical flows", () => {
     jest.useRealTimers();
     jest.restoreAllMocks();
     window.localStorage.clear();
+    window.sessionStorage.clear();
+    mockAuthApi.cleanup();
     window.history.pushState({}, "", "/");
   });
 
@@ -222,22 +237,24 @@ describe("App critical flows", () => {
     expect(window.location.pathname).toBe("/dashboard");
   });
 
-  test("ruta de detalle con ID real funciona al refrescar", () => {
+  test("ruta de detalle con ID real funciona al refrescar", async () => {
     setStoredUser("administrador");
     window.history.pushState({}, "", "/tickets/1001");
 
     render(<App />);
+    await flushAsync();
 
     expect(screen.getByText(/ticket #1001/i)).toBeInTheDocument();
     expect(screen.getByText(/laptop no enciende/i)).toBeInTheDocument();
     expect(window.location.pathname).toBe("/tickets/1001");
   });
 
-  test("ticket inexistente muestra pantalla de no encontrado", () => {
+  test("ticket inexistente muestra pantalla de no encontrado", async () => {
     setStoredUser("administrador");
     window.history.pushState({}, "", "/tickets/999999");
 
     render(<App />);
+    await flushAsync();
 
     expect(screen.getByText(/ticket no encontrado/i)).toBeInTheDocument();
   });

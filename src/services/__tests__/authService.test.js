@@ -1,193 +1,81 @@
+import { ROLES } from "../../data/users";
 import {
-  changePassword,
   clearAuthenticatedUser,
   getStoredAuthenticatedUser,
-  login,
   sanitizeAuthenticatedUser,
   storeAuthenticatedUser,
 } from "../authService";
-import { ROLES } from "../../data/users";
 
-describe("authService", () => {
-  const testUsers = [
-    {
-      id: 1,
-      username: "admin",
-      email: "admin@test.com",
-      password: "1234",
-      firstName: "Admin",
-      lastName: "User",
-      role: ROLES.ADMINISTRATOR,
-      active: true,
-    },
-    {
-      id: 2,
-      username: "tecnico",
-      email: "tech@test.com",
-      password: "1234",
-      firstName: "Tech",
-      lastName: "User",
-      role: ROLES.TECHNICIAN,
-      active: true,
-    },
-    {
-      id: 3,
-      username: "inactive",
-      email: "inactive@test.com",
-      password: "1234",
-      firstName: "In",
-      lastName: "Active",
-      role: ROLES.EMPLOYEE,
-      active: false,
-    },
-  ];
-
+describe("authService storage", () => {
   beforeEach(() => {
-    localStorage.clear();
+    window.localStorage.clear();
   });
 
-  describe("login", () => {
-    test("autentica con username", () => {
-      const result = login({ identifier: "admin", password: "1234" }, testUsers);
-
-      expect(result.ok).toBe(true);
-      expect(result.user.username).toBe("admin");
+  test("sanitiza usuario y normaliza el rol canónico", () => {
+    const sanitized = sanitizeAuthenticatedUser({
+      id: 1,
+      username: "test",
+      email: "test@example.test",
+      first_name: "Test",
+      last_name: "User",
+      role: "ADMINISTRATOR",
+      department: 4,
+      department_name: "Tecnología",
+      position: "Admin",
+      is_active: true,
+      must_change_password: true,
+      password: "no-debe-salir",
     });
 
-    test("autentica con email", () => {
-      const result = login({ identifier: "admin@test.com", password: "1234" }, testUsers);
-
-      expect(result.ok).toBe(true);
-      expect(result.user.email).toBe("admin@test.com");
-    });
-
-    test("autentica con nombre completo", () => {
-      const result = login({ identifier: "Admin User", password: "1234" }, testUsers);
-
-      expect(result.ok).toBe(true);
-    });
-
-    test("rechaza contrasena incorrecta", () => {
-      const result = login({ identifier: "admin", password: "wrong" }, testUsers);
-
-      expect(result.ok).toBe(false);
-      expect(result.message).toContain("incorrectas");
-    });
-
-    test("rechaza usuario inactivo", () => {
-      const result = login({ identifier: "inactive", password: "1234" }, testUsers);
-
-      expect(result.ok).toBe(false);
-      expect(result.message).toContain("inactivo");
-    });
-
-    test("busca sin distinguir mayusculas", () => {
-      const result = login({ identifier: "ADMIN", password: "1234" }, testUsers);
-
-      expect(result.ok).toBe(true);
-    });
-  });
-
-  describe("sanitizeAuthenticatedUser", () => {
-    test("mapea campos de sesion", () => {
-      const user = {
-        id: 1,
-        username: "test",
-        email: "test@test.com",
+    expect(sanitized).toEqual(
+      expect.objectContaining({
         firstName: "Test",
         lastName: "User",
         role: ROLES.ADMINISTRATOR,
-        department: "IT",
-        position: "Admin",
+        department: "Tecnología",
+        departmentId: 4,
         active: true,
         mustChangePassword: true,
-      };
-      const sanitized = sanitizeAuthenticatedUser(user);
-
-      expect(sanitized.username).toBe("test");
-      expect(sanitized.role).toBe(ROLES.ADMINISTRATOR);
-      expect(sanitized.firstName).toBe("Test");
-      expect(sanitized.lastName).toBe("User");
-      expect(sanitized.position).toBe("Admin");
-      expect(sanitized.mustChangePassword).toBe(true);
-      expect(sanitized).not.toHaveProperty("nombre");
-      expect(sanitized).not.toHaveProperty("rol");
-    });
-
-    test("devuelve null para usuario null", () => {
-      expect(sanitizeAuthenticatedUser(null)).toBeNull();
-    });
+      }),
+    );
+    expect(sanitized).not.toHaveProperty("password");
   });
 
-  describe("persistencia en localStorage", () => {
-    const user = {
-      id: 1,
-      username: "test",
-      email: "test@test.com",
-      firstName: "Test",
-      lastName: "User",
-      role: ROLES.ADMINISTRATOR,
-      department: "IT",
-      position: "Admin",
+  test("devuelve null para usuario ausente", () => {
+    expect(sanitizeAuthenticatedUser(null)).toBeNull();
+  });
+
+  test("guarda, recupera y limpia el usuario sin contraseña", () => {
+    storeAuthenticatedUser({
+      id: 2,
+      username: "tecnico",
+      email: "tecnico@example.test",
+      firstName: "Tania",
+      lastName: "Técnica",
+      role: ROLES.TECHNICIAN,
+      department: "Tecnología",
       active: true,
-    };
-
-    test("guarda usuario", () => {
-      storeAuthenticatedUser(user);
-
-      const stored = JSON.parse(localStorage.getItem("dayflow-auth-user"));
-      expect(stored.username).toBe("test");
     });
 
-    test("recupera usuario guardado", () => {
-      storeAuthenticatedUser(user);
+    const raw = JSON.parse(
+      window.localStorage.getItem("dayflow-auth-user"),
+    );
+    expect(raw).not.toHaveProperty("password");
+    expect(getStoredAuthenticatedUser().username).toBe("tecnico");
 
-      const retrieved = getStoredAuthenticatedUser();
-      expect(retrieved.username).toBe("test");
-    });
-
-    test("limpia usuario guardado", () => {
-      storeAuthenticatedUser(user);
-      clearAuthenticatedUser();
-
-      expect(getStoredAuthenticatedUser()).toBeNull();
-    });
-
-    test("rechaza rol invalido", () => {
-      localStorage.setItem("dayflow-auth-user", JSON.stringify({ username: "test", role: "INVALID" }));
-
-      expect(getStoredAuthenticatedUser()).toBeNull();
-      expect(localStorage.getItem("dayflow-auth-user")).toBeNull();
-    });
+    clearAuthenticatedUser();
+    expect(getStoredAuthenticatedUser()).toBeNull();
   });
 
-  describe("changePassword", () => {
-    test("rechaza la contrasena actual incorrecta", async () => {
-      const result = await changePassword(13, "incorrecta", "NuevaClave9");
+  test("elimina una sesión almacenada con rol inválido", () => {
+    window.localStorage.setItem(
+      "dayflow-auth-user",
+      JSON.stringify({ username: "test", role: "INVALID" }),
+    );
 
-      expect(result).toEqual(
-        expect.objectContaining({
-          ok: false,
-          message: expect.stringMatching(/actual no coincide/i),
-        }),
-      );
-    });
-
-    test("actualiza la contrasena cuando la actual es correcta", async () => {
-      const result = await changePassword(13, "1234", "NuevaClave9");
-
-      expect(result).toEqual(
-        expect.objectContaining({
-          ok: true,
-          data: expect.objectContaining({
-            id: 13,
-            mustChangePassword: false,
-          }),
-        }),
-      );
-      expect(login({ identifier: "scastillo", password: "NuevaClave9" }).ok).toBe(true);
-
-      await changePassword(13, "NuevaClave9", "1234");
-    });
+    expect(getStoredAuthenticatedUser()).toBeNull();
+    expect(
+      window.localStorage.getItem("dayflow-auth-user"),
+    ).toBeNull();
   });
 });

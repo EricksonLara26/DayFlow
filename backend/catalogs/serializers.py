@@ -52,3 +52,13 @@ class DepartmentSerializer(NamedCatalogSerializer):
 class CategorySerializer(NamedCatalogSerializer):
     class Meta(NamedCatalogSerializer.Meta):
         model = Category
+
+
+class DepartmentActionResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    data = DepartmentSerializer()
+
+
+class CategoryActionResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    data = CategorySerializer()

@@ -30,6 +30,7 @@ class TicketEventType(models.TextChoices):
 class TicketHistoryAction(models.TextChoices):
     CREATED = "CREATED", "Ticket creado"
     TAKEN = "TAKEN", "Ticket tomado"
+    ASSIGNED = "ASSIGNED", "Ticket asignado"
     STATUS_CHANGED = "STATUS_CHANGED", "Estado cambiado"
     PRIORITY_CHANGED = "PRIORITY_CHANGED", "Prioridad cambiada"
     COMMENT_ADDED = "COMMENT_ADDED", "Comentario agregado"
@@ -39,6 +40,7 @@ class TicketHistoryAction(models.TextChoices):
 ACTION_EVENT_TYPES = {
     TicketHistoryAction.CREATED: TicketEventType.TICKET,
     TicketHistoryAction.TAKEN: TicketEventType.ASSIGNMENT,
+    TicketHistoryAction.ASSIGNED: TicketEventType.ASSIGNMENT,
     TicketHistoryAction.STATUS_CHANGED: TicketEventType.STATUS,
     TicketHistoryAction.PRIORITY_CHANGED: TicketEventType.PRIORITY,
     TicketHistoryAction.COMMENT_ADDED: TicketEventType.COMMENT,
@@ -51,3 +53,19 @@ CLOSED_TICKET_STATUSES = (
     TicketStatus.COMPLETED,
     TicketStatus.DISMISSED,
 )
+
+TICKET_ATTACHMENT_ALLOWED_TYPES = {
+    ".csv": {"text/csv"},
+    ".docx": {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    },
+    ".jpeg": {"image/jpeg"},
+    ".jpg": {"image/jpeg"},
+    ".pdf": {"application/pdf"},
+    ".png": {"image/png"},
+    ".txt": {"text/plain"},
+    ".webp": {"image/webp"},
+    ".xlsx": {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+}

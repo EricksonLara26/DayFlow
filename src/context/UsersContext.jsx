@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import {
   canCreateUser,
   canDeactivateUser,
@@ -6,12 +6,18 @@ import {
   canEditUser,
   canResetUserPassword,
 } from "../config/permissions";
-import { ROLES, isTechnicianUser } from "../data/users";
 import {
+  ROLES,
+  isAdministratorUser,
+  isTechnicianUser,
+} from "../data/users";
+import {
+  clearUsersCache,
   createUser as createUserRequest,
   deleteUser as deleteUserRequest,
   getUsers as fetchUsers,
   getUsersSnapshot,
+  replaceUsersCache,
   resetPassword as resetUserPasswordRequest,
   updateUser as updateUserRequest,
 } from "../services/userService";
@@ -30,11 +36,38 @@ export function UsersProvider({ children }) {
   const [usersError, setUsersError] = useState("");
   const [usersLoading, setUsersLoading] = useState(false);
 
-  const refreshUsers = useCallback(async () => {
+  const refreshUsers = useCallback(async (actor = currentUser) => {
     setUsersLoading(true);
     setUsersError("");
 
     try {
+      if (!actor) {
+        clearUsersCache();
+        setUsers([]);
+        return {
+          ok: true,
+          data: [],
+          message: "",
+          status: 204,
+          error: null,
+        };
+      }
+
+      if (
+        actor.mustChangePassword ||
+        !isAdministratorUser(actor)
+      ) {
+        const visibleUsers = replaceUsersCache([actor]);
+        setUsers(visibleUsers);
+        return {
+          ok: true,
+          data: visibleUsers,
+          message: "",
+          status: 200,
+          error: null,
+        };
+      }
+
       const response = await fetchUsers();
 
       if (response.ok) {
@@ -45,13 +78,28 @@ export function UsersProvider({ children }) {
 
       return response;
     } catch {
-      const response = { ok: false, message: "No se pudieron cargar los usuarios." };
+      const response = {
+        ok: false,
+        data: null,
+        message: "No se pudieron cargar los usuarios.",
+        status: 0,
+        error: {
+          fields: {},
+          message: "No se pudieron cargar los usuarios.",
+          status: 0,
+          type: "network",
+        },
+      };
       setUsersError(response.message);
       return response;
     } finally {
       setUsersLoading(false);
     }
-  }, []);
+  }, [currentUser]);
+
+  useEffect(() => {
+    refreshUsers(currentUser);
+  }, [currentUser, refreshUsers]);
 
   const createUser = useCallback(
     async (form) => {

@@ -1,0 +1,4070 @@
+openapi: 3.0.3
+info:
+  title: DayFlow API
+  version: 1.0.0
+  description: API REST versionada para autenticación, usuarios, catálogos, tickets,
+    auditoría y analítica de DayFlow.
+paths:
+  /api/v1/analytics/activity-history/:
+    get:
+      operationId: analytics_activity_history_list
+      description: Respuesta paginada con cambios auditables de solo lectura.
+      summary: Historial global de actividad
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityHistoryList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/annual-technician-report/:
+    get:
+      operationId: analytics_annual_technician_report_retrieve
+      summary: Informe anual de tickets completados por técnico
+      parameters:
+      - in: query
+        name: technician_id
+        schema:
+          type: integer
+        description: ID canónico de un usuario TECHNICIAN.
+        required: true
+      - in: query
+        name: year
+        schema:
+          type: integer
+        description: Año de closed_at entre 2000 y 2100.
+        required: true
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnualTechnicianReportResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/demand-by-department/:
+    get:
+      operationId: analytics_demand_by_department_list
+      description: Excluye tickets DISMISSED.
+      summary: Demanda por departamento
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DepartmentTotal'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/due-tickets/:
+    get:
+      operationId: analytics_due_tickets_list
+      description: Tickets no terminales cuyo vencimiento está entre uno y tres días
+        desde la fecha UTC actual.
+      summary: Tickets próximos a vencer
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DueTicket'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/historical/:
+    get:
+      operationId: analytics_historical_list
+      summary: Histórico mensual
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Historical'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/summary/:
+    get:
+      operationId: analytics_summary_retrieve
+      summary: Resumen del dashboard
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/technician-ranking/:
+    get:
+      operationId: analytics_technician_ranking_list
+      summary: Ranking de técnicos
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TechnicianRanking'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/analytics/tickets-by-category/:
+    get:
+      operationId: analytics_tickets_by_category_list
+      description: Excluye tickets DISMISSED.
+      summary: Tickets por categoría
+      tags:
+      - Analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTotal'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/auth/change-password/:
+    post:
+      operationId: auth_change_password_create
+      description: También satisface el cambio obligatorio. Revoca sesiones anteriores
+        y entrega un access token nuevo.
+      summary: Cambiar contraseña
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            examples:
+              CambioDeContraseña:
+                value:
+                  current_password: <CONTRASEÑA_ACTUAL>
+                  new_password: <NUEVA_CONTRASEÑA_SEGURA>
+                  confirm_password: <NUEVA_CONTRASEÑA_SEGURA>
+                summary: Cambio de contraseña
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Acepta username o email. Devuelve un access JWT y guarda el refresh
+        JWT en una cookie HttpOnly.
+      summary: Iniciar sesión
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              Login:
+                value:
+                  identifier: usuario@example.test
+                  password: <TU_CONTRASEÑA>
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Revoca el refresh token si existe y elimina su cookie HttpOnly.
+      summary: Cerrar sesión
+      tags:
+      - Auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      summary: Consultar usuario actual
+      tags:
+      - Auth
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: Rota el refresh token recibido exclusivamente desde la cookie HttpOnly
+        `dayflow_refresh`. El cuerpo debe estar vacío.
+      summary: Renovar access token
+      tags:
+      - Auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+  /api/v1/categories/:
+    get:
+      operationId: categories_list
+      description: Expose active values to forms and administration to administrators.
+      summary: Listar categorías
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+          enum:
+          - all
+          - 'false'
+          - 'true'
+        description: Solo administradores pueden consultar inactivos.
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+    post:
+      operationId: categories_create
+      description: Expose active values to forms and administration to administrators.
+      summary: Crear categorías
+      tags:
+      - Catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/categories/{id}/:
+    get:
+      operationId: categories_retrieve
+      description: Expose active values to forms and administration to administrators.
+      summary: Consultar categorías
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este category.
+        required: true
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+    put:
+      operationId: categories_update
+      description: Expose active values to forms and administration to administrators.
+      summary: Actualizar categorías
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este category.
+        required: true
+      tags:
+      - Catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+    patch:
+      operationId: categories_partial_update
+      description: Expose active values to forms and administration to administrators.
+      summary: Actualizar parcialmente categorías
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este category.
+        required: true
+      tags:
+      - Catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/categories/{id}/activate/:
+    post:
+      operationId: categories_activate_create
+      description: Expose active values to forms and administration to administrators.
+      summary: Activar categorías
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este category.
+        required: true
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryActionResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/categories/{id}/deactivate/:
+    post:
+      operationId: categories_deactivate_create
+      description: Expose active values to forms and administration to administrators.
+      summary: Desactivar categorías
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este category.
+        required: true
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryActionResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/departments/:
+    get:
+      operationId: departments_list
+      description: Expose active values to forms and administration to administrators.
+      summary: Listar departamentos
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+          enum:
+          - all
+          - 'false'
+          - 'true'
+        description: Solo administradores pueden consultar inactivos.
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDepartmentList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+    post:
+      operationId: departments_create
+      description: Expose active values to forms and administration to administrators.
+      summary: Crear departamentos
+      tags:
+      - Catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/departments/{id}/:
+    get:
+      operationId: departments_retrieve
+      description: Expose active values to forms and administration to administrators.
+      summary: Consultar departamentos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este department.
+        required: true
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+    put:
+      operationId: departments_update
+      description: Expose active values to forms and administration to administrators.
+      summary: Actualizar departamentos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este department.
+        required: true
+      tags:
+      - Catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+    patch:
+      operationId: departments_partial_update
+      description: Expose active values to forms and administration to administrators.
+      summary: Actualizar parcialmente departamentos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este department.
+        required: true
+      tags:
+      - Catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDepartmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDepartmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDepartmentRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/departments/{id}/activate/:
+    post:
+      operationId: departments_activate_create
+      description: Expose active values to forms and administration to administrators.
+      summary: Activar departamentos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este department.
+        required: true
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentActionResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/departments/{id}/deactivate/:
+    post:
+      operationId: departments_deactivate_create
+      description: Expose active values to forms and administration to administrators.
+      summary: Desactivar departamentos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este department.
+        required: true
+      tags:
+      - Catalogs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentActionResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/tickets/:
+    get:
+      operationId: tickets_list
+      description: Aplica automáticamente el scope del rol autenticado.
+      summary: Listar tickets
+      parameters:
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date
+        description: Fecha inclusiva YYYY-MM-DD.
+      - in: query
+        name: created_to
+        schema:
+          type: string
+          format: date
+        description: Fecha inclusiva YYYY-MM-DD.
+      - in: query
+        name: due_soon
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      - in: query
+        name: priority
+        schema:
+          type: string
+          enum:
+          - ALL
+          - CRITICAL
+          - HIGH
+          - LOW
+          - MEDIUM
+      - in: query
+        name: query
+        schema:
+          type: string
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - all
+          - available
+          - history
+          - mine
+        description: Disponible únicamente para técnicos.
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ALL
+          - COMPLETED
+          - DISMISSED
+          - IN_PROGRESS
+          - ON_HOLD
+          - OPEN
+      tags:
+      - Tickets
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTicketListList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+    post:
+      operationId: tickets_create
+      description: Ticket visibility and audited workflow actions.
+      summary: Crear ticket
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/tickets/{id}/:
+    get:
+      operationId: tickets_retrieve
+      description: Ticket visibility and audited workflow actions.
+      summary: Consultar detalle del ticket
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/tickets/{id}/assign/:
+    post:
+      operationId: tickets_assign_create
+      description: Ticket visibility and audited workflow actions.
+      summary: Asignar técnico
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketAssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketAssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketAssignmentRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Conflicto:
+                  value:
+                    message: El ticket ya fue tomado por otro técnico.
+                    fields: {}
+          description: Conflicto con el estado actual del ticket.
+  /api/v1/tickets/{id}/attachments/:
+    post:
+      operationId: tickets_attachments_create
+      description: Ticket visibility and audited workflow actions.
+      summary: Cargar adjunto
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketAttachmentUploadRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketAttachment'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/tickets/{id}/attachments/{attachment_pk}/download/:
+    get:
+      operationId: tickets_attachments_download_retrieve
+      description: Ticket visibility and audited workflow actions.
+      summary: Descargar adjunto
+      parameters:
+      - in: path
+        name: attachment_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/tickets/{id}/comments/:
+    post:
+      operationId: tickets_comments_create
+      description: Ticket visibility and audited workflow actions.
+      summary: Agregar comentario
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCommentCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketCommentCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketCommentCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketComment'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/tickets/{id}/history/:
+    get:
+      operationId: tickets_history_list
+      description: Ticket visibility and audited workflow actions.
+      summary: Consultar historial auditable
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - Tickets
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTicketHistoryList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/tickets/{id}/status/:
+    post:
+      operationId: tickets_status_create
+      description: Ticket visibility and audited workflow actions.
+      summary: Cambiar estado
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketStatusRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketStatusRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketStatusRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Conflicto:
+                  value:
+                    message: El ticket ya fue tomado por otro técnico.
+                    fields: {}
+          description: Conflicto con el estado actual del ticket.
+  /api/v1/tickets/{id}/take/:
+    post:
+      operationId: tickets_take_create
+      description: Operación atómica para técnicos. Devuelve 409 si el ticket dejó
+        de estar OPEN o ya fue asignado.
+      summary: Tomar ticket disponible
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Conflicto:
+                  value:
+                    message: El ticket ya fue tomado por otro técnico.
+                    fields: {}
+          description: Conflicto con el estado actual del ticket.
+  /api/v1/users/:
+    get:
+      operationId: users_list
+      description: User administration without physical deletion.
+      summary: Listar usuarios
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: integer
+      - in: query
+        name: is_active
+        schema:
+          type: string
+          enum:
+          - ALL
+          - 'false'
+          - 'true'
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -created_at
+          - -first_name
+          - -last_name
+          - -username
+          - created_at
+          - first_name
+          - last_name
+          - username
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          enum:
+          - ADMINISTRATOR
+          - ALL
+          - EMPLOYEE
+          - TECHNICIAN
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Búsqueda textual.
+      tags:
+      - Users
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+    post:
+      operationId: users_create
+      description: User administration without physical deletion.
+      summary: Crear usuario
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+  /api/v1/users/{id}/:
+    get:
+      operationId: users_retrieve
+      description: User administration without physical deletion.
+      summary: Consultar usuario
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este user.
+        required: true
+      tags:
+      - Users
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+    put:
+      operationId: users_update
+      description: User administration without physical deletion.
+      summary: Actualizar usuario
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este user.
+        required: true
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+    patch:
+      operationId: users_partial_update
+      description: User administration without physical deletion.
+      summary: Actualizar parcialmente un usuario
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este user.
+        required: true
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/users/{id}/deactivate/:
+    post:
+      operationId: users_deactivate_create
+      description: User administration without physical deletion.
+      summary: Desactivar usuario
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este user.
+        required: true
+      tags:
+      - Users
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActionResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+  /api/v1/users/{id}/reset-password/:
+    post:
+      operationId: users_reset_password_create
+      description: User administration without physical deletion.
+      summary: Asignar contraseña temporal
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este user.
+        required: true
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemporaryPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TemporaryPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TemporaryPasswordRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActionResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                Validación:
+                  value:
+                    message: No se pudo procesar la solicitud.
+                    fields:
+                      due_date:
+                      - La fecha límite no puede ser anterior a la creación.
+          description: Solicitud o campos inválidos.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoAutenticado:
+                  value:
+                    message: Las credenciales de autenticación no se proveyeron.
+                    fields: {}
+                  summary: No autenticado
+          description: JWT ausente, inválido o expirado.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                SinPermiso:
+                  value:
+                    message: No tienes permisos para realizar esta operación.
+                    fields: {}
+                  summary: Sin permiso
+          description: El rol o el estado de la cuenta no permite la operación.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayFlowError'
+              examples:
+                NoEncontrado:
+                  value:
+                    message: No encontrado.
+                    fields: {}
+                  summary: No encontrado
+          description: El recurso no existe o queda fuera del scope del usuario.
+components:
+  schemas:
+    ActivityHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event_type:
+          type: string
+          readOnly: true
+        action_code:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        actor_id:
+          type: integer
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ticket_id:
+          type: integer
+          readOnly: true
+        ticket_title:
+          type: string
+          readOnly: true
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketHistoryChange'
+          readOnly: true
+      required:
+      - action
+      - action_code
+      - actor_id
+      - actor_name
+      - changes
+      - created_at
+      - event_type
+      - id
+      - ticket_id
+      - ticket_title
+    AnnualReportTicket:
+      type: object
+      properties:
+        ticket_id:
+          type: integer
+        title:
+          type: string
+        category_id:
+          type: integer
+        category_name:
+          type: string
+        department_id:
+          type: integer
+        department_name:
+          type: string
+        requester_id:
+          type: integer
+        requester_name:
+          type: string
+        technician_id:
+          type: integer
+        technician_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        taken_at:
+          type: string
+          format: date-time
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+        resolution_time_minutes:
+          type: integer
+          nullable: true
+          readOnly: true
+      required:
+      - category_id
+      - category_name
+      - closed_at
+      - created_at
+      - department_id
+      - department_name
+      - requester_id
+      - requester_name
+      - resolution_time_minutes
+      - status
+      - taken_at
+      - technician_id
+      - technician_name
+      - ticket_id
+      - title
+    AnnualTechnicianReportResponse:
+      type: object
+      properties:
+        technician_id:
+          type: integer
+        technician_name:
+          type: string
+        year:
+          type: integer
+        total_tickets:
+          type: integer
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnualReportTicket'
+      required:
+      - technician_id
+      - technician_name
+      - tickets
+      - total_tickets
+      - year
+    AuthenticationResponse:
+      type: object
+      description: Document the access-token response; refresh stays in HttpOnly cookie.
+      properties:
+        message:
+          type: string
+        token_type:
+          type: string
+        access:
+          type: string
+        access_expires_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access
+      - access_expires_at
+      - message
+      - token_type
+      - user
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - active
+      - created_at
+      - id
+      - name
+      - updated_at
+    CategoryActionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Category'
+      required:
+      - data
+      - message
+    CategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+      required:
+      - name
+    CategoryTotal:
+      type: object
+      properties:
+        category_id:
+          type: integer
+          nullable: true
+        category_name:
+          type: string
+        total:
+          type: integer
+      required:
+      - category_id
+      - category_name
+      - total
+    ChangePasswordRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - confirm_password
+      - current_password
+      - new_password
+    CurrentUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - user
+    DayFlowError:
+      type: object
+      description: Stable error envelope returned by the global DRF handler.
+      properties:
+        message:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+      - fields
+      - message
+    Department:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - active
+      - created_at
+      - id
+      - name
+      - updated_at
+    DepartmentActionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Department'
+      required:
+      - data
+      - message
+    DepartmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+      required:
+      - name
+    DepartmentTotal:
+      type: object
+      properties:
+        department_id:
+          type: integer
+          nullable: true
+        department_name:
+          type: string
+        total:
+          type: integer
+      required:
+      - department_id
+      - department_name
+      - total
+    DueTicket:
+      type: object
+      properties:
+        ticket_id:
+          type: integer
+        title:
+          type: string
+        due_date:
+          type: string
+          format: date
+        status:
+          type: string
+        priority:
+          type: string
+      required:
+      - due_date
+      - priority
+      - status
+      - ticket_id
+      - title
+    Historical:
+      type: object
+      properties:
+        period:
+          type: string
+        created:
+          type: integer
+        completed:
+          type: integer
+        dismissed:
+          type: integer
+      required:
+      - completed
+      - created
+      - dismissed
+      - period
+    LoginRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - identifier
+      - password
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    PaginatedActivityHistoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityHistory'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedDepartmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Department'
+    PaginatedTicketHistoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketHistory'
+    PaginatedTicketListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketList'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+    PatchedDepartmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+    PatchedUserUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        position:
+          type: string
+          nullable: true
+          maxLength: 150
+        department:
+          type: integer
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    PriorityEnum:
+      enum:
+      - LOW
+      - MEDIUM
+      - HIGH
+      - CRITICAL
+      type: string
+      description: |-
+        * `LOW` - Baja
+        * `MEDIUM` - Media
+        * `HIGH` - Alta
+        * `CRITICAL` - Crítica
+    RoleEnum:
+      enum:
+      - ADMINISTRATOR
+      - TECHNICIAN
+      - EMPLOYEE
+      type: string
+      description: |-
+        * `ADMINISTRATOR` - Administrador
+        * `TECHNICIAN` - Técnico
+        * `EMPLOYEE` - Empleado
+    StatusEnum:
+      enum:
+      - OPEN
+      - IN_PROGRESS
+      - ON_HOLD
+      - COMPLETED
+      - DISMISSED
+      type: string
+      description: |-
+        * `OPEN` - Abierto
+        * `IN_PROGRESS` - En proceso
+        * `ON_HOLD` - En espera
+        * `COMPLETED` - Completado
+        * `DISMISSED` - Desestimado
+    Summary:
+      type: object
+      properties:
+        total_tickets:
+          type: integer
+        open_tickets:
+          type: integer
+        in_progress_tickets:
+          type: integer
+        on_hold_tickets:
+          type: integer
+        completed_tickets:
+          type: integer
+        dismissed_tickets:
+          type: integer
+        overdue_tickets:
+          type: integer
+      required:
+      - completed_tickets
+      - dismissed_tickets
+      - in_progress_tickets
+      - on_hold_tickets
+      - open_tickets
+      - overdue_tickets
+      - total_tickets
+    TechnicianRanking:
+      type: object
+      properties:
+        technician_id:
+          type: integer
+        technician_name:
+          type: string
+        completed_tickets:
+          type: integer
+        average_resolution_time:
+          type: integer
+          nullable: true
+      required:
+      - average_resolution_time
+      - completed_tickets
+      - technician_id
+      - technician_name
+    TemporaryPasswordRequest:
+      type: object
+      properties:
+        temporary_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - confirm_password
+      - temporary_password
+    TicketAssignmentRequest:
+      type: object
+      properties:
+        assigned_technician:
+          type: integer
+      required:
+      - assigned_technician
+    TicketAttachment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        uploaded_by:
+          type: integer
+          readOnly: true
+        uploaded_by_name:
+          type: string
+          readOnly: true
+        file_name:
+          type: string
+          readOnly: true
+        mime_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        download_url:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - download_url
+      - file_name
+      - id
+      - mime_type
+      - size_bytes
+      - uploaded_by
+      - uploaded_by_name
+    TicketAttachmentUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          writeOnly: true
+        description:
+          type: string
+          writeOnly: true
+          nullable: true
+      required:
+      - file
+    TicketComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        author:
+          type: integer
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        author_role:
+          type: string
+          readOnly: true
+        author_role_name:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - author_name
+      - author_role
+      - author_role_name
+      - created_at
+      - id
+      - message
+    TicketCommentCreateRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 1
+      required:
+      - message
+    TicketCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+        category:
+          type: integer
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - category
+      - description
+      - priority
+      - title
+    TicketDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: integer
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          readOnly: true
+        priority_label:
+          type: string
+          readOnly: true
+        requester:
+          type: integer
+          readOnly: true
+        requester_name:
+          type: string
+          readOnly: true
+        assigned_technician:
+          type: integer
+          readOnly: true
+        assigned_technician_name:
+          type: string
+          readOnly: true
+        requester_department:
+          type: integer
+          readOnly: true
+        requester_department_name:
+          type: string
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        taken_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketComment'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketAttachment'
+          readOnly: true
+      required:
+      - assigned_technician
+      - assigned_technician_name
+      - attachments
+      - category
+      - category_name
+      - closed_at
+      - comments
+      - created_at
+      - description
+      - due_date
+      - id
+      - priority
+      - priority_label
+      - requester
+      - requester_department
+      - requester_department_name
+      - requester_name
+      - status
+      - status_label
+      - taken_at
+      - title
+      - updated_at
+    TicketHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event_type:
+          type: string
+          readOnly: true
+        action_code:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        actor:
+          type: integer
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketHistoryChange'
+          readOnly: true
+      required:
+      - action
+      - action_code
+      - actor
+      - actor_name
+      - changes
+      - created_at
+      - event_type
+      - id
+    TicketHistoryChange:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        field_code:
+          type: string
+          readOnly: true
+        old_value:
+          type: string
+          readOnly: true
+          nullable: true
+        new_value:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - field_code
+      - id
+      - new_value
+      - old_value
+    TicketList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: integer
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          readOnly: true
+        priority_label:
+          type: string
+          readOnly: true
+        requester:
+          type: integer
+          readOnly: true
+        requester_name:
+          type: string
+          readOnly: true
+        assigned_technician:
+          type: integer
+          readOnly: true
+        assigned_technician_name:
+          type: string
+          readOnly: true
+        requester_department:
+          type: integer
+          readOnly: true
+        requester_department_name:
+          type: string
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        taken_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assigned_technician
+      - assigned_technician_name
+      - category
+      - category_name
+      - closed_at
+      - created_at
+      - description
+      - due_date
+      - id
+      - priority
+      - priority_label
+      - requester
+      - requester_department
+      - requester_department_name
+      - requester_name
+      - status
+      - status_label
+      - taken_at
+      - title
+      - updated_at
+    TicketStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - status
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        position:
+          type: string
+          nullable: true
+          maxLength: 150
+        department:
+          type: integer
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+        role_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        must_change_password:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - department_name
+      - email
+      - first_name
+      - full_name
+      - id
+      - is_active
+      - last_name
+      - role
+      - role_name
+      - updated_at
+      - username
+    UserActionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - message
+      - user
+    UserCreateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        position:
+          type: string
+          nullable: true
+          maxLength: 150
+        department:
+          type: integer
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - department
+      - email
+      - first_name
+      - last_name
+      - password
+      - role
+      - username
+    UserUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        position:
+          type: string
+          nullable: true
+          maxLength: 150
+        department:
+          type: integer
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - department
+      - email
+      - first_name
+      - last_name
+      - role
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token obtenido en /api/v1/auth/login/. No usar aquí el refresh
+        token HttpOnly.
+tags:
+- name: Auth
+  description: Sesión JWT y contraseña.
+- name: Users
+  description: Administración de usuarios.
+- name: Catalogs
+  description: Departamentos y categorías.
+- name: Tickets
+  description: Flujo operativo de tickets.
+- name: Analytics
+  description: Métricas derivadas sin tablas de totales.

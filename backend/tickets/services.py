@@ -127,19 +127,18 @@ def create_ticket(
 
 @transaction.atomic
 def take_ticket(*, ticket, technician):
-    """Assign an active technician and move the ticket into progress."""
+    """Atomically claim an OPEN and currently unassigned ticket."""
     validate_active_technician(technician)
     locked_ticket = Ticket.objects.select_for_update().get(pk=ticket.pk)
 
-    if (
-        locked_ticket.assigned_technician_id is not None
-        and locked_ticket.assigned_technician_id != technician.pk
-    ):
+    if locked_ticket.assigned_technician_id is not None:
         raise TicketBusinessRuleError(
-            "ticket is already assigned to another technician"
+            "ticket is already assigned"
         )
-    if locked_ticket.status in CLOSED_TICKET_STATUSES:
-        raise TicketBusinessRuleError("a closed ticket cannot be taken")
+    if locked_ticket.status != TicketStatus.OPEN:
+        raise TicketBusinessRuleError(
+            "only an OPEN ticket can be taken"
+        )
 
     timestamp = timezone.now()
     old_assignee = locked_ticket.assigned_technician_id
@@ -175,6 +174,51 @@ def take_ticket(*, ticket, technician):
 
 
 @transaction.atomic
+def assign_ticket(*, ticket, technician, actor):
+    """Assign or reassign a non-terminal ticket as an audited operation."""
+    actor = _require_active_user(actor, field_name="actor")
+    validate_active_technician(technician)
+    locked_ticket = Ticket.objects.select_for_update().get(pk=ticket.pk)
+
+    if locked_ticket.status in CLOSED_TICKET_STATUSES:
+        raise TicketBusinessRuleError(
+            "a closed ticket cannot be assigned"
+        )
+
+    timestamp = timezone.now()
+    old_assignee = locked_ticket.assigned_technician_id
+    old_status = locked_ticket.status
+    old_taken_at = locked_ticket.taken_at
+
+    locked_ticket.assigned_technician = technician
+    locked_ticket.status = TicketStatus.IN_PROGRESS
+    locked_ticket.taken_at = locked_ticket.taken_at or timestamp
+    locked_ticket.save(
+        update_fields=(
+            "assigned_technician",
+            "status",
+            "taken_at",
+            "updated_at",
+        )
+    )
+    _record_history(
+        ticket=locked_ticket,
+        actor=actor,
+        action_code=TicketHistoryAction.ASSIGNED,
+        changes=(
+            (
+                "assigned_technician_id",
+                old_assignee,
+                locked_ticket.assigned_technician_id,
+            ),
+            ("status", old_status, locked_ticket.status),
+            ("taken_at", old_taken_at, locked_ticket.taken_at),
+        ),
+    )
+    return locked_ticket
+
+
+@transaction.atomic
 def change_ticket_status(*, ticket, status, actor):
     """Change status and record timestamp/state changes atomically."""
     actor = _require_active_user(actor, field_name="actor")
@@ -182,8 +226,19 @@ def change_ticket_status(*, ticket, status, actor):
         raise TicketBusinessRuleError("status is invalid")
 
     locked_ticket = Ticket.objects.select_for_update().get(pk=ticket.pk)
+    if locked_ticket.status in CLOSED_TICKET_STATUSES:
+        raise TicketBusinessRuleError(
+            "a closed ticket status cannot be changed"
+        )
+    if (
+        actor.role.code == RoleCode.TECHNICIAN
+        and locked_ticket.assigned_technician_id not in (None, actor.pk)
+    ):
+        raise TicketBusinessRuleError(
+            "ticket is assigned to another technician"
+        )
     if locked_ticket.status == status:
-        return locked_ticket
+        raise TicketBusinessRuleError("ticket already has this status")
 
     timestamp = timezone.now()
     old_status = locked_ticket.status

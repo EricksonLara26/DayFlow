@@ -3,7 +3,7 @@ import { UserPlus, X } from "lucide-react";
 import Button from "../common/Button";
 import LoadingButton from "../common/LoadingButton";
 import { ROLES, getRoleLabel } from "../../data/users";
-import { getDepartmentNamesSnapshot } from "../../services/departmentService";
+import { useDepartmentOptions } from "../../hooks/useCatalogOptions";
 import {
   FORM_MIN_LENGTHS,
   allowedValueError,
@@ -16,7 +16,6 @@ import {
 } from "../../utils/formValidation";
 
 const allowedRoles = [ROLES.EMPLOYEE, ROLES.TECHNICIAN];
-const departmentNames = getDepartmentNamesSnapshot();
 
 const initialForm = {
   firstName: "",
@@ -30,6 +29,7 @@ const initialForm = {
 };
 
 export default function UserForm({ onCancel, onCreateUser, users }) {
+  const { names: departmentNames } = useDepartmentOptions();
   const [form, setForm] = useState(initialForm);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -26,6 +27,12 @@ import { useAuth } from "../hooks/useAuth";
 import { usePreferences } from "../hooks/usePreferences";
 import { useTickets } from "../hooks/useTickets";
 import { useUsers } from "../hooks/useUsers";
+import {
+  getCategories,
+} from "../services/categoryService";
+import {
+  getDepartments,
+} from "../services/departmentService";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 import {
@@ -41,6 +48,10 @@ function getHomePath(user) {
   }
 
   return getPathForView(getDefaultView(user));
+}
+
+function refreshCatalogs() {
+  return Promise.all([getDepartments(), getCategories()]);
 }
 
 function LoginRoute({ currentUser, message, onLogin, preferences }) {
@@ -191,13 +202,23 @@ function AppRoutesContent() {
   const operationalDataError = ticketsError || usersError;
   const operationalDataLoading = ticketsLoading || usersLoading;
 
+  useEffect(() => {
+    if (currentUser && !currentUser.mustChangePassword) {
+      refreshCatalogs();
+    }
+  }, [currentUser?.id, currentUser?.mustChangePassword]);
+
   function navigateToView(view, options = {}) {
     const nextView = canAccessView(view) ? view : VIEW_IDS.ACCESS_DENIED;
     navigate(getPathForView(nextView), options);
   }
 
   function retryOperationalData() {
-    return Promise.all([refreshUsers(), refreshTickets()]);
+    return Promise.all([
+      refreshUsers(),
+      refreshTickets(),
+      refreshCatalogs(),
+    ]);
   }
 
   function goHome() {
@@ -212,7 +233,11 @@ function AppRoutesContent() {
     }
 
     const authenticatedUser = result.user ?? result.data?.user;
-    await Promise.all([refreshUsers(), refreshTickets()]);
+    await Promise.all([
+      refreshUsers(authenticatedUser),
+      refreshTickets(),
+      refreshCatalogs(),
+    ]);
     navigate(getHomePath(authenticatedUser), { replace: true });
 
     return { ok: true };

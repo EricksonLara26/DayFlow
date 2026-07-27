@@ -1,0 +1,370 @@
+{
+  "info": {
+    "name": "DayFlow API v1",
+    "description": "Colección local para validar autenticación, permisos, tickets y analítica. No contiene tokens ni credenciales.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login responde 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const payload = pm.response.json();",
+                  "  pm.environment.set('access_token', payload.access);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{identifier}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/auth/login/"
+          }
+        },
+        {
+          "name": "Usuario actual",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/me/"
+          }
+        },
+        {
+          "name": "Refresh desde cookie HttpOnly",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refresh responde 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.environment.set('access_token', pm.response.json().access);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/refresh/"
+          }
+        },
+        {
+          "name": "Logout",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logout responde 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.unset('access_token');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/logout/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/users/?role=ALL&is_active=ALL"
+          }
+        },
+        {
+          "name": "Consultar usuario",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/users/{{user_id}}/"
+          }
+        },
+        {
+          "name": "Crear usuario de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{new_user_username}}\",\n  \"email\": \"{{new_user_email}}\",\n  \"first_name\": \"Usuario\",\n  \"last_name\": \"Prueba\",\n  \"position\": \"Pruebas API\",\n  \"department\": {{department_id}},\n  \"role\": \"EMPLOYEE\",\n  \"password\": \"{{new_user_password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/users/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogs",
+      "item": [
+        {
+          "name": "Listar departamentos activos",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/departments/"
+          }
+        },
+        {
+          "name": "Listar categorías activas",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/categories/"
+          }
+        },
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{new_category_name}}\",\n  \"description\": \"Creada desde la colección local\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/categories/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Listar tickets",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/tickets/?status=ALL&priority=ALL"
+          }
+        },
+        {
+          "name": "Crear ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ticket creado', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('ticket_id', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Ticket de prueba API\",\n  \"description\": \"Creado desde la colección local de DayFlow\",\n  \"category\": {{category_id}},\n  \"priority\": \"HIGH\",\n  \"due_date\": null\n}"
+            },
+            "url": "{{base_url}}/api/v1/tickets/"
+          }
+        },
+        {
+          "name": "Consultar ticket",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/tickets/{{ticket_id}}/"
+          }
+        },
+        {
+          "name": "Tomar ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{base_url}}/api/v1/tickets/{{ticket_id}}/take/"
+          }
+        },
+        {
+          "name": "Asignar técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assigned_technician\": {{technician_id}}\n}"
+            },
+            "url": "{{base_url}}/api/v1/tickets/{{ticket_id}}/assign/"
+          }
+        },
+        {
+          "name": "Cambiar estado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/tickets/{{ticket_id}}/status/"
+          }
+        },
+        {
+          "name": "Agregar comentario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Comentario de validación desde Postman\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/tickets/{{ticket_id}}/comments/"
+          }
+        },
+        {
+          "name": "Consultar historial",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/tickets/{{ticket_id}}/history/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/summary/"
+          }
+        },
+        {
+          "name": "Technician ranking",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/technician-ranking/"
+          }
+        },
+        {
+          "name": "Tickets by category",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/tickets-by-category/"
+          }
+        },
+        {
+          "name": "Demand by department",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/demand-by-department/"
+          }
+        },
+        {
+          "name": "Due tickets",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/due-tickets/"
+          }
+        },
+        {
+          "name": "Historical",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/historical/"
+          }
+        },
+        {
+          "name": "Activity history",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/activity-history/"
+          }
+        },
+        {
+          "name": "Annual technician report",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/analytics/annual-technician-report/?technician_id={{technician_id}}&year={{report_year}}"
+          }
+        }
+      ]
+    }
+  ]
+}

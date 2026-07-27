@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import LoadingButton from "../common/LoadingButton";
 import { TICKET_PRIORITIES } from "../../data/tickets";
-import { getCategoryNamesSnapshot } from "../../services/categoryService";
-import { getDepartmentNamesSnapshot } from "../../services/departmentService";
+import {
+  useCategoryOptions,
+  useDepartmentOptions,
+} from "../../hooks/useCatalogOptions";
 import { getPriorityLabel } from "../../utils/ticketUtils";
 import { getTodayKey, parseDateKey } from "../../utils/dateUtils";
 import {
@@ -15,9 +17,6 @@ import {
   minLengthError,
   requiredError,
 } from "../../utils/formValidation";
-
-const initialCategoryNames = getCategoryNamesSnapshot();
-const initialDepartmentNames = getDepartmentNamesSnapshot();
 
 function getInitialForm(currentUser) {
   return {
@@ -46,16 +45,17 @@ function formatFileSize(size) {
 }
 
 export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requesters, users = [] }) {
-  const categories = initialCategoryNames;
+  const { names: categories } = useCategoryOptions();
+  const { names: departmentNames } = useDepartmentOptions();
   const departments = useMemo(() => {
     const currentDepartment = currentUser?.department?.trim();
 
-    if (currentDepartment && !initialDepartmentNames.includes(currentDepartment)) {
-      return [currentDepartment, ...initialDepartmentNames];
+    if (currentDepartment && !departmentNames.includes(currentDepartment)) {
+      return [currentDepartment, ...departmentNames];
     }
 
-    return initialDepartmentNames;
-  }, [currentUser?.department]);
+    return departmentNames;
+  }, [currentUser?.department, departmentNames]);
   const evidenceInputRef = useRef(null);
   const [form, setForm] = useState(() => getInitialForm(currentUser));
   const [fieldErrors, setFieldErrors] = useState({});

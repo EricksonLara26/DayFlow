@@ -5,6 +5,11 @@ import { getUserFullName } from "../data/users";
 import { initialTickets } from "../mocks";
 import { getTodayKey, parseDateKey } from "../utils/dateUtils";
 import { filterTickets, getStatusLabel, terminalTicketStatuses } from "../utils/ticketUtils";
+import { apiRequest } from "./apiClient";
+import {
+  ticketAttachmentBackendToFrontend,
+  ticketAttachmentToFormData,
+} from "./mappers";
 import { getUserSnapshotById } from "./userService";
 
 const TICKETS_STORAGE_KEY = "dayflow-tickets";
@@ -426,6 +431,23 @@ export function addTicketComment(ticketId, message, actor) {
   );
 
   return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Comentario agregado correctamente." });
+}
+
+export function uploadTicketAttachment(
+  ticketId,
+  fileOrPayload,
+  description,
+) {
+  const formData = ticketAttachmentToFormData(
+    fileOrPayload,
+    description,
+  );
+
+  return apiRequest(`tickets/${Number(ticketId)}/attachments/`, {
+    body: formData,
+    mapResponse: ticketAttachmentBackendToFrontend,
+    method: "POST",
+  });
 }
 
 export function closeTicket(ticketId, payload = {}) {

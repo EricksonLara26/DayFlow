@@ -9,7 +9,7 @@ import {
   canResetUserPassword,
 } from "../../config/permissions";
 import { ROLES, getRoleLabel, getUserFullName } from "../../data/users";
-import { getDepartmentNamesSnapshot } from "../../services/departmentService";
+import { useDepartmentOptions } from "../../hooks/useCatalogOptions";
 import {
   FORM_MIN_LENGTHS,
   allowedValueError,
@@ -22,7 +22,6 @@ import {
 } from "../../utils/formValidation";
 
 const editableRoles = [ROLES.ADMINISTRATOR, ROLES.TECHNICIAN, ROLES.EMPLOYEE];
-const departmentNames = getDepartmentNamesSnapshot();
 
 function getEditForm(user) {
   return {
@@ -91,6 +90,7 @@ export default function UserTable({
   onUpdateUser,
   users,
 }) {
+  const { names: departmentNames } = useDepartmentOptions();
   const [editingUserId, setEditingUserId] = useState(null);
   const [editForm, setEditForm] = useState(getEditForm({}));
   const [fieldErrors, setFieldErrors] = useState({});

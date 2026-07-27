@@ -1,0 +1,25 @@
+[run]
+branch = True
+source =
+    accounts
+    analytics
+    catalogs
+    config
+    tickets
+omit =
+    */migrations/*
+    */tests.py
+    */test_*.py
+    */admin.py
+    */apps.py
+    */asgi.py
+    */wsgi.py
+    manage.py
+
+[report]
+exclude_also =
+    if __name__ == .__main__.:
+    raise NotImplementedError
+show_missing = True
+skip_covered = False
+precision = 1
