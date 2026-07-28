@@ -86,7 +86,7 @@ export function storeAuthenticatedUser(user) {
       getSessionStorage()?.removeItem(AUTH_STORAGE_KEY);
     }
   } catch {
-    // La sesión continúa en memoria si el navegador bloquea localStorage.
+    // La sesión continúa en memoria si el navegador bloquea sessionStorage.
   }
 
   return sessionUser;
@@ -96,7 +96,7 @@ export function clearAuthenticatedUser() {
   try {
     getSessionStorage()?.removeItem(AUTH_STORAGE_KEY);
   } catch {
-    // No hay acción adicional si localStorage no está disponible.
+    // No hay acción adicional si sessionStorage no está disponible.
   }
 }
 

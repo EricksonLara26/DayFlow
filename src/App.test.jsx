@@ -269,13 +269,16 @@ describe("App critical flows", () => {
     expect(window.location.pathname).toBe("/access-denied");
   });
 
-  test("usuario no puede abrir tickets de otro usuario", () => {
+  test("usuario no puede abrir tickets de otro usuario", async () => {
     setStoredUser("usuario");
     window.history.pushState({}, "", "/tickets/1002");
 
     render(<App />);
+    await flushAsync();
 
-    expect(screen.getByText(/no tienes permisos/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/ticket no encontrado/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/vpn corporativa/i)).not.toBeInTheDocument();
   });
 
@@ -294,8 +297,13 @@ describe("App critical flows", () => {
     window.history.pushState({}, "", "/tickets/available");
 
     render(<App />);
+    await flushAsync();
 
-    expect(screen.getByRole("heading", { name: /tickets abiertos sin asignar/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: /solicitudes disponibles/i,
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /gesti.*usuarios/i })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/tickets/available");
   });

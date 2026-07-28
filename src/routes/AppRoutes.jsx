@@ -111,6 +111,7 @@ function TicketDetailRoute({
   canTakeTicket,
   canViewTicket,
   getTicketById,
+  loadTicketById,
   isLoading,
   onAddComment,
   onBack,
@@ -124,6 +125,10 @@ function TicketDetailRoute({
   const { id } = useParams();
   const location = useLocation();
   const ticket = getTicketById(id);
+
+  useEffect(() => {
+    loadTicketById(id);
+  }, [id, loadTicketById]);
 
   if (ticket && !canViewTicket(ticket)) {
     return <AccessDenied onGoHome={onGoHome} />;
@@ -177,6 +182,7 @@ function AppRoutesContent() {
     dashboardTicketsByCategory,
     getScopeForView,
     getTicketById,
+    loadTicketById,
     getVisibleTicketsForView,
     refreshTickets,
     takeTicket,
@@ -433,6 +439,7 @@ function AppRoutesContent() {
                 canViewTicket={canViewTicket}
                 error={operationalDataError}
                 getTicketById={getTicketById}
+                loadTicketById={loadTicketById}
                 isLoading={operationalDataLoading}
                 onAddComment={addComment}
                 onBack={goBackFromTicket}

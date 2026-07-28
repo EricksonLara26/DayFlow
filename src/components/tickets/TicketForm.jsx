@@ -87,16 +87,7 @@ export default function TicketForm({ currentUser, onCreateTicket, onSubmit, requ
   function handleEvidenceChange(event) {
     const file = event.target.files?.[0];
 
-    updateField(
-      "evidence",
-      file
-        ? {
-            name: file.name,
-            size: file.size,
-            type: file.type || "Archivo",
-          }
-        : null,
-    );
+    updateField("evidence", file ?? null);
   }
 
   function clearEvidence() {

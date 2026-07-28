@@ -178,7 +178,7 @@ export function userFrontendToBackend(user, options = {}) {
   });
 }
 
-function commentBackendToFrontend(comment) {
+export function ticketCommentBackendToFrontend(comment) {
   const mapped = backendToFrontend(comment);
   return {
     ...mapped,
@@ -198,7 +198,7 @@ export function ticketAttachmentBackendToFrontend(attachment) {
   };
 }
 
-function historyBackendToFrontend(history) {
+export function ticketHistoryBackendToFrontend(history) {
   const mapped = backendToFrontend(history);
   return {
     ...mapped,
@@ -237,10 +237,12 @@ export function ticketBackendToFrontend(ticket) {
         ? mapped.requesterDepartment
         : null),
     dueDate: mapped.dueDate ?? "",
-    comments: (mapped.comments ?? []).map(commentBackendToFrontend),
+    comments: (mapped.comments ?? []).map(
+      ticketCommentBackendToFrontend,
+    ),
     attachments,
     evidence: attachments[0] ?? null,
-    history: historySource.map(historyBackendToFrontend),
+    history: historySource.map(ticketHistoryBackendToFrontend),
   };
 }
 

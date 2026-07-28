@@ -2,6 +2,7 @@ import {
   initialUsers,
   mockCategories,
   mockDepartments,
+  initialTickets,
 } from "../mocks";
 import {
   toCanonicalRole,
@@ -17,6 +18,7 @@ import {
   clearUsersCache,
 } from "../services/userService";
 import { clearAccessToken } from "../services/tokenStorage";
+import { clearTicketsCache } from "../services/ticketService";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -81,6 +83,110 @@ function toBackendUser(user, departments) {
   };
 }
 
+function getUserDepartmentId(user, departments) {
+  return (
+    user?.departmentId ??
+    departments.find(
+      (department) => department.name === user?.department,
+    )?.id ??
+    null
+  );
+}
+
+function toBackendTicket(
+  ticket,
+  users,
+  departments,
+  categories,
+  { detail = false } = {},
+) {
+  const requester = users.find(
+    (user) => user.id === ticket.createdBy,
+  );
+  const technician = users.find(
+    (user) => user.id === ticket.assignedTo,
+  );
+  const category = categories.find(
+    (item) => item.name === ticket.category,
+  );
+  const departmentId =
+    ticket.departmentId ??
+    getUserDepartmentId(requester, departments);
+  const department = departments.find(
+    (item) => item.id === departmentId,
+  );
+  const mapped = {
+    id: ticket.id,
+    title: ticket.title,
+    description: ticket.description,
+    category: category?.id ?? ticket.categoryId ?? null,
+    category_name: category?.name ?? ticket.category,
+    status: ticket.status,
+    priority: ticket.priority,
+    requester: requester?.id ?? ticket.createdBy,
+    requester_name:
+      ticket.createdByName ??
+      `${requester?.firstName ?? ""} ${requester?.lastName ?? ""}`.trim(),
+    assigned_technician:
+      technician?.id ?? ticket.assignedTo ?? null,
+    assigned_technician_name:
+      ticket.assignedToName ??
+      (technician
+        ? `${technician.firstName} ${technician.lastName}`.trim()
+        : null),
+    requester_department: departmentId,
+    requester_department_name:
+      department?.name ?? ticket.department ?? "",
+    due_date: ticket.dueDate || null,
+    taken_at: ticket.takenAt ?? null,
+    closed_at: ticket.closedAt ?? null,
+    created_at: ticket.createdAt,
+    updated_at: ticket.updatedAt,
+  };
+
+  if (!detail) {
+    return mapped;
+  }
+
+  return {
+    ...mapped,
+    comments: (ticket.comments ?? []).map((comment) => ({
+      id: comment.id,
+      author: comment.authorId,
+      author_name: comment.authorName,
+      author_role: toCanonicalRole(comment.role),
+      author_role_name: comment.role,
+      message: comment.message,
+      created_at: comment.createdAt,
+    })),
+    attachments: (ticket.attachments ?? []).map((attachment) => ({
+      id: attachment.id,
+      uploaded_by: attachment.uploadedBy ?? ticket.createdBy,
+      uploaded_by_name:
+        attachment.uploadedByName ?? ticket.createdByName,
+      file_name: attachment.name,
+      mime_type: attachment.type,
+      size_bytes: attachment.size,
+      description: attachment.description ?? null,
+      created_at: attachment.uploadedAt,
+      download_url: `/api/v1/tickets/${ticket.id}/attachments/${attachment.id}/download/`,
+    })),
+  };
+}
+
+function toBackendHistory(ticket) {
+  return (ticket.history ?? []).map((item) => ({
+    id: item.id,
+    event_type: item.eventType ?? "UPDATED",
+    action_code: item.actionCode ?? "UPDATED",
+    action: item.action,
+    actor: item.userId,
+    actor_name: item.userName,
+    created_at: item.createdAt,
+    changes: item.changes ?? [],
+  }));
+}
+
 function getStoredUserId() {
   try {
     const value = window.sessionStorage.getItem(
@@ -131,6 +237,7 @@ export function installMockAuthApi() {
   let users = clone(initialUsers);
   let departments = clone(mockDepartments);
   let categories = clone(mockCategories);
+  let tickets = clone(initialTickets);
 
   const fetchMock = jest.fn(async (input, options = {}) => {
     const url = new URL(String(input));
@@ -269,6 +376,331 @@ export function installMockAuthApi() {
       return jsonResponse({
         message: "Sesión cerrada correctamente.",
       });
+    }
+
+    const authenticatedUser = users.find(
+      (candidate) =>
+        candidate.id ===
+        (authenticatedUserId ?? getStoredUserId()),
+    );
+    const visibleTickets = () => {
+      if (!authenticatedUser) {
+        return [];
+      }
+      if (
+        toCanonicalRole(authenticatedUser.role) === "EMPLOYEE"
+      ) {
+        return tickets.filter(
+          (ticket) => ticket.createdBy === authenticatedUser.id,
+        );
+      }
+
+      const scope = url.searchParams.get("scope");
+      if (
+        toCanonicalRole(authenticatedUser.role) === "TECHNICIAN"
+      ) {
+        if (scope === "available") {
+          return tickets.filter(
+            (ticket) =>
+              ticket.status === "OPEN" && !ticket.assignedTo,
+          );
+        }
+        if (scope === "mine") {
+          return tickets.filter(
+            (ticket) =>
+              ticket.assignedTo === authenticatedUser.id &&
+              !["COMPLETED", "DISMISSED"].includes(ticket.status),
+          );
+        }
+        if (scope === "history") {
+          return tickets.filter(
+            (ticket) =>
+              ticket.assignedTo === authenticatedUser.id &&
+              ["COMPLETED", "DISMISSED"].includes(ticket.status),
+          );
+        }
+      }
+      return tickets;
+    };
+
+    const ticketHistoryMatch = path.match(
+      /\/tickets\/(\d+)\/history\/$/,
+    );
+    if (ticketHistoryMatch && method === "GET") {
+      const ticketId = Number(ticketHistoryMatch[1]);
+      const ticket = visibleTickets().find(
+        (candidate) => candidate.id === ticketId,
+      );
+      return ticket
+        ? jsonResponse(paginated(toBackendHistory(ticket)))
+        : jsonResponse(
+            { message: "Ticket no encontrado.", fields: {} },
+            404,
+          );
+    }
+
+    const ticketActionMatch = path.match(
+      /\/tickets\/(\d+)\/(take|status|comments|attachments)\/$/,
+    );
+    if (ticketActionMatch && method === "POST") {
+      const ticketId = Number(ticketActionMatch[1]);
+      const action = ticketActionMatch[2];
+      const ticketIndex = tickets.findIndex(
+        (candidate) => candidate.id === ticketId,
+      );
+      if (ticketIndex === -1 || !authenticatedUser) {
+        return jsonResponse(
+          { message: "Ticket no encontrado.", fields: {} },
+          404,
+        );
+      }
+
+      const timestamp = new Date().toISOString();
+      const ticket = tickets[ticketIndex];
+      const actorName =
+        `${authenticatedUser.firstName} ${authenticatedUser.lastName}`.trim();
+
+      if (action === "take") {
+        if (ticket.status !== "OPEN" || ticket.assignedTo) {
+          return jsonResponse(
+            {
+              message: "El ticket ya fue tomado.",
+              fields: {},
+            },
+            409,
+          );
+        }
+        tickets[ticketIndex] = {
+          ...ticket,
+          assignedTo: authenticatedUser.id,
+          assignedToName: actorName,
+          status: "IN_PROGRESS",
+          takenAt: timestamp,
+          updatedAt: timestamp,
+        };
+        return jsonResponse(
+          toBackendTicket(
+            tickets[ticketIndex],
+            users,
+            departments,
+            categories,
+          ),
+        );
+      }
+
+      if (action === "status") {
+        tickets[ticketIndex] = {
+          ...ticket,
+          status: body.status,
+          updatedAt: timestamp,
+          closedAt: ["COMPLETED", "DISMISSED"].includes(
+            body.status,
+          )
+            ? timestamp
+            : ticket.closedAt,
+        };
+        return jsonResponse(
+          toBackendTicket(
+            tickets[ticketIndex],
+            users,
+            departments,
+            categories,
+          ),
+        );
+      }
+
+      if (action === "comments") {
+        const comment = {
+          id:
+            Math.max(
+              0,
+              ...(ticket.comments ?? []).map((item) => item.id),
+            ) + 1,
+          authorId: authenticatedUser.id,
+          authorName: actorName,
+          role: authenticatedUser.role,
+          message: body.message,
+          createdAt: timestamp,
+        };
+        tickets[ticketIndex] = {
+          ...ticket,
+          comments: [...(ticket.comments ?? []), comment],
+          updatedAt: timestamp,
+        };
+        return jsonResponse(
+          toBackendTicket(
+            tickets[ticketIndex],
+            users,
+            departments,
+            categories,
+            { detail: true },
+          ).comments.at(-1),
+          201,
+        );
+      }
+
+      const attachment = {
+        id:
+          Math.max(
+            0,
+            ...(ticket.attachments ?? []).map((item) => item.id),
+          ) + 1,
+        name: "evidencia.pdf",
+        size: 100,
+        type: "application/pdf",
+        uploadedAt: timestamp,
+        uploadedBy: authenticatedUser.id,
+        uploadedByName: actorName,
+      };
+      tickets[ticketIndex] = {
+        ...ticket,
+        attachments: [
+          ...(ticket.attachments ?? []),
+          attachment,
+        ],
+      };
+      return jsonResponse(
+        toBackendTicket(
+          tickets[ticketIndex],
+          users,
+          departments,
+          categories,
+          { detail: true },
+        ).attachments.at(-1),
+        201,
+      );
+    }
+
+    const ticketDetailMatch = path.match(
+      /\/tickets\/(\d+)\/$/,
+    );
+    if (ticketDetailMatch && method === "GET") {
+      const ticketId = Number(ticketDetailMatch[1]);
+      const ticket = visibleTickets().find(
+        (candidate) => candidate.id === ticketId,
+      );
+      return ticket
+        ? jsonResponse(
+            toBackendTicket(
+              ticket,
+              users,
+              departments,
+              categories,
+              { detail: true },
+            ),
+          )
+        : jsonResponse(
+            { message: "Ticket no encontrado.", fields: {} },
+            404,
+          );
+    }
+
+    if (path.endsWith("/tickets/")) {
+      if (!authenticatedUser) {
+        return jsonResponse(
+          {
+            message: "La sesiÃ³n no es vÃ¡lida o ha expirado.",
+            fields: {},
+          },
+          401,
+        );
+      }
+
+      if (method === "POST") {
+        const category = categories.find(
+          (item) => item.id === Number(body.category),
+        );
+        if (
+          !body.title?.trim() ||
+          !body.description?.trim() ||
+          !category
+        ) {
+          return jsonResponse(
+            {
+              message: "No se pudo procesar la solicitud.",
+              fields: {
+                title: body.title?.trim()
+                  ? []
+                  : ["Este campo es obligatorio."],
+                description: body.description?.trim()
+                  ? []
+                  : ["Este campo es obligatorio."],
+                category: category
+                  ? []
+                  : ["Selecciona una categoría válida."],
+              },
+            },
+            400,
+          );
+        }
+
+        const timestamp = new Date().toISOString();
+        const requesterName =
+          `${authenticatedUser.firstName} ${authenticatedUser.lastName}`.trim();
+        const departmentId = getUserDepartmentId(
+          authenticatedUser,
+          departments,
+        );
+        const department = departments.find(
+          (item) => item.id === departmentId,
+        );
+        const ticket = {
+          id:
+            Math.max(0, ...tickets.map((item) => item.id)) + 1,
+          title: body.title.trim(),
+          description: body.description.trim(),
+          category: category.name,
+          categoryId: category.id,
+          status: "OPEN",
+          priority: body.priority,
+          createdBy: authenticatedUser.id,
+          createdByName: requesterName,
+          assignedTo: null,
+          assignedToName: null,
+          department: department?.name ?? "",
+          departmentId,
+          dueDate: body.due_date ?? "",
+          takenAt: null,
+          closedAt: null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          comments: [],
+          attachments: [],
+          history: [
+            {
+              id: 1,
+              action: `Ticket creado por ${requesterName}`,
+              userId: authenticatedUser.id,
+              userName: requesterName,
+              createdAt: timestamp,
+            },
+          ],
+        };
+        tickets = [ticket, ...tickets];
+        return jsonResponse(
+          toBackendTicket(
+            ticket,
+            users,
+            departments,
+            categories,
+            { detail: true },
+          ),
+          201,
+        );
+      }
+
+      return jsonResponse(
+        paginated(
+          visibleTickets().map((ticket) =>
+            toBackendTicket(
+              ticket,
+              users,
+              departments,
+              categories,
+            ),
+          ),
+        ),
+      );
     }
 
     const userResetMatch = path.match(
@@ -514,6 +946,7 @@ export function installMockAuthApi() {
   clearUsersCache();
   clearDepartmentsCache();
   clearCategoriesCache();
+  clearTicketsCache();
   global.fetch = fetchMock;
 
   return {
@@ -523,6 +956,7 @@ export function installMockAuthApi() {
       clearUsersCache();
       clearDepartmentsCache();
       clearCategoriesCache();
+      clearTicketsCache();
       delete global.fetch;
     },
   };

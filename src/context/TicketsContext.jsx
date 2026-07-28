@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { TICKET_STATUSES } from "../data/tickets";
 import {
   getActivityHistorySnapshot,
@@ -13,8 +13,10 @@ import {
   addTicketComment as addTicketCommentRequest,
   assignTicket as assignTicketRequest,
   changeTicketStatus as changeTicketStatusRequest,
+  clearTicketsCache,
   createTicket as createTicketRequest,
   getDashboardTicketsForUser,
+  getTicketById as fetchTicketById,
   getTicketScopeForView,
   getTickets as fetchTickets,
   getTicketsForView,
@@ -56,6 +58,52 @@ export function TicketsProvider({ children }) {
       setTicketsLoading(false);
     }
   }, []);
+
+  const loadTicketById = useCallback(async (ticketId) => {
+    setTicketsLoading(true);
+    setTicketsError("");
+
+    try {
+      const response = await fetchTicketById(ticketId);
+
+      if (response.ok) {
+        setTickets(getTicketsSnapshot());
+      } else if (response.status !== 404) {
+        setTicketsError(
+          response.message ?? "No se pudo cargar la solicitud.",
+        );
+      }
+
+      return response;
+    } catch {
+      const response = {
+        ok: false,
+        message: "No se pudo cargar la solicitud.",
+        status: 0,
+      };
+      setTicketsError(response.message);
+      return response;
+    } finally {
+      setTicketsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      clearTicketsCache();
+      setTickets([]);
+      setTicketsError("");
+      return;
+    }
+
+    if (!currentUser.mustChangePassword) {
+      refreshTickets();
+    }
+  }, [
+    currentUser?.id,
+    currentUser?.mustChangePassword,
+    refreshTickets,
+  ]);
 
   const dashboardTickets = useMemo(
     () => getDashboardTicketsForUser(tickets, currentUser),
@@ -180,11 +228,19 @@ export function TicketsProvider({ children }) {
 
       if (result.ok) {
         await refreshTickets();
+        await loadTicketById(ticketId);
       }
 
       return result;
     },
-    [canTakeTicket, currentUser, getTicketById, isTechnician, refreshTickets],
+    [
+      canTakeTicket,
+      currentUser,
+      getTicketById,
+      isTechnician,
+      loadTicketById,
+      refreshTickets,
+    ],
   );
 
   const changeTicketStatus = useCallback(
@@ -203,11 +259,19 @@ export function TicketsProvider({ children }) {
 
       if (result.ok) {
         await refreshTickets();
+        await loadTicketById(ticketId);
       }
 
       return result;
     },
-    [canManageTicket, currentUser, getTicketById, isTechnician, refreshTickets],
+    [
+      canManageTicket,
+      currentUser,
+      getTicketById,
+      isTechnician,
+      loadTicketById,
+      refreshTickets,
+    ],
   );
 
   const addComment = useCallback(
@@ -226,11 +290,18 @@ export function TicketsProvider({ children }) {
 
       if (result.ok) {
         await refreshTickets();
+        await loadTicketById(ticketId);
       }
 
       return result;
     },
-    [canCommentTicket, currentUser, getTicketById, refreshTickets],
+    [
+      canCommentTicket,
+      currentUser,
+      getTicketById,
+      loadTicketById,
+      refreshTickets,
+    ],
   );
 
   const createTicket = useCallback(
@@ -286,6 +357,7 @@ export function TicketsProvider({ children }) {
       getScopeForView,
       getTicketById,
       getVisibleTicketsForView,
+      loadTicketById,
       refreshTickets,
       takeTicket,
       technicianRanking,
@@ -311,6 +383,7 @@ export function TicketsProvider({ children }) {
       getScopeForView,
       getTicketById,
       getVisibleTicketsForView,
+      loadTicketById,
       refreshTickets,
       takeTicket,
       technicianRanking,

@@ -1,132 +1,117 @@
 import { VIEW_IDS } from "../config/permissions";
 import { ROLES } from "../config/roles";
-import { TICKET_PRIORITIES, TICKET_STATUSES } from "../data/tickets";
-import { getUserFullName } from "../data/users";
-import { initialTickets } from "../mocks";
-import { getTodayKey, parseDateKey } from "../utils/dateUtils";
-import { filterTickets, getStatusLabel, terminalTicketStatuses } from "../utils/ticketUtils";
+import { TICKET_STATUSES } from "../data/tickets";
+import { filterTickets, terminalTicketStatuses } from "../utils/ticketUtils";
 import { apiRequest } from "./apiClient";
+import {
+  getActiveCategories,
+  getCategoriesSnapshot,
+} from "./categoryService";
 import {
   ticketAttachmentBackendToFrontend,
   ticketAttachmentToFormData,
+  ticketBackendToFrontend,
+  ticketCommentBackendToFrontend,
+  ticketFrontendToBackend,
+  ticketHistoryBackendToFrontend,
 } from "./mappers";
-import { getUserSnapshotById } from "./userService";
 
-const TICKETS_STORAGE_KEY = "dayflow-tickets";
-
-let mockTickets = readStoredTickets() ?? clone(initialTickets);
+let cachedTickets = [];
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
-}
-
-function canUseLocalStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage);
-}
-
-function readStoredTickets() {
-  if (!canUseLocalStorage()) {
-    return null;
-  }
-
-  try {
-    const rawTickets = window.localStorage.getItem(TICKETS_STORAGE_KEY);
-    const parsedTickets = rawTickets ? JSON.parse(rawTickets) : null;
-
-    return Array.isArray(parsedTickets) ? parsedTickets : null;
-  } catch {
-    return null;
-  }
-}
-
-function syncTicketsFromStorage() {
-  if (!canUseLocalStorage()) {
-    return;
-  }
-
-  mockTickets = readStoredTickets() ?? clone(initialTickets);
-}
-
-function persistTickets() {
-  if (!canUseLocalStorage()) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(mockTickets));
-  } catch {
-    // El panel sigue operando en memoria si el navegador bloquea localStorage.
-  }
-}
-
-function replaceTickets(nextTickets) {
-  mockTickets = nextTickets;
-  persistTickets();
-}
-
-function ok(data, extra = {}) {
-  return Promise.resolve({ ok: true, data, ...extra });
-}
-
-function fail(message, status = 400) {
-  return Promise.resolve({ ok: false, status, message, error: { message, status } });
-}
-
-function nowIso() {
-  return new Date().toISOString();
 }
 
 function normalizeId(id) {
   return Number(id);
 }
 
-function getNextId(items) {
-  return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
+function getListItems(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  return Array.isArray(payload?.results) ? payload.results : [];
 }
 
-function createHistoryItem(ticket, action, user, createdAt = nowIso()) {
-  return {
-    id: getNextId(ticket.history ?? []),
-    action,
-    userId: user.id,
-    userName: getUserFullName(user),
-    createdAt,
-  };
-}
-
-function createCommentItem(ticket, message, user, createdAt = nowIso()) {
-  return {
-    id: getNextId(ticket.comments ?? []),
-    authorId: user.id,
-    authorName: getUserFullName(user),
-    role: user.role,
-    message,
-    createdAt,
-  };
-}
-
-function normalizeEvidence(evidence, timestamp = nowIso()) {
-  const name = evidence?.name?.trim();
-
-  if (!name) {
+function normalizeTicket(ticket) {
+  if (!ticket || typeof ticket !== "object") {
     return null;
   }
 
+  const mapped = ticketBackendToFrontend(ticket);
   return {
-    name,
-    size: Number(evidence.size) || 0,
-    type: evidence.type?.trim() || "Archivo",
-    uploadedAt: evidence.uploadedAt ?? timestamp,
+    ...mapped,
+    id: normalizeId(mapped.id),
+    createdBy: normalizeId(mapped.createdBy),
+    assignedTo:
+      mapped.assignedTo === null || mapped.assignedTo === undefined
+        ? null
+        : normalizeId(mapped.assignedTo),
   };
 }
 
-function findTicketIndex(ticketId) {
-  const normalizedId = normalizeId(ticketId);
-  return mockTickets.findIndex((ticket) => ticket.id === normalizedId);
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value ?? {}, key);
 }
 
-function getTicketSnapshotByIndex(index) {
-  return index >= 0 ? clone(mockTickets[index]) : null;
+function mergeTicket(existing, incoming, source = incoming) {
+  if (!existing) {
+    return incoming;
+  }
+
+  return {
+    ...existing,
+    ...incoming,
+    attachments:
+      hasOwn(source, "attachments")
+        ? incoming.attachments
+        : existing.attachments ?? [],
+    comments:
+      hasOwn(source, "comments")
+        ? incoming.comments
+        : existing.comments ?? [],
+    history:
+      hasOwn(source, "history") || hasOwn(source, "historyEntries")
+        ? incoming.history
+        : existing.history ?? [],
+  };
+}
+
+function upsertCachedTicket(ticket, source = ticket) {
+  const normalized = normalizeTicket(ticket);
+  if (!normalized) {
+    return null;
+  }
+
+  const existing = cachedTickets.find(
+    (current) => current.id === normalized.id,
+  );
+  const merged = mergeTicket(existing, normalized, source);
+  cachedTickets = existing
+    ? cachedTickets.map((current) =>
+        current.id === merged.id ? merged : current,
+      )
+    : [merged, ...cachedTickets];
+  return merged;
+}
+
+function replaceTicketList(tickets) {
+  const nextTickets = tickets
+    .map((ticket) => {
+      const normalized = normalizeTicket(ticket);
+      if (!normalized) {
+        return null;
+      }
+      const existing = cachedTickets.find(
+        (current) => current.id === normalized.id,
+      );
+      return mergeTicket(existing, normalized, ticket);
+    })
+    .filter(Boolean);
+
+  cachedTickets = nextTickets;
+  return getTicketsSnapshot();
 }
 
 function applyTicketFilters(tickets, filters = {}) {
@@ -138,9 +123,14 @@ function applyTicketFilters(tickets, filters = {}) {
     result = getDashboardTicketsForUser(result, filters.user);
   }
 
-  const hasListFilters = ["query", "status", "priority", "createdFrom", "createdTo", "dueSoon"].some(
-    (key) => filters[key] !== undefined,
-  );
+  const hasListFilters = [
+    "query",
+    "status",
+    "priority",
+    "createdFrom",
+    "createdTo",
+    "dueSoon",
+  ].some((key) => filters[key] !== undefined);
 
   return hasListFilters
     ? filterTickets(result, {
@@ -154,283 +144,283 @@ function applyTicketFilters(tickets, filters = {}) {
     : result;
 }
 
+function mapViewToApiScope(user, view) {
+  if (user?.role !== ROLES.TECHNICIAN) {
+    return undefined;
+  }
+  if (view === VIEW_IDS.AVAILABLE_TICKETS) {
+    return "available";
+  }
+  if (view === VIEW_IDS.MY_TICKETS) {
+    return "mine";
+  }
+  if (view === VIEW_IDS.HISTORY) {
+    return "history";
+  }
+  return "all";
+}
+
+async function getCategoryLookup() {
+  const cachedCategories = getCategoriesSnapshot({ active: true });
+  if (cachedCategories.length) {
+    return cachedCategories;
+  }
+
+  const response = await getActiveCategories();
+  return response.ok ? response.data : [];
+}
+
+function mapActionResponse(response, fallbackMessage) {
+  if (!response.ok) {
+    return response;
+  }
+
+  const ticket = upsertCachedTicket(response.data);
+  return {
+    ...response,
+    data: clone(ticket),
+    message: response.message || fallbackMessage,
+  };
+}
+
+export function clearTicketsCache() {
+  cachedTickets = [];
+}
+
 export function getTicketsSnapshot(filters = {}) {
-  syncTicketsFromStorage();
-  return clone(applyTicketFilters(mockTickets, filters));
+  return clone(applyTicketFilters(cachedTickets, filters));
 }
 
 export function getTicketSnapshotById(id) {
-  syncTicketsFromStorage();
-  const ticket = mockTickets.find((currentTicket) => currentTicket.id === normalizeId(id));
+  const ticket = cachedTickets.find(
+    (current) => current.id === normalizeId(id),
+  );
   return ticket ? clone(ticket) : null;
 }
 
-export function getTickets(filters = {}) {
-  return ok(getTicketsSnapshot(filters));
-}
+export async function getTickets(filters = {}) {
+  const response = await apiRequest("tickets/", {
+    query: {
+      query: filters.query,
+      status: filters.status,
+      priority: filters.priority,
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
+      dueSoon: filters.dueSoon,
+      scope:
+        filters.scope ??
+        mapViewToApiScope(filters.user, filters.view),
+      page: filters.page,
+      pageSize: filters.pageSize ?? 100,
+    },
+  });
 
-export function getTicketById(id) {
-  const ticket = getTicketSnapshotById(id);
-
-  if (!ticket) {
-    return fail("Ticket no encontrado.", 404);
+  if (!response.ok) {
+    return response;
   }
 
-  return ok(ticket);
-}
-
-export function createTicket(payload) {
-  syncTicketsFromStorage();
-  const requester = payload.requester ?? getUserSnapshotById(payload.createdBy);
-  const title = payload.title?.trim();
-  const description = payload.description?.trim();
-  const category = payload.category?.trim();
-  const priority = payload.priority?.trim();
-  const department = payload.department?.trim() || requester?.department?.trim();
-  const dueDate = payload.dueDate?.trim() ?? "";
-
-  if (!requester) {
-    return fail("Solicitante no encontrado.", 404);
-  }
-
-  if (!title || !description) {
-    return fail("Título y descripción son obligatorios.");
-  }
-
-  if (!category) {
-    return fail("La categoría es obligatoria.");
-  }
-
-  if (!Object.values(TICKET_PRIORITIES).includes(priority)) {
-    return fail("La prioridad es obligatoria.");
-  }
-
-  if (!department) {
-    return fail("El departamento es obligatorio.");
-  }
-
-  if (dueDate && !parseDateKey(dueDate)) {
-    return fail("Selecciona una fecha límite válida.");
-  }
-
-  if (dueDate && dueDate < getTodayKey()) {
-    return fail("La fecha límite no puede ser anterior a hoy.");
-  }
-
-  const timestamp = nowIso();
-  const requesterName = getUserFullName(requester);
-  const evidence = normalizeEvidence(payload.evidence, timestamp);
-  const nextTicket = {
-    id: getNextId(mockTickets),
-    title,
-    description,
-    category,
-    status: TICKET_STATUSES.OPEN,
-    priority,
-    department,
-    createdBy: requester.id,
-    createdByName: requesterName,
-    assignedTo: null,
-    assignedToName: null,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    dueDate,
-    evidence,
-    closedAt: null,
-    comments: [],
-    history: [
-      {
-        id: 1,
-        action: `Ticket creado por ${requesterName}`,
-        userId: requester.id,
-        userName: requesterName,
-        createdAt: timestamp,
-      },
-    ],
+  const tickets = replaceTicketList(getListItems(response.data));
+  return {
+    ...response,
+    data: clone(applyTicketFilters(tickets, filters)),
+    pagination: {
+      count: response.data?.count ?? tickets.length,
+      next: response.data?.next ?? null,
+      previous: response.data?.previous ?? null,
+    },
   };
-
-  replaceTickets([nextTicket, ...mockTickets]);
-
-  return ok(clone(nextTicket), { message: "Ticket creado correctamente.", status: 201 });
 }
 
-export function updateTicket(id, payload) {
-  syncTicketsFromStorage();
-  const ticketIndex = findTicketIndex(id);
-
-  if (ticketIndex === -1) {
-    return fail("Ticket no encontrado.", 404);
-  }
-
-  replaceTickets(
-    mockTickets.map((ticket, index) =>
-      index === ticketIndex
-        ? {
-            ...ticket,
-            ...payload,
-            id: ticket.id,
-            updatedAt: payload.updatedAt ?? nowIso(),
-          }
-        : ticket,
-    ),
+export async function getTicketHistory(id) {
+  const response = await apiRequest(
+    `tickets/${normalizeId(id)}/history/`,
   );
+  if (!response.ok) {
+    return response;
+  }
 
-  return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Ticket actualizado correctamente." });
+  const history = getListItems(response.data).map(
+    ticketHistoryBackendToFrontend,
+  );
+  return { ...response, data: history };
 }
 
-export function assignTicket(ticketId, technicianId) {
-  syncTicketsFromStorage();
-  const ticketIndex = findTicketIndex(ticketId);
-  const technician = getUserSnapshotById(technicianId);
+export async function getTicketById(id) {
+  const ticketId = normalizeId(id);
+  const response = await apiRequest(`tickets/${ticketId}/`, {
+    mapResponse: ticketBackendToFrontend,
+  });
 
-  if (ticketIndex === -1) {
-    return fail("Ticket no encontrado.", 404);
+  if (!response.ok) {
+    return response;
   }
 
-  if (!technician) {
-    return fail("Tecnico no encontrado.", 404);
+  const historyResponse = await getTicketHistory(ticketId);
+  if (!historyResponse.ok) {
+    return historyResponse;
   }
 
-  const timestamp = nowIso();
-  const ticket = mockTickets[ticketIndex];
-  const technicianName = getUserFullName(technician);
-  const nextHistoryId = getNextId(ticket.history ?? []);
+  const source = {
+    ...response.data,
+    history: historyResponse.data,
+  };
+  const ticket = upsertCachedTicket(source, source);
+  return { ...response, data: clone(ticket) };
+}
 
-  replaceTickets(
-    mockTickets.map((currentTicket, index) => {
-      if (index !== ticketIndex) {
-        return currentTicket;
-      }
+export async function createTicket(payload) {
+  const categories = await getCategoryLookup();
+  const body = ticketFrontendToBackend(payload, { categories });
+  const response = await apiRequest("tickets/", {
+    body,
+    mapRequest: false,
+    mapResponse: ticketBackendToFrontend,
+    method: "POST",
+  });
 
+  if (!response.ok) {
+    return response;
+  }
+
+  let ticket = upsertCachedTicket(response.data, response.data);
+  const evidence =
+    payload.evidence &&
+    typeof payload.evidence === "object" &&
+    "file" in payload.evidence
+      ? payload.evidence.file
+      : payload.evidence;
+
+  if (
+    evidence &&
+    ((typeof File !== "undefined" && evidence instanceof File) ||
+      (typeof Blob !== "undefined" && evidence instanceof Blob))
+  ) {
+    const attachmentResponse = await uploadTicketAttachment(
+      ticket.id,
+      evidence,
+      payload.evidence?.description,
+    );
+    if (!attachmentResponse.ok) {
       return {
-        ...currentTicket,
-        assignedTo: technician.id,
-        assignedToName: technicianName,
-        status: TICKET_STATUSES.IN_PROGRESS,
-        takenAt: currentTicket.takenAt ?? timestamp,
-        updatedAt: timestamp,
-        history: [
-          ...(currentTicket.history ?? []),
-          {
-            id: nextHistoryId,
-            action: `Ticket tomado por ${technicianName}`,
-            userId: technician.id,
-            userName: technicianName,
-            createdAt: timestamp,
-          },
-          {
-            id: nextHistoryId + 1,
-            action: "Estado cambiado a En proceso",
-            userId: technician.id,
-            userName: technicianName,
-            createdAt: timestamp,
-          },
-        ],
+        ...response,
+        data: clone(ticket),
+        message:
+          "Ticket creado, pero no se pudo adjuntar la evidencia: " +
+          attachmentResponse.message,
+        warning: attachmentResponse.error,
       };
-    }),
-  );
+    }
 
-  return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Ticket asignado correctamente." });
+    ticket = upsertCachedTicket(
+      {
+        ...ticket,
+        attachments: [
+          ...(ticket.attachments ?? []),
+          attachmentResponse.data,
+        ],
+      },
+      { attachments: true },
+    );
+  }
+
+  return {
+    ...response,
+    data: clone(ticket),
+    message: response.message || "Ticket creado correctamente.",
+  };
 }
 
-export function changeTicketStatus(ticketId, status, comment, actor) {
-  syncTicketsFromStorage();
-  const ticketIndex = findTicketIndex(ticketId);
-
-  if (ticketIndex === -1) {
-    return fail("Ticket no encontrado.", 404);
-  }
-
-  if (!Object.values(TICKET_STATUSES).includes(status)) {
-    return fail("Estado de ticket invalido.");
-  }
-
-  const ticket = mockTickets[ticketIndex];
-  const actingUser = actor ?? getUserSnapshotById(ticket.assignedTo);
-
-  if (!actingUser) {
-    return fail("Usuario responsable no encontrado.", 404);
-  }
-
-  const timestamp = nowIso();
-  const shouldClose = status === TICKET_STATUSES.COMPLETED || status === TICKET_STATUSES.DISMISSED;
-  const assignedTo = ticket.assignedTo ?? actingUser.id;
-  const assignedToName = ticket.assignedToName ?? getUserFullName(actingUser);
-  const action =
-    status === TICKET_STATUSES.COMPLETED
-      ? "Ticket completado"
-      : status === TICKET_STATUSES.DISMISSED
-        ? "Ticket desestimado por area tecnica"
-        : `Estado cambiado a ${getStatusLabel(status)}`;
-
-  replaceTickets(
-    mockTickets.map((currentTicket, index) => {
-      if (index !== ticketIndex) {
-        return currentTicket;
-      }
-
-      const nextComments = comment
-        ? [...(currentTicket.comments ?? []), createCommentItem(currentTicket, comment, actingUser, timestamp)]
-        : currentTicket.comments;
-
-      return {
-        ...currentTicket,
-        assignedTo,
-        assignedToName,
-        status,
-        takenAt: currentTicket.takenAt ?? (!currentTicket.assignedTo ? timestamp : currentTicket.takenAt),
-        updatedAt: timestamp,
-        closedAt: shouldClose ? timestamp : currentTicket.closedAt,
-        comments: nextComments,
-        history: [...(currentTicket.history ?? []), createHistoryItem(currentTicket, action, actingUser, timestamp)],
-      };
-    }),
+export async function updateTicket(id, payload) {
+  const categories = await getCategoryLookup();
+  const response = await apiRequest(
+    `tickets/${normalizeId(id)}/`,
+    {
+      body: ticketFrontendToBackend(payload, { categories }),
+      mapRequest: false,
+      mapResponse: ticketBackendToFrontend,
+      method: "PATCH",
+    },
   );
-
-  return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Estado actualizado correctamente." });
+  return mapActionResponse(
+    response,
+    "Ticket actualizado correctamente.",
+  );
 }
 
-export function addTicketComment(ticketId, message, actor) {
-  syncTicketsFromStorage();
-  const ticketIndex = findTicketIndex(ticketId);
+export async function assignTicket(ticketId) {
+  const response = await apiRequest(
+    `tickets/${normalizeId(ticketId)}/take/`,
+    {
+      mapResponse: ticketBackendToFrontend,
+      method: "POST",
+    },
+  );
+  return mapActionResponse(
+    response,
+    "Ticket asignado correctamente.",
+  );
+}
 
-  if (ticketIndex === -1) {
-    return fail("Ticket no encontrado.", 404);
-  }
-
-  if (!actor) {
-    return fail("Usuario responsable no encontrado.", 404);
-  }
-
-  const timestamp = nowIso();
-
-  replaceTickets(
-    mockTickets.map((currentTicket, index) => {
-      if (index !== ticketIndex) {
-        return currentTicket;
-      }
-
-      return {
-        ...currentTicket,
-        comments: [
-          ...(currentTicket.comments ?? []),
-          createCommentItem(currentTicket, message, actor, timestamp),
-        ],
-        history: [
-          ...(currentTicket.history ?? []),
-          createHistoryItem(
-            currentTicket,
-            `Comentario agregado por ${getUserFullName(actor)}`,
-            actor,
-            timestamp,
-          ),
-        ],
-        updatedAt: timestamp,
-      };
-    }),
+export async function changeTicketStatus(
+  ticketId,
+  status,
+  comment,
+) {
+  const response = await apiRequest(
+    `tickets/${normalizeId(ticketId)}/status/`,
+    {
+      body: { status },
+      mapResponse: ticketBackendToFrontend,
+      method: "POST",
+    },
+  );
+  const result = mapActionResponse(
+    response,
+    "Estado actualizado correctamente.",
   );
 
-  return ok(getTicketSnapshotByIndex(ticketIndex), { message: "Comentario agregado correctamente." });
+  if (result.ok && comment?.trim()) {
+    const commentResult = await addTicketComment(
+      ticketId,
+      comment,
+    );
+    if (!commentResult.ok) {
+      return commentResult;
+    }
+  }
+
+  return result;
+}
+
+export async function addTicketComment(ticketId, message) {
+  const response = await apiRequest(
+    `tickets/${normalizeId(ticketId)}/comments/`,
+    {
+      body: { message },
+      mapResponse: ticketCommentBackendToFrontend,
+      method: "POST",
+    },
+  );
+  if (!response.ok) {
+    return response;
+  }
+
+  const id = normalizeId(ticketId);
+  const existing = cachedTickets.find((ticket) => ticket.id === id);
+  if (existing) {
+    upsertCachedTicket(
+      {
+        ...existing,
+        comments: [...(existing.comments ?? []), response.data],
+      },
+      { comments: true },
+    );
+  }
+
+  return {
+    ...response,
+    message: response.message || "Comentario agregado correctamente.",
+  };
 }
 
 export function uploadTicketAttachment(
@@ -443,20 +433,42 @@ export function uploadTicketAttachment(
     description,
   );
 
-  return apiRequest(`tickets/${Number(ticketId)}/attachments/`, {
-    body: formData,
-    mapResponse: ticketAttachmentBackendToFrontend,
-    method: "POST",
-  });
+  return apiRequest(
+    `tickets/${normalizeId(ticketId)}/attachments/`,
+    {
+      body: formData,
+      mapResponse: ticketAttachmentBackendToFrontend,
+      method: "POST",
+    },
+  );
+}
+
+export function downloadTicketAttachment(ticketId, attachmentId) {
+  return apiRequest(
+    `tickets/${normalizeId(ticketId)}/attachments/${normalizeId(
+      attachmentId,
+    )}/download/`,
+    {
+      responseType: "blob",
+    },
+  );
 }
 
 export function closeTicket(ticketId, payload = {}) {
-  const nextStatus = payload.status ?? TICKET_STATUSES.COMPLETED;
-  return changeTicketStatus(ticketId, nextStatus, payload.comment, payload.actor);
+  const nextStatus =
+    payload.status ?? TICKET_STATUSES.COMPLETED;
+  return changeTicketStatus(
+    ticketId,
+    nextStatus,
+    payload.comment,
+  );
 }
 
 function isOpenUnassigned(ticket) {
-  return ticket.status === TICKET_STATUSES.OPEN && !ticket.assignedTo;
+  return (
+    ticket.status === TICKET_STATUSES.OPEN &&
+    !ticket.assignedTo
+  );
 }
 
 function isAssignedTo(ticket, user) {
@@ -468,11 +480,16 @@ export function getVisibleTicketsForUser(tickets, user) {
     return [];
   }
 
-  if (user.role === ROLES.ADMINISTRATOR || user.role === ROLES.TECHNICIAN) {
+  if (
+    user.role === ROLES.ADMINISTRATOR ||
+    user.role === ROLES.TECHNICIAN
+  ) {
     return tickets;
   }
 
-  return tickets.filter((ticket) => ticket.createdBy === user.id);
+  return tickets.filter(
+    (ticket) => ticket.createdBy === user.id,
+  );
 }
 
 export function getDashboardTicketsForUser(tickets, user) {
@@ -485,10 +502,15 @@ export function getDashboardTicketsForUser(tickets, user) {
   }
 
   if (user.role === ROLES.TECHNICIAN) {
-    return tickets.filter((ticket) => isOpenUnassigned(ticket) || isAssignedTo(ticket, user));
+    return tickets.filter(
+      (ticket) =>
+        isOpenUnassigned(ticket) || isAssignedTo(ticket, user),
+    );
   }
 
-  return tickets.filter((ticket) => ticket.createdBy === user.id);
+  return tickets.filter(
+    (ticket) => ticket.createdBy === user.id,
+  );
 }
 
 export function getTicketsForView(tickets, user, view) {
@@ -502,22 +524,34 @@ export function getTicketsForView(tickets, user, view) {
 
   if (view === VIEW_IDS.MY_TICKETS) {
     return tickets.filter(
-      (ticket) => isAssignedTo(ticket, user) && !terminalTicketStatuses.includes(ticket.status),
+      (ticket) =>
+        isAssignedTo(ticket, user) &&
+        !terminalTicketStatuses.includes(ticket.status),
     );
   }
 
   if (view === VIEW_IDS.HISTORY) {
     return tickets.filter(
-      (ticket) => isAssignedTo(ticket, user) && terminalTicketStatuses.includes(ticket.status),
+      (ticket) =>
+        isAssignedTo(ticket, user) &&
+        terminalTicketStatuses.includes(ticket.status),
     );
   }
 
-  if (view === VIEW_IDS.TICKETS && user.role === ROLES.ADMINISTRATOR) {
+  if (
+    view === VIEW_IDS.TICKETS &&
+    user.role === ROLES.ADMINISTRATOR
+  ) {
     return tickets;
   }
 
-  if (view === VIEW_IDS.TICKETS && user.role === ROLES.EMPLOYEE) {
-    return tickets.filter((ticket) => ticket.createdBy === user.id);
+  if (
+    view === VIEW_IDS.TICKETS &&
+    user.role === ROLES.EMPLOYEE
+  ) {
+    return tickets.filter(
+      (ticket) => ticket.createdBy === user.id,
+    );
   }
 
   return getVisibleTicketsForUser(tickets, user);

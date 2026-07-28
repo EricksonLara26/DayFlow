@@ -6,10 +6,13 @@ La aplicacion trabaja internamente en `camelCase`. Si DRF expone `snake_case`, l
 
 ## Estado actual
 
-- No hay `fetch` real implementado para dashboard.
-- Los mocks siguen siendo la fuente interna temporal.
-- `src/services/dashboardService.js` prepara los agregados con la forma esperada para backend.
-- Los componentes visuales no deben contar tickets para construir metricas del dashboard.
+- Django publica los endpoints derivados bajo `/api/v1/analytics/`.
+- Los tickets usados por el frontend provienen de `/api/v1/tickets/` y se
+  conservan temporalmente en una caché de memoria.
+- `src/services/dashboardService.js` puede derivar los mismos contratos desde
+  esa caché API para las vistas ya existentes.
+- Los mocks de `src/mocks/` son fixtures exclusivas de pruebas y no son una
+  fuente de datos en producción.
 
 ## Resumen general
 
@@ -152,7 +155,7 @@ Campos:
 
 ## Estados de respuesta esperados
 
-Cuando se conecte API real, el servicio deberia poder representar:
+El servicio representa:
 
 - `loading`: solicitud en curso.
 - `error`: fallo de red, permisos o validacion de backend.
@@ -171,4 +174,7 @@ Los componentes actuales ya reciben `summary`, `technicianRanking`, `categoryVol
 - `getHistoricalSnapshot`
 - `getActivityHistorySnapshot`
 
-Estos servicios conservan mocks por ahora y son el punto natural para reemplazar snapshots locales por clientes DRF en una etapa posterior.
+Estos snapshots se calculan exclusivamente sobre datos previamente obtenidos
+de la API. Los endpoints DRF equivalentes están cubiertos por las pruebas
+backend y permiten mover cada panel a una consulta directa sin cambiar su
+contrato visual.

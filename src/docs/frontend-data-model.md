@@ -5,8 +5,8 @@ Este documento define el modelo de datos canonico del frontend. La aplicacion de
 ## Convencion general
 
 - El frontend usa `camelCase` para objetos, formularios, estado local, servicios y componentes.
-- El backend Django/MySQL probablemente expondra `snake_case`.
-- La conversion esperada vive fuera de los componentes, por ejemplo `first_name` -> `firstName` y `created_at` -> `createdAt`.
+- El backend Django/MySQL expone `snake_case`.
+- La conversion vive en los mappers de `src/services/mappers.js`, por ejemplo `first_name` -> `firstName` y `created_at` -> `createdAt`.
 - No deben convivir dos nombres para el mismo dato dentro del modelo frontend. Ejemplos no permitidos: `firstName` + `nombre`, `role` + `rol`, `department` + `departamento`, `category` + `categoria`, `closedAt` + `completedAt`.
 
 ## User
@@ -43,9 +43,11 @@ Campos obligatorios:
 
 Campos opcionales:
 
-- `password`: solo para mocks locales de login. No debe formar parte del usuario expuesto por un backend real.
 - `createdAt`: fecha de creacion.
 - `updatedAt`: fecha de ultima actualizacion.
+
+`password` no forma parte del modelo de lectura. Solo se acepta como campo
+`write_only` en las operaciones autorizadas de alta o cambio de contraseña.
 
 ## Ticket
 
@@ -91,7 +93,9 @@ Campos opcionales:
 - `closedAt`: fecha de cierre cuando el ticket queda completado o desestimado.
 - `takenAt`: fecha en que un tecnico toma el ticket.
 
-Nota de demo: los mocks actuales pueden conservar campos de presentacion como `createdByName` y `assignedToName` para no ampliar el alcance visual. La fuente canonica de relacion es `createdBy` y `assignedTo`.
+`createdByName` y `assignedToName` son campos derivados de solo lectura que
+entrega la API. Las relaciones canónicas siguen siendo `createdBy` y
+`assignedTo`.
 
 ## Category
 
@@ -205,7 +209,8 @@ Campos opcionales:
 
 ## Evidence
 
-No existe un modelo de evidencia implementado actualmente. Si se agrega, el frontend deberia usar esta estructura:
+Los adjuntos se persisten mediante `TicketAttachment` y se cargan con
+`FormData`. El frontend usa esta estructura normalizada:
 
 ```js
 {
@@ -213,7 +218,7 @@ No existe un modelo de evidencia implementado actualmente. Si se agrega, el fron
   ticketId: 1001,
   uploadedBy: 10,
   fileName: "captura-error.png",
-  fileUrl: "https://example.com/files/captura-error.png",
+  downloadUrl: "/api/v1/tickets/1001/attachments/1/download/",
   mimeType: "image/png",
   createdAt: "2026-05-12T09:30:00.000Z"
 }
@@ -225,7 +230,7 @@ Campos obligatorios:
 - `ticketId`: ticket asociado.
 - `uploadedBy`: `id` del usuario que subio la evidencia.
 - `fileName`: nombre del archivo.
-- `fileUrl`: URL o ruta de descarga.
+- `downloadUrl`: URL autorizada de descarga.
 - `mimeType`: tipo MIME.
 - `createdAt`: fecha de carga.
 
@@ -233,7 +238,7 @@ Campos opcionales:
 
 - `description`: descripcion breve de la evidencia.
 
-## Futuro mapper Django
+## Mapper Django
 
 Ejemplo esperado de conversion:
 
