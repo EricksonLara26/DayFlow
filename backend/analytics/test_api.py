@@ -132,6 +132,12 @@ class AnalyticsDataMixin:
             priority=priority,
         )
         created_at = created_at or timezone.now() - timedelta(hours=1)
+        if due_date is not None and due_date < created_at.date():
+            created_at = datetime.combine(
+                due_date - timedelta(days=1),
+                datetime.min.time(),
+                tzinfo=datetime_timezone.utc,
+            )
         if status_value in (
             TicketStatus.COMPLETED,
             TicketStatus.DISMISSED,

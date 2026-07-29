@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from django.contrib import admin
-from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, models, transaction
 from django.db.models.deletion import ProtectedError
@@ -220,6 +220,41 @@ class TicketModelTests(TicketTestCase):
                         Ticket.objects.filter(pk=ticket.pk).update(
                             **{field_name: invalid_value}
                         )
+
+    def test_due_date_cannot_precede_created_at_in_django_or_database(self):
+        ticket = self.create_ticket()
+        invalid_due_date = timezone.localdate() - timedelta(days=1)
+        ticket.due_date = invalid_due_date
+
+        with self.assertRaises(ValidationError):
+            ticket.full_clean()
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Ticket.objects.filter(pk=ticket.pk).update(
+                    due_date=invalid_due_date
+                )
+
+    def test_history_change_field_is_unique_per_history_entry(self):
+        ticket = self.create_ticket()
+        history = ticket.history_entries.get(
+            action_code=TicketHistoryAction.CREATED
+        )
+        TicketHistoryChange.objects.create(
+            history=history,
+            field_code="status",
+            old_value=TicketStatus.OPEN,
+            new_value=TicketStatus.IN_PROGRESS,
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                TicketHistoryChange.objects.create(
+                    history=history,
+                    field_code="status",
+                    old_value=TicketStatus.IN_PROGRESS,
+                    new_value=TicketStatus.ON_HOLD,
+                )
 
     def test_protect_preserves_ticket_history(self):
         ticket = self.create_ticket()

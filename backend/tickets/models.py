@@ -4,7 +4,9 @@ from pathlib import Path
 from uuid import uuid4
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from catalogs.models import Category, Department, Role
 
@@ -137,6 +139,18 @@ class Ticket(models.Model):
             ),
             models.CheckConstraint(
                 condition=(
+                    models.Q(due_date__isnull=True)
+                    | models.Q(
+                        due_date__gte=models.functions.Cast(
+                            models.F("created_at"),
+                            output_field=models.DateField(),
+                        )
+                    )
+                ),
+                name="tickets_due_on_after_created",
+            ),
+            models.CheckConstraint(
+                condition=(
                     models.Q(
                         status__in=CLOSED_TICKET_STATUSES,
                         closed_at__isnull=False,
@@ -153,6 +167,23 @@ class Ticket(models.Model):
                 name="tickets_closed_status_consistent",
             ),
         ]
+
+    def clean(self):
+        super().clean()
+        created_date = (
+            self.created_at.date()
+            if self.created_at is not None
+            else timezone.localdate()
+        )
+        if self.due_date is not None and self.due_date < created_date:
+            raise ValidationError(
+                {
+                    "due_date": (
+                        "La fecha límite no puede ser anterior "
+                        "a la fecha de creación."
+                    )
+                }
+            )
 
     def __str__(self):
         return f"#{self.pk or 'new'} - {self.title}"
@@ -267,13 +298,11 @@ class TicketHistoryChange(models.Model):
     class Meta:
         db_table = "ticket_history_changes"
         ordering = ("id",)
-        indexes = [
-            models.Index(
-                fields=("history", "field_code"),
-                name="history_changes_field_idx",
-            )
-        ]
         constraints = [
+            models.UniqueConstraint(
+                fields=("history", "field_code"),
+                name="history_changes_history_field_uniq",
+            ),
             models.CheckConstraint(
                 condition=~models.Q(field_code=""),
                 name="history_changes_field_not_empty",

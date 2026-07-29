@@ -1,8 +1,12 @@
 """Tests for DayFlow catalogs."""
 
+from importlib import import_module
+from types import SimpleNamespace
+
+from django.apps import apps
 from django.contrib import admin
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
 
 from .models import (
@@ -30,6 +34,51 @@ class CanonicalRoleTests(TestCase):
         role = Role.objects.get(code=RoleCode.TECHNICIAN)
         self.assertEqual(str(role), "Técnico")
         self.assertEqual(role.code, "TECHNICIAN")
+
+
+class ApprovedDepartmentMigrationTests(TestCase):
+    exact_names = {
+        "Tecnología",
+        "Soporte Técnico",
+        "Administración",
+        "Operaciones",
+        "Ventas",
+    }
+
+    def test_migration_preserves_ids_and_is_idempotent(self):
+        technology = Department.objects.get(name="Tecnología")
+        original_id = technology.id
+        Department.objects.filter(pk=original_id).update(name="Tecnologia")
+
+        migration_module = import_module(
+            "catalogs.migrations."
+            "0004_normalize_approved_department_names"
+        )
+        schema_editor = SimpleNamespace(connection=connection)
+        migration_module.normalize_approved_department_names(
+            apps,
+            schema_editor,
+        )
+        migration_module.normalize_approved_department_names(
+            apps,
+            schema_editor,
+        )
+
+        technology.refresh_from_db()
+        self.assertEqual(technology.id, original_id)
+        self.assertEqual(technology.name, "Tecnología")
+        self.assertSetEqual(
+            set(
+                Department.objects.filter(
+                    name__in=self.exact_names
+                ).values_list("name", flat=True)
+            ),
+            self.exact_names,
+        )
+        self.assertEqual(
+            Department.objects.filter(name__in=self.exact_names).count(),
+            len(self.exact_names),
+        )
 
 
 class NamedCatalogTests(TestCase):

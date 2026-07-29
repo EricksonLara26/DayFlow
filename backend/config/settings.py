@@ -1,5 +1,6 @@
 """Django settings for the DayFlow backend."""
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -336,8 +337,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = min(
     2_621_440,
 )
 DATA_UPLOAD_MAX_MEMORY_SIZE = REQUEST_MAX_BYTES
-FILE_UPLOAD_PERMISSIONS = 0o640
-FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
+FILE_UPLOAD_PERMISSIONS = None if os.name == "nt" else 0o640
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = None if os.name == "nt" else 0o750
 
 
 # Logging: never enable SQL/body logging in production.
