@@ -1,4 +1,3 @@
--- DayFlow - Datos académicos sanitizados
 -- Versión: 4.0
 -- Motor objetivo: MySQL 8.0.46
 --
@@ -9,7 +8,6 @@
 -- Los catálogos cerrados de roles, categorías y departamentos contienen
 -- únicamente los valores funcionales aprobados para DayFlow.
 --
--- Ejecutar después de sql/schema.sql sobre una base académica vacía.
 -- No ejecutar sobre la base de desarrollo.
 
 SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
@@ -459,10 +457,6 @@ INSERT INTO users (
         '2026-01-03 09:55:00'
     );
 
--- 20 tickets distribuidos entre enero y el corte académico del
--- 3 de agosto de 2026, con todos los estados y prioridades.
--- Al corte, los tickets 3, 5, 6, 9, 11 y 13 están vencidos sin cerrar;
--- los tickets 14 y 15 vencen próximamente, el 4 y 6 de agosto.
 INSERT INTO tickets (
     id,
     title,
@@ -800,7 +794,6 @@ INSERT INTO tickets (
         '2026-08-18'
     );
 
--- 20 comentarios académicos.
 INSERT INTO ticket_comments (
     id,
     ticket_id,

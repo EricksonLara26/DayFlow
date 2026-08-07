@@ -1,10 +1,8 @@
--- DayFlow - Consultas académicas de reportes
 -- Compatible con MySQL 8.0.46.
 -- Archivo de solo lectura: no modifica datos ni define credenciales.
 
 USE dayflow_db;
 
--- Fecha de referencia reproducible correspondiente al corte académico de la entrega.
 SET @report_date = DATE('2026-08-03');
 
 -- REPORTE 1: Resumen de tickets por estado.
@@ -191,7 +189,6 @@ ORDER BY
     t.id ASC;
 
 -- REPORTE 9: Evolución mensual disponible de tickets creados entre enero y agosto de 2026.
--- Muestra la evolución disponible hasta el corte académico, no doce meses completos.
 SELECT
     YEAR(t.created_at) AS report_year,
     MONTH(t.created_at) AS report_month,

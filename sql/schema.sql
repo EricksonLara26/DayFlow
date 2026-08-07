@@ -1,5 +1,4 @@
 -- Proyecto: DayFlow
--- Versión del esquema académico: 4.0
 -- Motor objetivo: MySQL 8.0.46
 -- Alineado con los modelos vigentes y las migraciones hasta
 -- catalogs.0004 y tickets.0002.
