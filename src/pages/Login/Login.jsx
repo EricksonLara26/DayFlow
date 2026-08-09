@@ -120,9 +120,6 @@ export default function Login({ message, onLogin }) {
         <div>
           <p className="eyebrow">Acceso seguro</p>
           <h1>Accede a DayFlow</h1>
-          <p className="login-copy">
-            Ingresa con tus credenciales corporativas. El sistema identificará tu rol automáticamente.
-          </p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>

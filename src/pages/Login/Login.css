@@ -44,12 +44,6 @@
   font-size: 1.2rem;
 }
 
-.login-copy {
-  margin: 10px 0 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
 .login-form {
   display: grid;
   gap: 14px;
